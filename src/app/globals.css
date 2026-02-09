@@ -1,26 +1,368 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================
+   PuzKit3D Design System - Tailwind CSS v4
+   ============================================ */
 
 @theme inline {
+  /* Colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  /* Typography */
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-heading: var(--font-outfit), var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+
+  /* Semantic Colors */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+
+  /* Components */
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Brand Colors - PuzKit3D */
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-accent: var(--brand-accent);
+
+  /* Status Colors */
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
+  /* Chart Colors */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Sidebar */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Border Radius */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ============================================
+   Light Theme - PuzKit3D
+   Industrial / Model Kit / Premium Feel
+   ============================================ */
+:root {
+  --radius: 0.625rem;
+
+  /* Base */
+  --background: oklch(0.985 0.002 247);
+  --foreground: oklch(0.145 0.035 265);
+
+  /* Brand Colors - Navy Blue + Red Accent (Gundam RX-78 inspired) */
+  --brand: oklch(0.35 0.12 250);
+  --brand-foreground: oklch(0.98 0.005 250);
+  --brand-accent: oklch(0.55 0.22 25);
+
+  /* Primary - Deep Navy */
+  --primary: oklch(0.25 0.08 255);
+  --primary-foreground: oklch(0.98 0.005 250);
+
+  /* Secondary - Light Gray */
+  --secondary: oklch(0.96 0.005 250);
+  --secondary-foreground: oklch(0.25 0.08 255);
+
+  /* Accent - Vibrant Red */
+  --accent: oklch(0.55 0.22 25);
+  --accent-foreground: oklch(0.98 0.005 250);
+
+  /* Muted */
+  --muted: oklch(0.955 0.005 250);
+  --muted-foreground: oklch(0.45 0.03 255);
+
+  /* Cards & Popovers */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0.035 265);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0.035 265);
+
+  /* Destructive */
+  --destructive: oklch(0.55 0.22 25);
+
+  /* Borders & Inputs */
+  --border: oklch(0.9 0.01 250);
+  --input: oklch(0.9 0.01 250);
+  --ring: oklch(0.35 0.12 250);
+
+  /* Status Colors */
+  --success: oklch(0.55 0.18 145);
+  --success-foreground: oklch(0.98 0.005 145);
+  --warning: oklch(0.75 0.18 75);
+  --warning-foreground: oklch(0.25 0.05 75);
+  --info: oklch(0.55 0.15 240);
+  --info-foreground: oklch(0.98 0.005 240);
+
+  /* Charts */
+  --chart-1: oklch(0.55 0.22 25);
+  --chart-2: oklch(0.55 0.15 240);
+  --chart-3: oklch(0.55 0.18 145);
+  --chart-4: oklch(0.75 0.18 75);
+  --chart-5: oklch(0.55 0.18 300);
+
+  /* Sidebar */
+  --sidebar: oklch(0.98 0.005 250);
+  --sidebar-foreground: oklch(0.145 0.035 265);
+  --sidebar-primary: oklch(0.25 0.08 255);
+  --sidebar-primary-foreground: oklch(0.98 0.005 250);
+  --sidebar-accent: oklch(0.955 0.005 250);
+  --sidebar-accent-foreground: oklch(0.25 0.08 255);
+  --sidebar-border: oklch(0.9 0.01 250);
+  --sidebar-ring: oklch(0.35 0.12 250);
+}
+
+/* ============================================
+   Dark Theme - PuzKit3D
+   Premium Dark / Metallic Feel
+   ============================================ */
+.dark {
+  /* Base */
+  --background: oklch(0.13 0.03 260);
+  --foreground: oklch(0.97 0.005 250);
+
+  /* Brand Colors */
+  --brand: oklch(0.55 0.18 240);
+  --brand-foreground: oklch(0.13 0.03 260);
+  --brand-accent: oklch(0.65 0.22 25);
+
+  /* Primary - Bright Blue */
+  --primary: oklch(0.65 0.18 240);
+  --primary-foreground: oklch(0.13 0.03 260);
+
+  /* Secondary */
+  --secondary: oklch(0.22 0.03 260);
+  --secondary-foreground: oklch(0.97 0.005 250);
+
+  /* Accent - Bright Red */
+  --accent: oklch(0.65 0.22 25);
+  --accent-foreground: oklch(0.13 0.03 260);
+
+  /* Muted */
+  --muted: oklch(0.22 0.03 260);
+  --muted-foreground: oklch(0.65 0.03 260);
+
+  /* Cards & Popovers */
+  --card: oklch(0.18 0.03 260);
+  --card-foreground: oklch(0.97 0.005 250);
+  --popover: oklch(0.18 0.03 260);
+  --popover-foreground: oklch(0.97 0.005 250);
+
+  /* Destructive */
+  --destructive: oklch(0.65 0.22 25);
+
+  /* Borders & Inputs */
+  --border: oklch(0.28 0.03 260);
+  --input: oklch(0.28 0.03 260);
+  --ring: oklch(0.55 0.18 240);
+
+  /* Status Colors */
+  --success: oklch(0.65 0.18 145);
+  --success-foreground: oklch(0.13 0.03 145);
+  --warning: oklch(0.8 0.18 75);
+  --warning-foreground: oklch(0.2 0.05 75);
+  --info: oklch(0.65 0.15 240);
+  --info-foreground: oklch(0.13 0.03 240);
+
+  /* Charts */
+  --chart-1: oklch(0.65 0.22 25);
+  --chart-2: oklch(0.65 0.15 240);
+  --chart-3: oklch(0.65 0.18 145);
+  --chart-4: oklch(0.8 0.18 75);
+  --chart-5: oklch(0.65 0.18 300);
+
+  /* Sidebar */
+  --sidebar: oklch(0.15 0.03 260);
+  --sidebar-foreground: oklch(0.97 0.005 250);
+  --sidebar-primary: oklch(0.55 0.18 240);
+  --sidebar-primary-foreground: oklch(0.97 0.005 250);
+  --sidebar-accent: oklch(0.22 0.03 260);
+  --sidebar-accent-foreground: oklch(0.97 0.005 250);
+  --sidebar-border: oklch(0.28 0.03 260);
+  --sidebar-ring: oklch(0.55 0.18 240);
+}
+
+/* ============================================
+   Base Styles
+   ============================================ */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  /* Typography */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading font-semibold tracking-tight;
+  }
+
+  h1 {
+    @apply text-4xl md:text-5xl;
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl;
+  }
+
+  h3 {
+    @apply text-2xl md:text-3xl;
+  }
+
+  h4 {
+    @apply text-xl md:text-2xl;
+  }
+
+  h5 {
+    @apply text-lg md:text-xl;
+  }
+
+  h6 {
+    @apply text-base md:text-lg;
+  }
+
+  p {
+    @apply leading-relaxed;
+  }
+
+  /* Links */
+  a {
+    @apply transition-colors duration-200;
+  }
+
+  /* Focus visible */
+  :focus-visible {
+    @apply outline-ring outline-2 outline-offset-2;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ============================================
+   Utility Classes
+   ============================================ */
+@layer utilities {
+  /* Text gradient */
+  .text-gradient {
+    @apply from-brand to-brand-accent bg-gradient-to-r bg-clip-text text-transparent;
+  }
+
+  /* Glassmorphism */
+  .glass {
+    @apply bg-white/80 backdrop-blur-md dark:bg-black/50;
+  }
+
+  /* Card hover effect */
+  .card-hover {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg;
+  }
+
+  /* Hide scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Container */
+  .container-custom {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+}
+
+/* ============================================
+   Animations
+   ============================================ */
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
