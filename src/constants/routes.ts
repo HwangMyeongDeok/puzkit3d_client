@@ -1,41 +1,29 @@
-/**
- * Application routes
- * Use these constants instead of hardcoding paths
- */
-
 export const ROUTES = {
-  // Public
   HOME: '/',
 
-  // Auth
   LOGIN: '/login',
   REGISTER: '/register',
   FORGOT_PASSWORD: '/forgot-password',
   RESET_PASSWORD: '/reset-password',
 
-  // Products
-  PRODUCTS: '/products',
-  PRODUCT_DETAIL: (slug: string) => `/products/${slug}` as const,
+  PRODUCTS: '/shop',
+  PRODUCT_DETAIL: (slug: string) => `/shop/${slug}` as const,
 
-  // Cart & Checkout
   CART: '/cart',
   CHECKOUT: '/checkout',
+  CHECKOUT_SUCCESS: '/checkout/success',
 
-  // Orders
   ORDERS: '/orders',
   ORDER_DETAIL: (id: string) => `/orders/${id}` as const,
 
-  // Import Request (overseas ordering)
   IMPORT_REQUESTS: '/import-requests',
   IMPORT_REQUEST_NEW: '/import-requests/new',
   IMPORT_REQUEST_DETAIL: (id: string) => `/import-requests/${id}` as const,
 
-  // Profile
   PROFILE: '/profile',
   PROFILE_ADDRESSES: '/profile/addresses',
   PROFILE_SETTINGS: '/profile/settings',
 
-  // Static pages
   ABOUT: '/about',
   CONTACT: '/contact',
   FAQ: '/faq',
@@ -43,7 +31,6 @@ export const ROUTES = {
   TERMS_OF_SERVICE: '/terms-of-service',
 } as const;
 
-// API endpoints base paths
 export const API_ROUTES = {
   AUTH: '/auth',
   PRODUCTS: '/products',

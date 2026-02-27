@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
-import { Inter, Outfit, Geist_Mono } from 'next/font/google';
+import { Inter, Outfit } from 'next/font/google';
 import { Toaster } from 'sonner';
 
 import './globals.css';
 import { ReduxProvider } from '@/providers/ReduxProvider';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
 
 const inter = Inter({
   variable: '--font-inter',
@@ -13,12 +15,6 @@ const inter = Inter({
 
 const outfit = Outfit({
   variable: '--font-outfit',
-  subsets: ['latin'],
-  display: 'swap',
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
   subsets: ['latin'],
   display: 'swap',
 });
@@ -47,11 +43,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" suppressHydrationWarning>
-      <body
-        className={`${inter.variable} ${outfit.variable} ${geistMono.variable} font-sans antialiased`}
-      >
+      <body className={`${inter.variable} ${outfit.variable} font-sans antialiased`}>
         <ReduxProvider>
-          {children}
+          <Header />
+          <main className="min-h-screen pt-16">{children}</main>
+          <Footer />
           <Toaster position="top-right" richColors closeButton />
         </ReduxProvider>
       </body>

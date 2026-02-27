@@ -28,17 +28,13 @@ const persistAuth = debounce((state: RootState['auth']) => {
     } else if (!state.isLoading) {
       localStorage.removeItem(APP_CONFIG.AUTH_STORAGE_KEY);
     }
-  } catch {
-    /* empty */
-  }
+  } catch {}
 }, 300);
 
 const persistCart = debounce((items: RootState['cart']['items']) => {
   try {
     localStorage.setItem(APP_CONFIG.CART_STORAGE_KEY, JSON.stringify(items));
-  } catch {
-    /* empty */
-  }
+  } catch {}
 }, 300);
 
 const authActions = [

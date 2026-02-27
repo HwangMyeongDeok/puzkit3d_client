@@ -1,8 +1,3 @@
-/**
- * Application enums and constant values
- */
-
-// Material types
 export const MATERIAL = {
   PAPER: 'paper',
   PLASTIC: 'plastic',
@@ -19,7 +14,6 @@ export const MATERIAL_LABELS: Record<string, string> = {
   screw: 'Ốc vít',
 };
 
-// Difficulty levels
 export const DIFFICULTY = {
   EASY: 'easy',
   MEDIUM: 'medium',
@@ -34,7 +28,6 @@ export const DIFFICULTY_LABELS: Record<string, string> = {
   expert: 'Chuyên gia',
 };
 
-// Order status
 export const ORDER_STATUS = {
   PENDING: 'pending',
   CONFIRMED: 'confirmed',
@@ -53,7 +46,6 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
   cancelled: 'Đã hủy',
 };
 
-// Import request status
 export const IMPORT_REQUEST_STATUS = {
   SUBMITTED: 'submitted',
   REVIEWING: 'reviewing',
@@ -76,7 +68,6 @@ export const IMPORT_REQUEST_STATUS_LABELS: Record<string, string> = {
   cancelled: 'Đã hủy',
 };
 
-// Payment methods
 export const PAYMENT_METHOD = {
   COD: 'cod',
   BANK_TRANSFER: 'bank_transfer',
@@ -91,7 +82,6 @@ export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   vnpay: 'VNPay',
 };
 
-// Sort options
 export const SORT_OPTIONS = [
   { value: 'createdAt:desc', label: 'Mới nhất' },
   { value: 'createdAt:asc', label: 'Cũ nhất' },
@@ -102,6 +92,5 @@ export const SORT_OPTIONS = [
   { value: 'rating:desc', label: 'Đánh giá cao nhất' },
 ] as const;
 
-// Pagination
 export const DEFAULT_PAGE_SIZE = 12;
 export const PAGE_SIZE_OPTIONS = [12, 24, 48] as const;
