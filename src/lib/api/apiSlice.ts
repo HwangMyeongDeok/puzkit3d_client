@@ -20,7 +20,7 @@ export const apiSlice = createApi({
   tagTypes: tagTypes,
   endpoints: () => ({}),
   keepUnusedDataFor: 60,
-  refetchOnFocus: true,
+  refetchOnFocus: false,
   refetchOnReconnect: true,
 });
 

@@ -37,9 +37,7 @@ function StoreInitializer({ children }: { children: ReactNode }) {
         const cartItems = JSON.parse(storedCart);
         store.dispatch(loadCart(cartItems));
       }
-    } catch {
-      /* empty */
-    }
+    } catch {}
   }, []);
 
   return <>{children}</>;
