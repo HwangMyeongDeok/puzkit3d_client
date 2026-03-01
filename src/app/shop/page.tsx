@@ -1,7 +1,10 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { SlidersHorizontal, ChevronDown } from 'lucide-react';
+import { SlidersHorizontal, ChevronDown, Search, X } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Input } from '@/components/ui/input';
+import { useDebounce } from '@/lib/hooks/useDebounce';
 
 import { products, getAllBrands } from '@/lib/mockData';
 import type { MockProduct } from '@/lib/mockData';
@@ -20,6 +23,12 @@ const SORT_OPTIONS = [
 type SortValue = (typeof SORT_OPTIONS)[number]['value'];
 
 export default function ShopPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedDifficulties, setSelectedDifficulties] = useState<MockProduct['difficulty'][]>([]);
   const [sortBy, setSortBy] = useState<SortValue>('popular');
@@ -42,6 +51,11 @@ export default function ShopPage() {
   const filteredProducts = useMemo(() => {
     let results = [...products];
 
+    if (debouncedSearchQuery) {
+      results = results.filter((p) =>
+        p.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+      );
+    }
     if (selectedBrands.length > 0) {
       results = results.filter((p) => selectedBrands.includes(p.brand));
     }
@@ -67,10 +81,28 @@ export default function ShopPage() {
     }
 
     return results;
-  }, [selectedBrands, selectedDifficulties, sortBy]);
+  }, [debouncedSearchQuery, selectedBrands, selectedDifficulties, sortBy]);
 
   const FiltersContent = (
     <div className="flex flex-col gap-6">
+      <div className="relative">
+        <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+        <Input
+          placeholder="Tìm sản phẩm..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
       <div>
         <h3 className="text-foreground mb-3 text-sm font-bold">Thương hiệu</h3>
         <div className="flex flex-col gap-2">
@@ -111,13 +143,14 @@ export default function ShopPage() {
         </div>
       </div>
 
-      {(selectedBrands.length > 0 || selectedDifficulties.length > 0) && (
+      {(selectedBrands.length > 0 || selectedDifficulties.length > 0 || searchQuery !== '') && (
         <button
           onClick={() => {
             setSelectedBrands([]);
             setSelectedDifficulties([]);
+            setSearchQuery('');
           }}
-          className="text-accent hover:text-accent/80 text-xs font-semibold transition-colors"
+          className="text-accent hover:text-accent/80 justify-start text-left text-xs font-semibold transition-colors"
         >
           Xóa tất cả bộ lọc
         </button>

@@ -40,12 +40,14 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-1">
-          <button
+          {/* Search */}
+          <Link
+            href={ROUTES.PRODUCTS}
             className="text-foreground/80 hover:bg-secondary hover:text-brand-accent rounded-lg p-2 transition-colors"
             aria-label="Search"
           >
             <Search className="h-5 w-5" />
-          </button>
+          </Link>
 
           <button
             className="text-foreground/80 hover:bg-secondary hover:text-brand-accent rounded-lg p-2 transition-colors"
