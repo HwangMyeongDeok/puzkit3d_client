@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { CheckCircle, ArrowRight, Package } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { ROUTES } from '@/constants';
 
 export default function OrderSuccessPage() {
   return (
@@ -30,13 +31,13 @@ export default function OrderSuccessPage() {
       </div>
 
       <div className="flex flex-col items-center gap-3 sm:flex-row">
-        <Link href="/shop">
+        <Link href={ROUTES.PRODUCTS}>
           <Button size="lg" className="gap-2 rounded-xl px-8">
             Khám phá thêm mô hình
             <ArrowRight className="h-4 w-4" />
           </Button>
         </Link>
-        <Link href="/">
+        <Link href={ROUTES.HOME}>
           <Button variant="outline" size="lg" className="gap-2 rounded-xl px-8">
             Về trang chủ
           </Button>

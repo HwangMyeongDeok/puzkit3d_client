@@ -1,3 +1,5 @@
+export type CartItemType = 'instock' | 'partner';
+
 export interface CartItem {
   productId: string;
   name: string;
@@ -6,6 +8,7 @@ export interface CartItem {
   quantity: number;
   variant?: string;
   maxQuantity?: number;
+  itemType: CartItemType;
 }
 
 export interface CartState {
@@ -22,6 +25,7 @@ export interface AddToCartPayload {
   quantity: number;
   variant?: string;
   maxQuantity?: number;
+  itemType: CartItemType;
 }
 
 export interface UpdateCartItemPayload {

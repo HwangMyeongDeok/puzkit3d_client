@@ -1,9 +1,10 @@
 import Link from 'next/link';
+import { ROUTES } from '@/constants';
 
 const QUICK_LINKS = [
-  { href: '/', label: 'Home' },
-  { href: '/shop', label: 'Shop All' },
-  { href: '/brands', label: 'Brands' },
+  { href: ROUTES.HOME, label: 'Home' },
+  { href: ROUTES.PRODUCTS, label: 'Shop All' },
+  { href: ROUTES.BRANDS, label: 'Brands' },
   { href: '/custom-service', label: 'Custom Service' },
   { href: '/contact', label: 'Contact' },
 ];

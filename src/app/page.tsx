@@ -1,5 +1,18 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'Trang chủ',
+  description:
+    'PuzKit3D — Cửa hàng mô hình lắp ráp 3D hàng đầu. Đa dạng chất liệu gỗ, kim loại, nhựa. Hỗ trợ đặt hàng quốc tế và thiết kế theo yêu cầu.',
+  openGraph: {
+    title: 'PuzKit3D - Mô hình Lắp ráp Trí tuệ 3D',
+    description: 'Khám phá bộ sưu tập mô hình 3D chất lượng cao. Đa dạng chất liệu và phong cách.',
+    url: '/',
+    type: 'website',
+  },
+};
 
 import { getFeaturedProducts } from '@/lib/mockData';
 import ProductCard from '@/components/custom/ProductCard';

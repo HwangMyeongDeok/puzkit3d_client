@@ -4,6 +4,7 @@ import { setupListeners } from '@reduxjs/toolkit/query';
 import { apiSlice } from '@/lib/api/apiSlice';
 import authReducer from './slices/authSlice';
 import cartReducer from './slices/cartSlice';
+import checkoutReducer from './slices/checkoutSlice';
 import { persistMiddleware } from './middleware/persistMiddleware';
 
 export const store = configureStore({
@@ -11,6 +12,7 @@ export const store = configureStore({
     [apiSlice.reducerPath]: apiSlice.reducer,
     auth: authReducer,
     cart: cartReducer,
+    checkout: checkoutReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

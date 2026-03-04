@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { SlidersHorizontal, ChevronDown, Search, X } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
@@ -48,7 +48,7 @@ export default function ShopPage() {
     );
   };
 
-  const filteredProducts = useMemo(() => {
+  const filteredProducts = (() => {
     let results = [...products];
 
     if (debouncedSearchQuery) {
@@ -81,7 +81,7 @@ export default function ShopPage() {
     }
 
     return results;
-  }, [debouncedSearchQuery, selectedBrands, selectedDifficulties, sortBy]);
+  })();
 
   const FiltersContent = (
     <div className="flex flex-col gap-6">
