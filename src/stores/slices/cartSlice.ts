@@ -116,6 +116,12 @@ const cartSlice = createSlice({
       state.items = action.payload;
       recalculateTotals(state);
     },
+
+    removeSelectedItems: (state, action: PayloadAction<string[]>) => {
+      const idsToRemove = new Set(action.payload);
+      state.items = state.items.filter((item) => !idsToRemove.has(item.productId));
+      recalculateTotals(state);
+    },
   },
 });
 
@@ -127,6 +133,7 @@ export const {
   decrementQuantity,
   clearCart,
   loadCart,
+  removeSelectedItems,
 } = cartSlice.actions;
 
 export default cartSlice.reducer;
@@ -135,3 +142,16 @@ export const selectCartItems = (state: { cart: CartState }) => state.cart.items;
 export const selectCartTotalQuantity = (state: { cart: CartState }) => state.cart.totalQuantity;
 export const selectCartTotalPrice = (state: { cart: CartState }) => state.cart.totalPrice;
 export const selectCartItemCount = (state: { cart: CartState }) => state.cart.items.length;
+
+export const selectInstockItems = (state: { cart: CartState }) =>
+  state.cart.items.filter((item) => item.itemType === 'instock');
+export const selectPartnerItems = (state: { cart: CartState }) =>
+  state.cart.items.filter((item) => item.itemType === 'partner');
+export const selectInstockTotalPrice = (state: { cart: CartState }) =>
+  state.cart.items
+    .filter((item) => item.itemType === 'instock')
+    .reduce((sum, item) => sum + item.price * item.quantity, 0);
+export const selectPartnerTotalPrice = (state: { cart: CartState }) =>
+  state.cart.items
+    .filter((item) => item.itemType === 'partner')
+    .reduce((sum, item) => sum + item.price * item.quantity, 0);

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 
 import { formatPrice } from '@/lib/utils';
@@ -12,6 +13,8 @@ import {
   selectCartItems,
   selectCartTotalPrice,
   selectCartTotalQuantity,
+  selectInstockItems,
+  selectPartnerItems,
 } from '@/stores/slices/cartSlice';
 import { ROUTES } from '@/constants';
 
@@ -36,6 +39,8 @@ export default function MiniCart({ children }: MiniCartProps) {
   const cartItems = useAppSelector(selectCartItems);
   const totalPrice = useAppSelector(selectCartTotalPrice);
   const totalQuantity = useAppSelector(selectCartTotalQuantity);
+  const instockCount = useAppSelector(selectInstockItems).length;
+  const partnerCount = useAppSelector(selectPartnerItems).length;
 
   return (
     <Sheet>
@@ -68,15 +73,28 @@ export default function MiniCart({ children }: MiniCartProps) {
                   key={item.productId}
                   className="border-border bg-card flex gap-3 rounded-lg border p-3"
                 >
-                  <div className="bg-muted h-16 w-16 shrink-0 overflow-hidden rounded-md">
-                    <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                  <div className="bg-muted relative h-16 w-16 shrink-0 overflow-hidden rounded-md">
+                    <Image
+                      src={item.image}
+                      alt={item.name}
+                      fill
+                      sizes="64px"
+                      className="object-cover"
+                    />
                   </div>
 
                   <div className="flex min-w-0 flex-1 flex-col justify-between">
                     <p className="text-card-foreground line-clamp-1 text-xs font-semibold">
                       {item.name}
                     </p>
-                    <p className="text-accent text-xs font-bold">{formatPrice(item.price)}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-accent text-xs font-bold">{formatPrice(item.price)}</p>
+                      {item.itemType === 'partner' && (
+                        <span className="bg-warning/15 text-warning rounded px-1.5 py-0.5 text-[9px] font-bold">
+                          Đối tác
+                        </span>
+                      )}
+                    </div>
 
                     <div className="flex items-center justify-between">
                       <div className="border-border flex items-center rounded border">
@@ -136,7 +154,16 @@ export default function MiniCart({ children }: MiniCartProps) {
         {cartItems.length > 0 && (
           <SheetFooter className="border-border border-t px-5 py-4">
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground text-sm font-semibold">Tạm tính</span>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-sm font-semibold">Tạm tính</span>
+                {(instockCount > 0 || partnerCount > 0) && (
+                  <span className="text-muted-foreground text-[10px]">
+                    {instockCount > 0 && `${instockCount} có sẵn`}
+                    {instockCount > 0 && partnerCount > 0 && ' · '}
+                    {partnerCount > 0 && `${partnerCount} đặt trước`}
+                  </span>
+                )}
+              </div>
               <span className="text-accent text-lg font-extrabold">{formatPrice(totalPrice)}</span>
             </div>
 
@@ -144,20 +171,20 @@ export default function MiniCart({ children }: MiniCartProps) {
 
             <div className="flex flex-col gap-2">
               <SheetClose asChild>
-                <Link href={ROUTES.CHECKOUT}>
+                <Link href={ROUTES.CART}>
                   <Button className="w-full gap-2 rounded-xl py-5 text-sm font-bold shadow-lg">
-                    Thanh toán
+                    Xem giỏ hàng & thanh toán
                   </Button>
                 </Link>
               </SheetClose>
 
               <SheetClose asChild>
-                <Link href={ROUTES.CART}>
+                <Link href={ROUTES.PRODUCTS}>
                   <Button
                     variant="outline"
                     className="w-full rounded-xl py-5 text-sm font-semibold"
                   >
-                    Xem giỏ hàng đầy đủ
+                    Tiếp tục mua sắm
                   </Button>
                 </Link>
               </SheetClose>

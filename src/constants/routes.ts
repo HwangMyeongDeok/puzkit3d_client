@@ -12,6 +12,9 @@ export const ROUTES = {
   CART: '/cart',
   CHECKOUT: '/checkout',
   CHECKOUT_SUCCESS: '/checkout/success',
+  CHECKOUT_SUCCESS_QUOTE: '/checkout/success-quote',
+
+  BRANDS: '/brands',
 
   ORDERS: '/orders',
   ORDER_DETAIL: (id: string) => `/orders/${id}` as const,

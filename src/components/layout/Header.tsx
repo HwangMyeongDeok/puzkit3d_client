@@ -12,7 +12,7 @@ import MiniCart from '@/components/custom/MiniCart';
 const NAV_LINKS = [
   { href: ROUTES.HOME, label: 'Home' },
   { href: ROUTES.PRODUCTS, label: 'Shop All' },
-  { href: '/brands', label: 'Brands' },
+  { href: ROUTES.BRANDS, label: 'Brands' },
   { href: '/custom-service', label: 'Custom Service' },
 ];
 

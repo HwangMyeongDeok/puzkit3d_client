@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight } from 'lucide-react';
 
 import {
@@ -50,7 +51,13 @@ export default function HeroCarousel() {
           <CarouselItem key={index}>
             <div className="bg-primary relative min-h-[60vh] overflow-hidden">
               <div className="absolute inset-0">
-                <img src={slide.image} alt="" className="h-full w-full object-cover opacity-30" />
+                <Image
+                  src={slide.image}
+                  alt=""
+                  fill
+                  sizes="100vw"
+                  className="object-cover opacity-30"
+                />
                 <div className={`absolute inset-0 bg-gradient-to-r ${slide.gradient}`} />
               </div>
 
@@ -97,12 +104,13 @@ export default function HeroCarousel() {
                   <div className="hidden items-center justify-center lg:flex">
                     <div className="relative">
                       <div className="bg-brand/20 absolute -inset-4 rounded-2xl blur-2xl" />
-                      <img
+                      <Image
                         src={slide.image}
                         alt={slide.heading}
-                        className="border-primary-foreground/10 relative rounded-2xl border shadow-2xl"
                         width={560}
                         height={420}
+                        className="border-primary-foreground/10 relative rounded-2xl border shadow-2xl"
+                        priority
                       />
                     </div>
                   </div>
