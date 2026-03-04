@@ -5,17 +5,15 @@ import Image from 'next/image';
 import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 
 import { formatPrice } from '@/lib/utils';
-import { useAppDispatch, useAppSelector } from '@/stores';
+import { useAppSelector } from '@/stores';
 import {
-  incrementQuantity,
-  decrementQuantity,
-  removeFromCart,
   selectCartItems,
   selectCartTotalPrice,
   selectCartTotalQuantity,
   selectInstockItems,
   selectPartnerItems,
 } from '@/stores/slices/cartSlice';
+import { useCartSync } from '@/lib/hooks/useCartSync';
 import { ROUTES } from '@/constants';
 
 import {
@@ -35,7 +33,7 @@ interface MiniCartProps {
 }
 
 export default function MiniCart({ children }: MiniCartProps) {
-  const dispatch = useAppDispatch();
+  const { handleIncrement, handleDecrement, handleRemove } = useCartSync();
   const cartItems = useAppSelector(selectCartItems);
   const totalPrice = useAppSelector(selectCartTotalPrice);
   const totalQuantity = useAppSelector(selectCartTotalQuantity);
@@ -100,12 +98,7 @@ export default function MiniCart({ children }: MiniCartProps) {
                       <div className="border-border flex items-center rounded border">
                         <button
                           onClick={() =>
-                            dispatch(
-                              decrementQuantity({
-                                productId: item.productId,
-                                variant: item.variant,
-                              })
-                            )
+                            handleDecrement(item.productId, item.quantity, item.variant)
                           }
                           className="text-foreground/50 hover:bg-secondary flex h-6 w-6 cursor-pointer items-center justify-center transition-colors"
                         >
@@ -116,12 +109,7 @@ export default function MiniCart({ children }: MiniCartProps) {
                         </span>
                         <button
                           onClick={() =>
-                            dispatch(
-                              incrementQuantity({
-                                productId: item.productId,
-                                variant: item.variant,
-                              })
-                            )
+                            handleIncrement(item.productId, item.quantity, item.variant)
                           }
                           className="text-foreground/50 hover:bg-secondary flex h-6 w-6 cursor-pointer items-center justify-center transition-colors"
                         >
@@ -130,14 +118,7 @@ export default function MiniCart({ children }: MiniCartProps) {
                       </div>
 
                       <button
-                        onClick={() =>
-                          dispatch(
-                            removeFromCart({
-                              productId: item.productId,
-                              variant: item.variant,
-                            })
-                          )
-                        }
+                        onClick={() => handleRemove(item.productId, item.variant)}
                         className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive cursor-pointer rounded p-1 transition-colors"
                         aria-label="Xóa"
                       >

@@ -53,6 +53,7 @@ const cartActions = [
   'cart/decrementQuantity',
   'cart/clearCart',
   'cart/loadCart',
+  'cart/rollbackQuantity',
 ];
 
 export const persistMiddleware: Middleware = (store) => (next) => (action) => {
@@ -67,7 +68,15 @@ export const persistMiddleware: Middleware = (store) => (next) => (action) => {
     }
 
     if (cartActions.includes(actionType)) {
-      persistCart(state.cart.items);
+      if (!state.auth.isAuthenticated) {
+        persistCart(state.cart.items);
+      }
+    }
+
+    if (actionType === 'auth/logout') {
+      try {
+        localStorage.removeItem(APP_CONFIG.CART_STORAGE_KEY);
+      } catch {}
     }
   }
 

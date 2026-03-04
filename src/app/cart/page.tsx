@@ -14,17 +14,17 @@ import {
   AlertTriangle,
   Package,
   FileText,
+  Loader2,
 } from 'lucide-react';
 
 import { formatPrice } from '@/lib/utils';
 import { useAppDispatch, useAppSelector } from '@/stores';
 import {
-  incrementQuantity,
-  decrementQuantity,
-  removeFromCart,
   selectInstockItems,
   selectPartnerItems,
+  selectCartSyncStatus,
 } from '@/stores/slices/cartSlice';
+import { useCartSync } from '@/lib/hooks/useCartSync';
 import { ROUTES } from '@/constants';
 import OrderStepper from '@/components/custom/OrderStepper';
 import { setSelectedItems } from '@/stores/slices/checkoutSlice';
@@ -113,7 +113,9 @@ export default function CartPage() {
   const router = useRouter();
   const instockItems = useAppSelector(selectInstockItems);
   const partnerItems = useAppSelector(selectPartnerItems);
+  const syncStatus = useAppSelector(selectCartSyncStatus);
   const allItems = [...instockItems, ...partnerItems];
+  const { handleIncrement, handleDecrement, handleRemove } = useCartSync();
 
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
 
@@ -181,7 +183,10 @@ export default function CartPage() {
 
   return (
     <div className="container-custom pt-8 pb-28 lg:pt-12 lg:pb-12">
-      <h1 className="mb-8 text-3xl font-bold md:text-4xl">Giỏ hàng</h1>
+      <div className="mb-8 flex items-center gap-3">
+        <h1 className="text-3xl font-bold md:text-4xl">Giỏ hàng</h1>
+        {syncStatus === 'syncing' && <Loader2 className="text-brand h-5 w-5 animate-spin" />}
+      </div>
 
       <div className="flex flex-col gap-8">
         {instockItems.length > 0 && (
@@ -214,19 +219,9 @@ export default function CartPage() {
                   item={item}
                   isChecked={checkedIds.has(item.productId)}
                   onToggle={() => toggleItem(item.productId)}
-                  onIncrement={() =>
-                    dispatch(
-                      incrementQuantity({ productId: item.productId, variant: item.variant })
-                    )
-                  }
-                  onDecrement={() =>
-                    dispatch(
-                      decrementQuantity({ productId: item.productId, variant: item.variant })
-                    )
-                  }
-                  onRemove={() =>
-                    dispatch(removeFromCart({ productId: item.productId, variant: item.variant }))
-                  }
+                  onIncrement={() => handleIncrement(item.productId, item.quantity, item.variant)}
+                  onDecrement={() => handleDecrement(item.productId, item.quantity, item.variant)}
+                  onRemove={() => handleRemove(item.productId, item.variant)}
                 />
               ))}
             </div>
@@ -273,19 +268,9 @@ export default function CartPage() {
                   item={item}
                   isChecked={checkedIds.has(item.productId)}
                   onToggle={() => toggleItem(item.productId)}
-                  onIncrement={() =>
-                    dispatch(
-                      incrementQuantity({ productId: item.productId, variant: item.variant })
-                    )
-                  }
-                  onDecrement={() =>
-                    dispatch(
-                      decrementQuantity({ productId: item.productId, variant: item.variant })
-                    )
-                  }
-                  onRemove={() =>
-                    dispatch(removeFromCart({ productId: item.productId, variant: item.variant }))
-                  }
+                  onIncrement={() => handleIncrement(item.productId, item.quantity, item.variant)}
+                  onDecrement={() => handleDecrement(item.productId, item.quantity, item.variant)}
+                  onRemove={() => handleRemove(item.productId, item.variant)}
                 />
               ))}
             </div>
