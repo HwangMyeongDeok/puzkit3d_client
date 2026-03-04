@@ -15,6 +15,7 @@ export interface CartState {
   items: CartItem[];
   totalQuantity: number;
   totalPrice: number;
+  syncStatus: 'idle' | 'syncing' | 'error';
 }
 
 export interface AddToCartPayload {
