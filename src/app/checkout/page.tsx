@@ -92,10 +92,13 @@ export default function CheckoutPage() {
   const selectedItems = (() => {
     if (selectedIds.length === 0) return allCartItems;
     const idSet = new Set(selectedIds);
-    return allCartItems.filter((item) => idSet.has(item.productId));
+    return allCartItems.filter((item) => idSet.has(item.itemId));
   })();
 
-  const subtotal = selectedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = selectedItems.reduce(
+    (sum, item) => sum + (item.unitPrice ?? 0) * item.quantity,
+    0
+  );
   const shipping = isPartnerMode ? 0 : 30_000;
   const total = subtotal + shipping;
 
@@ -115,7 +118,7 @@ export default function CheckoutPage() {
 
   const onSubmit = (data: CheckoutFormValues) => {
     setIsSubmitting(true);
-    const idsToRemove = selectedItems.map((item) => item.productId);
+    const idsToRemove = selectedItems.map((item) => item.itemId);
 
     const targetRoute = isPartnerMode ? ROUTES.CHECKOUT_SUCCESS_QUOTE : ROUTES.CHECKOUT_SUCCESS;
     const toastMsg = isPartnerMode ? 'Yêu cầu báo giá đã được gửi!' : 'Đặt hàng thành công!';
@@ -349,11 +352,11 @@ export default function CheckoutPage() {
 
                 <div className="flex max-h-60 flex-col gap-4 overflow-y-auto pr-1">
                   {selectedItems.map((item) => (
-                    <div key={item.productId} className="flex items-center gap-3">
+                    <div key={item.itemId} className="flex items-center gap-3">
                       <div className="bg-muted relative h-14 w-14 shrink-0 overflow-hidden rounded-lg">
                         <Image
-                          src={item.image}
-                          alt={item.name}
+                          src={item.thumbnailUrl}
+                          alt={item.productName}
                           fill
                           sizes="56px"
                           className="object-cover"
@@ -364,14 +367,14 @@ export default function CheckoutPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-card-foreground truncate text-sm font-semibold">
-                          {item.name}
+                          {item.productName}
                         </p>
                         {isPartnerMode && (
-                          <p className="text-muted-foreground text-[10px]">Giá dự kiến</p>
+                          <p className="text-muted-foreground text-[10px]">Giá tham khảo</p>
                         )}
                       </div>
                       <span className="text-card-foreground shrink-0 text-sm font-bold">
-                        {formatPrice(item.price * item.quantity)}
+                        {formatPrice((item.unitPrice ?? 0) * item.quantity)}
                       </span>
                     </div>
                   ))}

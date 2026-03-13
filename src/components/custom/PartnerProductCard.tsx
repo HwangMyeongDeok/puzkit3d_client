@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Star, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
-import type { PartnerProduct } from '@/lib/partnerMockData';
+import type { PartnerProduct } from '@/types';
 import { formatPrice } from '@/lib/utils';
 import { useAppDispatch } from '@/stores';
 import { addToCart } from '@/stores/slices/cartSlice';
@@ -23,13 +23,15 @@ export default function PartnerProductCard({ product }: PartnerProductCardProps)
 
     dispatch(
       addToCart({
-        productId: product.id,
-        name: product.name,
-        image: product.image,
-        price: product.estimatedPrice,
+        itemId: product.id,
+        unitPrice: null,
+        instockProductPriceDetailId: null,
         quantity: 1,
-        maxQuantity: 5,
-        itemType: 'partner',
+        cartType: 'PARTNER',
+        productName: product.name,
+        thumbnailUrl: product.thumbnailUrl,
+        sku: null,
+        variantColor: null,
       })
     );
     toast.success(`Đã thêm "${product.name}" vào yêu cầu báo giá`);
@@ -40,7 +42,7 @@ export default function PartnerProductCard({ product }: PartnerProductCardProps)
       <div className="card-hover border-border bg-card overflow-hidden rounded-xl border">
         <div className="bg-muted relative aspect-square overflow-hidden">
           <Image
-            src={product.image}
+            src={product.thumbnailUrl}
             alt={product.name}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
@@ -53,7 +55,7 @@ export default function PartnerProductCard({ product }: PartnerProductCardProps)
 
         <div className="flex flex-col gap-2 p-3">
           <span className="text-brand text-[11px] font-semibold tracking-wider uppercase">
-            {product.brand}
+            {product.partner.name}
           </span>
 
           <h3 className="text-card-foreground line-clamp-2 min-h-[2.5rem] text-sm leading-tight font-semibold">
@@ -61,9 +63,9 @@ export default function PartnerProductCard({ product }: PartnerProductCardProps)
           </h3>
 
           <div className="flex flex-col gap-0.5">
-            <span className="text-muted-foreground text-[10px] font-medium">Giá dự kiến</span>
+            <span className="text-muted-foreground text-[10px] font-medium">Giá tham khảo</span>
             <span className="text-accent text-base font-bold">
-              {formatPrice(product.estimatedPrice)}
+              {formatPrice(product.referencePrice)}
             </span>
           </div>
 

@@ -1,6 +1,6 @@
 import { apiSlice } from '@/lib/api/apiSlice';
 
-import type { Product, Category, GetProductsRequest, GetProductsResponse } from '@/types';
+import type { InstockProduct, Topic, GetProductsRequest, GetProductsResponse } from '@/types';
 
 export const productApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -19,7 +19,7 @@ export const productApi = apiSlice.injectEndpoints({
           : [{ type: 'Product', id: 'LIST' }],
     }),
 
-    getProduct: builder.query<Product, string>({
+    getProduct: builder.query<InstockProduct, string>({
       query: (idOrSlug) => ({
         url: `/products/${idOrSlug}`,
         method: 'GET',
@@ -27,7 +27,7 @@ export const productApi = apiSlice.injectEndpoints({
       providesTags: (_result, _error, id) => [{ type: 'Product', id }],
     }),
 
-    getFeaturedProducts: builder.query<Product[], void>({
+    getFeaturedProducts: builder.query<InstockProduct[], void>({
       query: () => ({
         url: '/products/featured',
         method: 'GET',
@@ -35,7 +35,7 @@ export const productApi = apiSlice.injectEndpoints({
       providesTags: [{ type: 'Product', id: 'FEATURED' }],
     }),
 
-    getRelatedProducts: builder.query<Product[], string>({
+    getRelatedProducts: builder.query<InstockProduct[], string>({
       query: (productId) => ({
         url: `/products/${productId}/related`,
         method: 'GET',
@@ -43,17 +43,17 @@ export const productApi = apiSlice.injectEndpoints({
       providesTags: (_result, _error, id) => [{ type: 'Product', id: `RELATED-${id}` }],
     }),
 
-    getCategories: builder.query<Category[], void>({
+    getTopics: builder.query<Topic[], void>({
       query: () => ({
-        url: '/categories',
+        url: '/topics',
         method: 'GET',
       }),
       providesTags: ['Category'],
     }),
 
-    getCategory: builder.query<Category, string>({
+    getTopic: builder.query<Topic, string>({
       query: (idOrSlug) => ({
-        url: `/categories/${idOrSlug}`,
+        url: `/topics/${idOrSlug}`,
         method: 'GET',
       }),
       providesTags: (_result, _error, id) => [{ type: 'Category', id }],
@@ -66,6 +66,6 @@ export const {
   useGetProductQuery,
   useGetFeaturedProductsQuery,
   useGetRelatedProductsQuery,
-  useGetCategoriesQuery,
-  useGetCategoryQuery,
+  useGetTopicsQuery,
+  useGetTopicQuery,
 } = productApi;

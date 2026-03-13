@@ -22,12 +22,11 @@ export async function syncGuestCart(guestItems: CartItem[]): Promise<CartApiResp
 
   for (const guestItem of guestItems) {
     const existing = merged.find(
-      (item) => item.productId === guestItem.productId && item.variant === guestItem.variant
+      (item) => item.itemId === guestItem.itemId && item.sku === guestItem.sku
     );
 
     if (existing) {
-      const sumQty = existing.quantity + guestItem.quantity;
-      existing.quantity = existing.maxQuantity ? Math.min(sumQty, existing.maxQuantity) : sumQty;
+      existing.quantity += guestItem.quantity;
     } else {
       merged.push({ ...guestItem });
     }
@@ -40,13 +39,10 @@ export async function syncGuestCart(guestItems: CartItem[]): Promise<CartApiResp
 export async function addItemToServer(item: CartItem): Promise<CartApiResponse> {
   await delay(300);
 
-  const existing = serverCart.find(
-    (i) => i.productId === item.productId && i.variant === item.variant
-  );
+  const existing = serverCart.find((i) => i.itemId === item.itemId && i.sku === item.sku);
 
   if (existing) {
-    const newQty = existing.quantity + item.quantity;
-    existing.quantity = existing.maxQuantity ? Math.min(newQty, existing.maxQuantity) : newQty;
+    existing.quantity += item.quantity;
   } else {
     serverCart.push({ ...item });
   }
@@ -55,33 +51,33 @@ export async function addItemToServer(item: CartItem): Promise<CartApiResponse> 
 }
 
 export async function updateItemQty(
-  productId: string,
+  itemId: string,
   quantity: number,
-  variant?: string
+  sku: string | null
 ): Promise<CartApiResponse> {
   await delay(300);
 
-  const item = serverCart.find((i) => i.productId === productId && i.variant === variant);
+  const item = serverCart.find((i) => i.itemId === itemId && i.sku === sku);
 
   if (!item) {
     return { success: false, data: [...serverCart], error: 'Item not found' };
   }
 
   if (quantity <= 0) {
-    serverCart = serverCart.filter((i) => !(i.productId === productId && i.variant === variant));
+    serverCart = serverCart.filter((i) => !(i.itemId === itemId && i.sku === sku));
   } else {
-    item.quantity = item.maxQuantity ? Math.min(quantity, item.maxQuantity) : quantity;
+    item.quantity = quantity;
   }
 
   return { success: true, data: [...serverCart] };
 }
 
 export async function removeItemFromServer(
-  productId: string,
-  variant?: string
+  itemId: string,
+  sku: string | null
 ): Promise<CartApiResponse> {
   await delay(300);
-  serverCart = serverCart.filter((i) => !(i.productId === productId && i.variant === variant));
+  serverCart = serverCart.filter((i) => !(i.itemId === itemId && i.sku === sku));
   return { success: true, data: [...serverCart] };
 }
 
@@ -91,6 +87,6 @@ export async function clearServerCart(): Promise<CartApiResponse> {
   return { success: true, data: [] };
 }
 
-export function _resetServerCart() {
+export function _resetServerCart(): void {
   serverCart = [];
 }

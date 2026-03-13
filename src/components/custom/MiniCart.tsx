@@ -66,68 +66,72 @@ export default function MiniCart({ children }: MiniCartProps) {
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {cartItems.map((item) => (
-                <div
-                  key={item.productId}
-                  className="border-border bg-card flex gap-3 rounded-lg border p-3"
-                >
-                  <div className="bg-muted relative h-16 w-16 shrink-0 overflow-hidden rounded-md">
-                    <Image
-                      src={item.image}
-                      alt={item.name}
-                      fill
-                      sizes="64px"
-                      className="object-cover"
-                    />
-                  </div>
-
-                  <div className="flex min-w-0 flex-1 flex-col justify-between">
-                    <p className="text-card-foreground line-clamp-1 text-xs font-semibold">
-                      {item.name}
-                    </p>
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-accent text-xs font-bold">{formatPrice(item.price)}</p>
-                      {item.itemType === 'partner' && (
-                        <span className="bg-warning/15 text-warning rounded px-1.5 py-0.5 text-[9px] font-bold">
-                          Đối tác
-                        </span>
-                      )}
+              {cartItems.map((item) => {
+                const displayPrice = item.unitPrice ?? 0;
+                return (
+                  <div
+                    key={`${item.itemId}-${item.sku ?? ''}`}
+                    className="border-border bg-card flex gap-3 rounded-lg border p-3"
+                  >
+                    <div className="bg-muted relative h-16 w-16 shrink-0 overflow-hidden rounded-md">
+                      <Image
+                        src={item.thumbnailUrl}
+                        alt={item.productName}
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                      />
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <div className="border-border flex items-center rounded border">
-                        <button
-                          onClick={() =>
-                            handleDecrement(item.productId, item.quantity, item.variant)
-                          }
-                          className="text-foreground/50 hover:bg-secondary flex h-6 w-6 cursor-pointer items-center justify-center transition-colors"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </button>
-                        <span className="border-border flex h-6 w-7 items-center justify-center border-x text-[11px] font-bold">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() =>
-                            handleIncrement(item.productId, item.quantity, item.variant)
-                          }
-                          className="text-foreground/50 hover:bg-secondary flex h-6 w-6 cursor-pointer items-center justify-center transition-colors"
-                        >
-                          <Plus className="h-3 w-3" />
-                        </button>
+                    <div className="flex min-w-0 flex-1 flex-col justify-between">
+                      <p className="text-card-foreground line-clamp-1 text-xs font-semibold">
+                        {item.productName}
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-accent text-xs font-bold">{formatPrice(displayPrice)}</p>
+                        {item.cartType === 'PARTNER' && (
+                          <span className="bg-warning/15 text-warning rounded px-1.5 py-0.5 text-[9px] font-bold">
+                            Đối tác
+                          </span>
+                        )}
+                        {item.variantColor && (
+                          <span className="text-muted-foreground text-[9px]">
+                            · {item.variantColor}
+                          </span>
+                        )}
                       </div>
 
-                      <button
-                        onClick={() => handleRemove(item.productId, item.variant)}
-                        className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive cursor-pointer rounded p-1 transition-colors"
-                        aria-label="Xóa"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      <div className="flex items-center justify-between">
+                        <div className="border-border flex items-center rounded border">
+                          <button
+                            onClick={() => handleDecrement(item.itemId, item.quantity, item.sku)}
+                            className="text-foreground/50 hover:bg-secondary flex h-6 w-6 cursor-pointer items-center justify-center transition-colors"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </button>
+                          <span className="border-border flex h-6 w-7 items-center justify-center border-x text-[11px] font-bold">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => handleIncrement(item.itemId, item.quantity, item.sku)}
+                            className="text-foreground/50 hover:bg-secondary flex h-6 w-6 cursor-pointer items-center justify-center transition-colors"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </div>
+
+                        <button
+                          onClick={() => handleRemove(item.itemId, item.sku)}
+                          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive cursor-pointer rounded p-1 transition-colors"
+                          aria-label="Xóa"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

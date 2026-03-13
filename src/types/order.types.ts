@@ -1,65 +1,130 @@
 import type { BaseEntity } from './common.types';
-import type { CartItem } from './cart.types';
 
-export type OrderStatus =
-  | 'pending'
-  | 'confirmed'
-  | 'packed'
-  | 'shipped'
-  | 'delivered'
-  | 'cancelled';
+// ============ SHARED ============
 
-export interface ShippingAddress {
-  id?: string;
+export type PaymentMethod = 'COD' | 'ONLINE';
+
+export interface CustomerAddress {
+  provinceCode: string;
+  provinceName: string;
+  districtCode: string;
+  districtName: string;
+  wardCode: string;
+  wardName: string;
+}
+
+// ============ INSTOCK ORDER ============
+
+export type InstockOrderStatus = number; // DB uses integer status codes
+
+export interface InstockOrder extends BaseEntity {
+  code: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  customerAddress: CustomerAddress;
+  subTotalAmount: number;
+  shippingFee: number;
+  usedCoinAmountAsMoney: number;
+  grandTotalAmount: number;
+  status: InstockOrderStatus;
+  paymentMethod: PaymentMethod;
+  isPaid: boolean;
+  paidAt: string | null;
+}
+
+export interface InstockOrderDetail {
+  id: string;
+  instockOrderId: string;
+  instockProductVariantId: string;
+  sku: string;
+  productName: string | null;
+  variantName: string | null;
+  unitPrice: number;
+  quantity: number;
+  instockProductPriceDetailId: string;
+  priceName: string;
+  totalAmount: number;
+}
+
+// ============ PARTNER ORDER ============
+
+export interface PartnerProductRequest extends BaseEntity {
+  code: string;
+  customerId: string;
+  partnerId: string;
+  desiredDeliveryDate: string;
+  totalRequestedQuantity: number;
+  note: string | null;
+  status: number;
+}
+
+export interface PartnerProductRequestItem {
+  id: string;
+  partnerProductRequestId: string;
+  partnerProductId: string;
+  referenceUnitPrice: number;
+  quantity: number;
+  referenceTotalAmount: number;
+}
+
+export interface PartnerProductQuotation extends BaseEntity {
+  code: string;
+  partnerProductRequestId: string;
+  version: number;
+  subTotalAmount: number;
+  shippingFee: number;
+  importTaxAmount: number;
+  grandTotalAmount: number;
+  expectedDeliveryDate: string;
+  note: string | null;
+  status: number;
+}
+
+export interface PartnerProductOrder extends BaseEntity {
+  code: string;
+  partnerProductQuotationId: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  customerAddress: CustomerAddress;
+  subTotalAmount: number;
+  shippingFee: number;
+  importTaxAmount: number;
+  usedCoinAmountAsMoney: number;
+  grandTotalAmount: number;
+  status: number;
+  paymentMethod: PaymentMethod;
+  isPaid: boolean;
+  paidAt: string | null;
+}
+
+export interface PartnerProductOrderDetail {
+  id: string;
+  partnerProductOrderId: string;
+  partnerProductId: string;
+  partnerProductSku: string;
+  partnerProductName: string | null;
+  unitPrice: number;
+  quantity: number;
+  totalAmount: number;
+}
+
+// ============ CHECKOUT FORM (FE-only) ============
+
+export interface CheckoutFormData {
   fullName: string;
   phone: string;
-  province: string;
-  district: string;
-  ward: string;
+  email: string;
+  provinceCode: string;
+  provinceName: string;
+  districtCode: string;
+  districtName: string;
+  wardCode: string;
+  wardName: string;
   address: string;
-  isDefault?: boolean;
-}
-
-export interface OrderItem extends CartItem {
-  subtotal: number;
-}
-
-export interface Order extends BaseEntity {
-  orderNumber: string;
-  items: OrderItem[];
-  shippingAddress: ShippingAddress;
-  shippingFee: number;
-  subtotal: number;
-  discount: number;
-  total: number;
-  status: OrderStatus;
-  paymentMethod: 'cod' | 'bank_transfer' | 'momo' | 'vnpay';
-  paymentStatus: 'pending' | 'paid' | 'refunded';
+  paymentMethod: PaymentMethod;
   note?: string;
-  trackingNumber?: string;
-  estimatedDelivery?: string;
-}
-
-export type ImportRequestStatus =
-  | 'submitted'
-  | 'reviewing'
-  | 'quote_sent'
-  | 'deposit_paid'
-  | 'ordered'
-  | 'arrived'
-  | 'delivered'
-  | 'cancelled';
-
-export interface ImportRequest extends BaseEntity {
-  brand: string;
-  productLink?: string;
-  productCode?: string;
-  quantity: number;
-  notes?: string;
-  status: ImportRequestStatus;
-  quotedPrice?: number;
-  serviceFee?: number;
-  shippingFee?: number;
-  depositAmount?: number;
-  estimatedArrival?: string;
 }

@@ -48,6 +48,9 @@ function CartItemRow({
   onDecrement: () => void;
   onRemove: () => void;
 }) {
+  const isPartner = item.cartType === 'PARTNER';
+  const displayPrice = item.unitPrice ?? 0;
+
   return (
     <div className="border-border bg-card flex gap-3 rounded-xl border p-4 transition-shadow hover:shadow-md">
       <div className="flex items-center">
@@ -60,15 +63,24 @@ function CartItemRow({
       </div>
 
       <div className="bg-muted relative h-20 w-20 shrink-0 overflow-hidden rounded-lg">
-        <Image src={item.image} alt={item.name} fill sizes="80px" className="object-cover" />
+        <Image
+          src={item.thumbnailUrl}
+          alt={item.productName}
+          fill
+          sizes="80px"
+          className="object-cover"
+        />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col justify-between">
         <div>
-          <p className="text-card-foreground line-clamp-1 text-sm font-semibold">{item.name}</p>
+          <p className="text-card-foreground line-clamp-1 text-sm font-semibold">
+            {item.productName}
+          </p>
           <p className="text-muted-foreground mt-0.5 text-xs">
-            {item.itemType === 'partner' ? 'Giá dự kiến: ' : ''}
-            {formatPrice(item.price)} / sản phẩm
+            {isPartner ? 'Giá tham khảo: ' : ''}
+            {formatPrice(displayPrice)} / sản phẩm
+            {item.variantColor && <span className="ml-2">· {item.variantColor}</span>}
           </p>
         </div>
 
@@ -92,7 +104,7 @@ function CartItemRow({
           </div>
 
           <span className="text-accent text-sm font-bold">
-            {formatPrice(item.price * item.quantity)}
+            {formatPrice(displayPrice * item.quantity)}
           </span>
 
           <button
@@ -132,27 +144,27 @@ export default function CartPage() {
     setCheckedIds((prev) => {
       const next = new Set(prev);
       items.forEach((item) => {
-        if (checked) next.add(item.productId);
-        else next.delete(item.productId);
+        if (checked) next.add(item.itemId);
+        else next.delete(item.itemId);
       });
       return next;
     });
   };
 
   const isSectionAllChecked = (items: CartItem[]) =>
-    items.length > 0 && items.every((item) => checkedIds.has(item.productId));
+    items.length > 0 && items.every((item) => checkedIds.has(item.itemId));
 
   const isSectionPartialChecked = (items: CartItem[]) =>
-    items.some((item) => checkedIds.has(item.productId)) && !isSectionAllChecked(items);
+    items.some((item) => checkedIds.has(item.itemId)) && !isSectionAllChecked(items);
 
-  const checkedInstockCount = instockItems.filter((i) => checkedIds.has(i.productId)).length;
-  const checkedPartnerCount = partnerItems.filter((i) => checkedIds.has(i.productId)).length;
+  const checkedInstockCount = instockItems.filter((i) => checkedIds.has(i.itemId)).length;
+  const checkedPartnerCount = partnerItems.filter((i) => checkedIds.has(i.itemId)).length;
 
   const hasMixedSelection = checkedInstockCount > 0 && checkedPartnerCount > 0;
 
   const selectedTotal = allItems
-    .filter((item) => checkedIds.has(item.productId))
-    .reduce((sum, item) => sum + item.price * item.quantity, 0);
+    .filter((item) => checkedIds.has(item.itemId))
+    .reduce((sum, item) => sum + (item.unitPrice ?? 0) * item.quantity, 0);
 
   const selectedCount = checkedInstockCount + checkedPartnerCount;
 
@@ -215,13 +227,13 @@ export default function CartPage() {
             <div className="flex flex-col gap-3">
               {instockItems.map((item) => (
                 <CartItemRow
-                  key={item.productId}
+                  key={item.itemId}
                   item={item}
-                  isChecked={checkedIds.has(item.productId)}
-                  onToggle={() => toggleItem(item.productId)}
-                  onIncrement={() => handleIncrement(item.productId, item.quantity, item.variant)}
-                  onDecrement={() => handleDecrement(item.productId, item.quantity, item.variant)}
-                  onRemove={() => handleRemove(item.productId, item.variant)}
+                  isChecked={checkedIds.has(item.itemId)}
+                  onToggle={() => toggleItem(item.itemId)}
+                  onIncrement={() => handleIncrement(item.itemId, item.quantity, item.sku)}
+                  onDecrement={() => handleDecrement(item.itemId, item.quantity, item.sku)}
+                  onRemove={() => handleRemove(item.itemId, item.sku)}
                 />
               ))}
             </div>
@@ -264,13 +276,13 @@ export default function CartPage() {
             <div className="flex flex-col gap-3">
               {partnerItems.map((item) => (
                 <CartItemRow
-                  key={item.productId}
+                  key={item.itemId}
                   item={item}
-                  isChecked={checkedIds.has(item.productId)}
-                  onToggle={() => toggleItem(item.productId)}
-                  onIncrement={() => handleIncrement(item.productId, item.quantity, item.variant)}
-                  onDecrement={() => handleDecrement(item.productId, item.quantity, item.variant)}
-                  onRemove={() => handleRemove(item.productId, item.variant)}
+                  isChecked={checkedIds.has(item.itemId)}
+                  onToggle={() => toggleItem(item.itemId)}
+                  onIncrement={() => handleIncrement(item.itemId, item.quantity, item.sku)}
+                  onDecrement={() => handleDecrement(item.itemId, item.quantity, item.sku)}
+                  onRemove={() => handleRemove(item.itemId, item.sku)}
                 />
               ))}
             </div>

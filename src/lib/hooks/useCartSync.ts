@@ -26,25 +26,24 @@ export function useCartSync() {
   const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const snapshotRef = useRef<Map<string, number>>(new Map());
 
-  const getKey = (productId: string, variant?: string) =>
-    variant ? `${productId}::${variant}` : productId;
+  const getKey = (itemId: string, sku: string | null) => (sku ? `${itemId}::${sku}` : itemId);
 
-  const scheduleSyncToServer = (productId: string, quantity: number, variant?: string) => {
+  const scheduleSyncToServer = (itemId: string, quantity: number, sku: string | null) => {
     if (!isAuthenticated) return;
 
-    const key = getKey(productId, variant);
+    const key = getKey(itemId, sku);
     const existing = timersRef.current.get(key);
     if (existing) clearTimeout(existing);
 
     const timer = setTimeout(async () => {
       timersRef.current.delete(key);
       try {
-        await dispatch(syncItemToServer({ productId, quantity, variant })).unwrap();
+        await dispatch(syncItemToServer({ itemId, quantity, sku })).unwrap();
         snapshotRef.current.delete(key);
       } catch {
         const prevQty = snapshotRef.current.get(key);
         if (prevQty !== undefined) {
-          dispatch(rollbackQuantity({ productId, variant, previousQuantity: prevQty }));
+          dispatch(rollbackQuantity({ itemId, sku, previousQuantity: prevQty }));
           snapshotRef.current.delete(key);
         }
         toast.error('Không thể cập nhật giỏ hàng. Vui lòng thử lại.');
@@ -54,31 +53,31 @@ export function useCartSync() {
     timersRef.current.set(key, timer);
   };
 
-  const captureSnapshot = (productId: string, currentQty: number, variant?: string) => {
-    const key = getKey(productId, variant);
+  const captureSnapshot = (itemId: string, currentQty: number, sku: string | null) => {
+    const key = getKey(itemId, sku);
     if (!snapshotRef.current.has(key)) {
       snapshotRef.current.set(key, currentQty);
     }
   };
 
-  const handleIncrement = (productId: string, currentQty: number, variant?: string) => {
-    captureSnapshot(productId, currentQty, variant);
-    dispatch(incrementQuantity({ productId, variant }));
-    scheduleSyncToServer(productId, currentQty + 1, variant);
+  const handleIncrement = (itemId: string, currentQty: number, sku: string | null) => {
+    captureSnapshot(itemId, currentQty, sku);
+    dispatch(incrementQuantity({ itemId, sku }));
+    scheduleSyncToServer(itemId, currentQty + 1, sku);
   };
 
-  const handleDecrement = (productId: string, currentQty: number, variant?: string) => {
-    captureSnapshot(productId, currentQty, variant);
-    dispatch(decrementQuantity({ productId, variant }));
+  const handleDecrement = (itemId: string, currentQty: number, sku: string | null) => {
+    captureSnapshot(itemId, currentQty, sku);
+    dispatch(decrementQuantity({ itemId, sku }));
     const newQty = currentQty - 1;
-    scheduleSyncToServer(productId, newQty, variant);
+    scheduleSyncToServer(itemId, newQty, sku);
   };
 
-  const handleRemove = async (productId: string, variant?: string) => {
-    dispatch(removeFromCart({ productId, variant }));
+  const handleRemove = async (itemId: string, sku: string | null) => {
+    dispatch(removeFromCart({ itemId, sku }));
     if (isAuthenticated) {
       try {
-        await dispatch(removeFromCartServer({ productId, variant })).unwrap();
+        await dispatch(removeFromCartServer({ itemId, sku })).unwrap();
       } catch {
         toast.error('Không thể xóa sản phẩm. Vui lòng thử lại.');
       }
