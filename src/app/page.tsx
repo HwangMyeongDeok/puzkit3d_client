@@ -14,14 +14,14 @@ export const metadata: Metadata = {
   },
 };
 
-import { getFeaturedProducts } from '@/lib/mockData';
+import { products } from '@/lib/mockData';
 import ProductCard from '@/components/custom/ProductCard';
 import TrustBadges from '@/components/custom/TrustBadges';
 import HeroCarousel from '@/components/home/HeroCarousel';
 import BrandMarquee from '@/components/home/BrandMarquee';
 
 export default function Home() {
-  const featured = getFeaturedProducts(4);
+  const featured = [...products].sort((a, b) => b.rating - a.rating).slice(0, 4);
 
   return (
     <>

@@ -1,18 +1,18 @@
 import type { PaginationParams, PaginatedResponse, SortParams } from '../common.types';
-import type { Product, ProductFilters, ProductSortBy, Category } from '../product.types';
+import type { InstockProduct, ProductFilters, ProductSortBy, Topic } from '../product.types';
 
 export interface GetProductsRequest extends PaginationParams, SortParams, ProductFilters {
   sortBy?: ProductSortBy;
 }
 
-export type GetProductsResponse = PaginatedResponse<Product>;
+export type GetProductsResponse = PaginatedResponse<InstockProduct>;
 
-export type GetProductResponse = Product;
+export type GetProductResponse = InstockProduct;
 
-export type GetFeaturedProductsResponse = Product[];
+export type GetFeaturedProductsResponse = InstockProduct[];
 
-export type GetRelatedProductsResponse = Product[];
+export type GetRelatedProductsResponse = InstockProduct[];
 
-export type GetCategoriesResponse = Category[];
+export type GetTopicsResponse = Topic[];
 
-export type GetCategoryResponse = Category;
+export type GetTopicResponse = Topic;

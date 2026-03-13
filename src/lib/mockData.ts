@@ -1,364 +1,552 @@
-export interface MockProduct {
-  id: string;
-  slug: string;
-  name: string;
-  brand: string;
-  category: string;
-  price: number;
-  originalPrice: number;
-  rating: number;
-  soldCount: number;
-  difficulty: 'easy' | 'medium' | 'hard' | 'expert';
-  image: string;
-  images: string[];
-  description: string;
-  longDescription: string;
-  inStock: boolean;
+import type {
+  Topic,
+  AssemblyMethod,
+  Material,
+  Capability,
+  InstockProduct,
+  InstockProductVariantWithDetails,
+} from '@/types';
+
+// ============ CATALOG MOCK DATA ============
+
+export const topics: Topic[] = [
+  {
+    id: 'topic-001',
+    name: 'Gundam',
+    description: 'Mô hình Gundam từ series Mobile Suit Gundam',
+    slug: 'gundam',
+    parentId: null,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'topic-002',
+    name: 'Kiến trúc',
+    description: 'Mô hình kiến trúc và công trình nổi tiếng',
+    slug: 'kien-truc',
+    parentId: null,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'topic-003',
+    name: 'Phương tiện',
+    description: 'Mô hình xe, tàu, máy bay',
+    slug: 'phuong-tien',
+    parentId: null,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'topic-004',
+    name: 'Figure',
+    description: 'Mô hình nhân vật, figure anime',
+    slug: 'figure',
+    parentId: null,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'topic-005',
+    name: 'Diorama',
+    description: 'Mô hình diorama, cảnh quan',
+    slug: 'diorama',
+    parentId: null,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+];
+
+export const assemblyMethods: AssemblyMethod[] = [
+  {
+    id: 'asm-001',
+    name: 'Snap-fit',
+    description: 'Lắp ghép bằng khớp nối, không cần keo',
+    slug: 'snap-fit',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'asm-002',
+    name: 'Keo dán',
+    description: 'Cần sử dụng keo dán để lắp ráp',
+    slug: 'keo-dan',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'asm-003',
+    name: 'Kim loại xoắn',
+    description: 'Lắp bằng cách xoắn/gấp tấm kim loại',
+    slug: 'kim-loai-xoan',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+];
+
+export const materials: Material[] = [
+  {
+    id: 'mat-001',
+    name: 'Nhựa PS',
+    description: 'Nhựa Polystyrene cao cấp',
+    slug: 'nhua-ps',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'mat-002',
+    name: 'Kim loại',
+    description: 'Tấm kim loại cắt laser',
+    slug: 'kim-loai',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'mat-003',
+    name: 'Gỗ',
+    description: 'Gỗ ván ép cắt laser',
+    slug: 'go',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+];
+
+export const capabilities: Capability[] = [
+  {
+    id: 'cap-001',
+    name: 'LED',
+    description: 'Có đèn LED trang trí',
+    slug: 'led',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'cap-002',
+    name: 'Khớp động',
+    description: 'Có khớp nối di chuyển được',
+    slug: 'khop-dong',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'cap-003',
+    name: 'Âm thanh',
+    description: 'Có module phát âm thanh',
+    slug: 'am-thanh',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+];
+
+// ============ HELPER: create variant with details ============
+
+function createVariant(
+  id: string,
+  productId: string,
+  sku: string,
+  color: string,
+  dims: [number, number, number],
+  unitPrice: number,
+  stock: number
+): InstockProductVariantWithDetails {
+  return {
+    id,
+    instockProductId: productId,
+    sku,
+    color,
+    assembledLengthMm: dims[0],
+    assembledWidthMm: dims[1],
+    assembledHeightMm: dims[2],
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+    priceDetail: {
+      id: `pd-${id}`,
+      instockPriceId: 'price-default',
+      instockProductVariantId: id,
+      unitPrice,
+      isActive: true,
+      createdAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z',
+    },
+    inventory: {
+      id: `inv-${id}`,
+      instockProductVariantId: id,
+      totalQuantity: stock,
+      createdAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z',
+    },
+  };
 }
 
-export const products: MockProduct[] = [
+// ============ INSTOCK PRODUCTS ============
+
+export const products: InstockProduct[] = [
   {
     id: 'prod-001',
+    code: 'GD-RX78',
     slug: 'rx-78-2-gundam-ver-ka',
     name: 'RX-78-2 Gundam Ver.Ka MG 1/100',
-    brand: 'Bandai',
-    category: 'Gundam',
-    price: 1_350_000,
-    originalPrice: 1_600_000,
-    rating: 4.8,
-    soldCount: 2340,
-    difficulty: 'hard',
-    image: 'https://placehold.co/600x600/1a1a2e/e0e0e0?text=RX-78-2+Gundam',
-    images: [
+    totalPieceCount: 480,
+    difficultLevel: 'HARD',
+    estimatedBuildTime: 480,
+    thumbnailUrl: 'https://placehold.co/600x600/1a1a2e/e0e0e0?text=RX-78-2+Gundam',
+    previewAsset: [
       'https://placehold.co/600x600/1a1a2e/e0e0e0?text=RX-78-2+Front',
       'https://placehold.co/600x600/1a1a2e/e0e0e0?text=RX-78-2+Side',
       'https://placehold.co/600x600/1a1a2e/e0e0e0?text=RX-78-2+Back',
     ],
     description:
-      'Mô hình Gundam RX-78-2 phiên bản Ver.Ka tỷ lệ 1/100 (Master Grade). Thiết kế chi tiết với khớp nối linh hoạt, phù hợp cho người chơi có kinh nghiệm.',
-    longDescription: `## Tổng quan
-
-Mô hình **RX-78-2 Gundam Ver.Ka** là phiên bản Master Grade 1/100 được thiết kế bởi **Katoki Hajime** — nhà thiết kế huyền thoại của Bandai.
-
-## Đặc điểm nổi bật
-
-- **Khớp nối linh hoạt**: Có thể tạo nhiều tư thế chiến đấu ấn tượng
-- **Decal nước cao cấp**: Đi kèm bộ decal nước chi tiết từng milimet
-- **Khung nội tuyến**: Inner frame cho phép hiển thị cấu trúc bên trong
-- **Vũ khí đầy đủ**: Beam Rifle, Shield, Beam Saber x2
-
-## Thông số
-
-| Thuộc tính | Chi tiết |
-|------------|---------|
-| Tỷ lệ | 1/100 (Master Grade) |
-| Chiều cao | ~18cm sau lắp ráp |
-| Số chi tiết | ~280 miếng |
-| Chất liệu | Nhựa PS, PE, ABS |`,
-    inStock: true,
+      'Mô hình Gundam RX-78-2 phiên bản Ver.Ka tỷ lệ 1/100 (Master Grade). Thiết kế chi tiết với khớp nối linh hoạt, phù hợp cho người chơi có kinh nghiệm.\n\n## Tổng quan\n\n**RX-78-2 Gundam Ver.Ka** là phiên bản Master Grade được thiết kế bởi Hajime Katoki. Bộ kit gồm **480 chi tiết** nhựa PS cao cấp.\n\n### Đặc điểm nổi bật\n\n- Khung inner frame toàn bộ\n- Khớp nối đa hướng linh hoạt\n- Decal nước (waterslide) độ phân giải cao\n- Weapon set đầy đủ: Beam Rifle, Shield, Beam Saber x2',
+    topicId: 'topic-001',
+    assemblyMethodId: 'asm-001',
+    capabilityId: 'cap-002',
+    materialId: 'mat-001',
+    isActive: true,
+    createdAt: '2024-06-15T00:00:00Z',
+    updatedAt: '2024-06-15T00:00:00Z',
+    topic: topics[0],
+    assemblyMethod: assemblyMethods[0],
+    material: materials[0],
+    capability: capabilities[1],
+    variants: [
+      createVariant('var-001', 'prod-001', 'RX78-W', 'Trắng', [180, 80, 250], 1_350_000, 15),
+      createVariant('var-002', 'prod-001', 'RX78-T', 'Titanium', [180, 80, 250], 1_600_000, 5),
+    ],
+    rating: 4.8,
+    soldCount: 2340,
   },
   {
     id: 'prod-002',
-    slug: 'ugears-hurdy-gurdy',
-    name: 'Ugears Hurdy-Gurdy Mechanical Model',
-    brand: 'Ugears',
-    category: 'Mechanical',
-    price: 2_890_000,
-    originalPrice: 3_200_000,
-    rating: 4.9,
-    soldCount: 1850,
-    difficulty: 'expert',
-    image: 'https://placehold.co/600x600/2d2d44/e0e0e0?text=Hurdy-Gurdy',
-    images: [
-      'https://placehold.co/600x600/2d2d44/e0e0e0?text=Hurdy-Gurdy+1',
-      'https://placehold.co/600x600/2d2d44/e0e0e0?text=Hurdy-Gurdy+2',
-      'https://placehold.co/600x600/2d2d44/e0e0e0?text=Hurdy-Gurdy+3',
+    code: 'GD-SAZB',
+    slug: 'sazabi-ver-ka-mg',
+    name: 'Sazabi Ver.Ka MG 1/100',
+    totalPieceCount: 620,
+    difficultLevel: 'EXPERT',
+    estimatedBuildTime: 720,
+    thumbnailUrl: 'https://placehold.co/600x600/2e1a1a/e0e0e0?text=Sazabi+Ver.Ka',
+    previewAsset: [
+      'https://placehold.co/600x600/2e1a1a/e0e0e0?text=Sazabi+Front',
+      'https://placehold.co/600x600/2e1a1a/e0e0e0?text=Sazabi+Side',
+      'https://placehold.co/600x600/2e1a1a/e0e0e0?text=Sazabi+Back',
     ],
     description:
-      'Mô hình cơ khí bằng gỗ cao cấp Ugears Hurdy-Gurdy. Có thể thực sự chơi nhạc sau khi lắp ráp. Không cần keo dán, tự lắp ráp hoàn toàn.',
-    longDescription: `## Nhạc cụ cơ khí thực sự
-
-**Hurdy-Gurdy** là nhạc cụ cổ điển châu Âu, và Ugears đã tái hiện nó hoàn hảo bằng gỗ. Sau khi lắp ráp, bạn có thể **quay tay để phát nhạc thực sự**.
-
-## Đặc điểm
-
-- **Chơi nhạc thật**: Phát ra âm thanh khi quay crank
-- **Không cần keo dán**: Tự khớp hoàn toàn bằng cơ chế lắp ghép
-- **Gỗ tự nhiên**: Chất liệu gỗ birch cao cấp, cắt laser chính xác
-- **292 chi tiết**: Thời gian lắp ráp ước tính 15-20 giờ`,
-    inStock: true,
+      'Mô hình Sazabi Ver.Ka MG 1/100 — kiệt tác pinnacle của dòng Master Grade. Armor chi tiết cực kỳ phức tạp, phù hợp cho modeler chuyên nghiệp.\n\n## Chi tiết sản phẩm\n\nBộ kit **Sazabi Ver.Ka** có hơn **620 chi tiết**, hệ thống armor có thể mở ra (open hatch), inner frame hoàn chỉnh.',
+    topicId: 'topic-001',
+    assemblyMethodId: 'asm-001',
+    capabilityId: 'cap-002',
+    materialId: 'mat-001',
+    isActive: true,
+    createdAt: '2024-06-10T00:00:00Z',
+    updatedAt: '2024-06-10T00:00:00Z',
+    topic: topics[0],
+    assemblyMethod: assemblyMethods[0],
+    material: materials[0],
+    capability: capabilities[1],
+    variants: [createVariant('var-003', 'prod-002', 'SAZB-R', 'Đỏ', [200, 100, 280], 2_100_000, 8)],
+    rating: 4.9,
+    soldCount: 1820,
   },
   {
     id: 'prod-003',
-    slug: 'tamiya-tiger-i-tank',
-    name: 'Tamiya 1/35 Tiger I Tank Late Version',
-    brand: 'Tamiya',
-    category: 'Military',
-    price: 980_000,
-    originalPrice: 1_100_000,
-    rating: 4.7,
-    soldCount: 3120,
-    difficulty: 'medium',
-    image: 'https://placehold.co/600x600/3a3a5c/e0e0e0?text=Tiger+I+Tank',
-    images: [
-      'https://placehold.co/600x600/3a3a5c/e0e0e0?text=Tiger+I+1',
-      'https://placehold.co/600x600/3a3a5c/e0e0e0?text=Tiger+I+2',
-      'https://placehold.co/600x600/3a3a5c/e0e0e0?text=Tiger+I+3',
+    code: 'ML-EIF',
+    slug: 'eiffel-tower-metal-3d',
+    name: 'Tháp Eiffel Metal Earth 3D',
+    totalPieceCount: 42,
+    difficultLevel: 'MEDIUM',
+    estimatedBuildTime: 120,
+    thumbnailUrl: 'https://placehold.co/600x600/1a2e1a/e0e0e0?text=Eiffel+Tower',
+    previewAsset: [
+      'https://placehold.co/600x600/1a2e1a/e0e0e0?text=Eiffel+Front',
+      'https://placehold.co/600x600/1a2e1a/e0e0e0?text=Eiffel+Side',
     ],
     description:
-      'Mô hình xe tăng Tiger I phiên bản cuối tỷ lệ 1/35 của Tamiya. Chi tiết cực cao, phù hợp cho người chơi trung cấp.',
-    longDescription: `## Huyền thoại bọc thép
-
-Xe tăng **Tiger I** là một trong những cỗ máy chiến tranh nổi tiếng nhất Thế chiến II. Mô hình Tamiya tái hiện phiên bản cuối với độ chính xác lịch sử cao.
-
-## Đặc điểm
-
-- **Chi tiết nội thất**: Buồng lái, động cơ, và tháp pháo chi tiết
-- **Xích kim loại**: Đi kèm xích kim loại có thể lắp từng mắt
-- **Decal chính xác**: Nhiều phương án sơn theo đơn vị thực tế
-- **Tỷ lệ 1/35**: Kích thước hoàn hảo để trưng bày`,
-    inStock: true,
+      'Mô hình kim loại 3D tháp Eiffel — Metal Earth. Cắt laser siêu chi tiết, lắp ráp bằng cách gấp tấm kim loại.\n\n## Sản phẩm bao gồm\n\n- 2 tấm kim loại cắt laser\n- Hướng dẫn lắp ráp hình ảnh\n- Không cần keo dán',
+    topicId: 'topic-002',
+    assemblyMethodId: 'asm-003',
+    capabilityId: 'cap-001',
+    materialId: 'mat-002',
+    isActive: true,
+    createdAt: '2024-05-20T00:00:00Z',
+    updatedAt: '2024-05-20T00:00:00Z',
+    topic: topics[1],
+    assemblyMethod: assemblyMethods[2],
+    material: materials[1],
+    capability: capabilities[0],
+    variants: [
+      createVariant('var-004', 'prod-003', 'EIF-SL', 'Bạc', [45, 45, 150], 320_000, 50),
+      createVariant('var-005', 'prod-003', 'EIF-GD', 'Vàng', [45, 45, 150], 380_000, 30),
+    ],
+    rating: 4.5,
+    soldCount: 5100,
   },
   {
     id: 'prod-004',
-    slug: 'strike-freedom-gundam-pg',
-    name: 'Strike Freedom Gundam PG 1/60',
-    brand: 'Bandai',
-    category: 'Gundam',
-    price: 6_500_000,
-    originalPrice: 7_200_000,
-    rating: 4.9,
-    soldCount: 890,
-    difficulty: 'expert',
-    image: 'https://placehold.co/600x600/1a1a2e/e0e0e0?text=Strike+Freedom',
-    images: [
-      'https://placehold.co/600x600/1a1a2e/e0e0e0?text=Strike+Freedom+1',
-      'https://placehold.co/600x600/1a1a2e/e0e0e0?text=Strike+Freedom+2',
-      'https://placehold.co/600x600/1a1a2e/e0e0e0?text=Strike+Freedom+3',
+    code: 'GD-WING',
+    slug: 'wing-gundam-zero-ew-mg',
+    name: 'Wing Gundam Zero EW MG 1/100',
+    totalPieceCount: 350,
+    difficultLevel: 'HARD',
+    estimatedBuildTime: 360,
+    thumbnailUrl: 'https://placehold.co/600x600/1a1a3e/e0e0e0?text=Wing+Zero+EW',
+    previewAsset: [
+      'https://placehold.co/600x600/1a1a3e/e0e0e0?text=Wing+Front',
+      'https://placehold.co/600x600/1a1a3e/e0e0e0?text=Wing+Side',
+      'https://placehold.co/600x600/1a1a3e/e0e0e0?text=Wing+Back',
     ],
     description:
-      'Mô hình Gundam Strike Freedom PG 1/60 — Perfect Grade. Kit cao cấp nhất với LED nội tuyến, khung kim loại bên trong.',
-    longDescription: `## Perfect Grade — Đỉnh cao mô hình
-
-**Strike Freedom Gundam PG 1/60** là kit cao cấp nhất trong dòng Gunpla. Với tỷ lệ 1/60 lớn và cơ chế LED tích hợp, đây là mô hình mơ ước của mọi modeler.
-
-## Đặc điểm cao cấp
-
-- **LED nội tuyến**: Hệ thống đèn LED chiếu sáng cockpit và mắt
-- **Khung kim loại**: Inner frame kim loại cho độ cứng cáp tối đa
-- **Cánh DRAGOON**: 8 cánh có thể tháo rời và gắn trên base
-- **Kích thước lớn**: Cao ~33cm, ấn tượng khi trưng bày`,
-    inStock: false,
+      'Wing Gundam Zero EW phiên bản nguyên tác Endless Waltz. Cánh thiên thần mở rộng ấn tượng.\n\n## Đặc điểm\n\n- Cánh thiên thần có thể gập/mở\n- Twin Buster Rifle kèm theo\n- Stand hiển thị bay',
+    topicId: 'topic-001',
+    assemblyMethodId: 'asm-001',
+    capabilityId: 'cap-002',
+    materialId: 'mat-001',
+    isActive: true,
+    createdAt: '2024-07-01T00:00:00Z',
+    updatedAt: '2024-07-01T00:00:00Z',
+    topic: topics[0],
+    assemblyMethod: assemblyMethods[0],
+    material: materials[0],
+    capability: capabilities[1],
+    variants: [
+      createVariant('var-006', 'prod-004', 'WING-W', 'Trắng', [195, 90, 260], 980_000, 20),
+    ],
+    rating: 4.7,
+    soldCount: 1560,
   },
   {
     id: 'prod-005',
-    slug: 'ugears-v-express-steam-train',
-    name: 'Ugears V-Express Steam Train',
-    brand: 'Ugears',
-    category: 'Mechanical',
-    price: 1_750_000,
-    originalPrice: 1_900_000,
-    rating: 4.6,
-    soldCount: 1200,
-    difficulty: 'medium',
-    image: 'https://placehold.co/600x600/2d2d44/e0e0e0?text=Steam+Train',
-    images: [
-      'https://placehold.co/600x600/2d2d44/e0e0e0?text=Steam+Train+1',
-      'https://placehold.co/600x600/2d2d44/e0e0e0?text=Steam+Train+2',
-      'https://placehold.co/600x600/2d2d44/e0e0e0?text=Steam+Train+3',
+    code: 'ML-STAR',
+    slug: 'star-destroyer-metal-3d',
+    name: 'Star Destroyer Metal 3D',
+    totalPieceCount: 65,
+    difficultLevel: 'HARD',
+    estimatedBuildTime: 180,
+    thumbnailUrl: 'https://placehold.co/600x600/2e2e1a/e0e0e0?text=Star+Destroyer',
+    previewAsset: [
+      'https://placehold.co/600x600/2e2e1a/e0e0e0?text=Star+Front',
+      'https://placehold.co/600x600/2e2e1a/e0e0e0?text=Star+Top',
     ],
     description:
-      'Đầu máy hơi nước V-Express của Ugears. Có thể chạy trên ray sau khi lắp ráp. Chất liệu gỗ tự nhiên, không cần keo.',
-    longDescription: `## Đầu máy hơi nước cơ khí
-
-**V-Express** tái hiện đầu máy hơi nước cổ điển với cơ chế chạy bằng dây cót. Sau khi lắp ráp, bạn vặn dây cót và tàu sẽ tự chạy trên ray.
-
-## Đặc điểm
-
-- **Tự chạy**: Cơ chế dây cót cho phép tàu chạy ~5 mét
-- **Gỗ birch tự nhiên**: Cắt laser chính xác 0.1mm
-- **Đi kèm ray**: Bộ kit bao gồm đường ray để tàu chạy
-- **Thời gian lắp**: Ước tính 8-12 giờ`,
-    inStock: true,
+      'Mô hình Star Destroyer từ series Star Wars — Metal Earth. 3 tấm kim loại, chi tiết bề mặt cực kỳ sắc nét.',
+    topicId: 'topic-003',
+    assemblyMethodId: 'asm-003',
+    capabilityId: 'cap-001',
+    materialId: 'mat-002',
+    isActive: true,
+    createdAt: '2024-05-25T00:00:00Z',
+    updatedAt: '2024-05-25T00:00:00Z',
+    topic: topics[2],
+    assemblyMethod: assemblyMethods[2],
+    material: materials[1],
+    capability: capabilities[0],
+    variants: [createVariant('var-007', 'prod-005', 'STAR-SL', 'Bạc', [120, 65, 40], 450_000, 25)],
+    rating: 4.6,
+    soldCount: 3200,
   },
   {
     id: 'prod-006',
-    slug: 'tamiya-gr-supra',
-    name: 'Tamiya 1/24 Toyota GR Supra',
-    brand: 'Tamiya',
-    category: 'Vehicle',
-    price: 750_000,
-    originalPrice: 750_000,
-    rating: 4.5,
-    soldCount: 4500,
-    difficulty: 'easy',
-    image: 'https://placehold.co/600x600/3a3a5c/e0e0e0?text=GR+Supra',
-    images: [
-      'https://placehold.co/600x600/3a3a5c/e0e0e0?text=GR+Supra+1',
-      'https://placehold.co/600x600/3a3a5c/e0e0e0?text=GR+Supra+2',
-      'https://placehold.co/600x600/3a3a5c/e0e0e0?text=GR+Supra+3',
+    code: 'GD-UNIC',
+    slug: 'unicorn-gundam-pg',
+    name: 'Unicorn Gundam PG 1/60',
+    totalPieceCount: 780,
+    difficultLevel: 'EXPERT',
+    estimatedBuildTime: 1200,
+    thumbnailUrl: 'https://placehold.co/600x600/1a1a2e/e0c0c0?text=Unicorn+PG',
+    previewAsset: [
+      'https://placehold.co/600x600/1a1a2e/e0c0c0?text=Unicorn+Front',
+      'https://placehold.co/600x600/1a1a2e/e0c0c0?text=Unicorn+Side',
+      'https://placehold.co/600x600/1a1a2e/e0c0c0?text=Unicorn+LED',
     ],
     description:
-      'Mô hình xe Toyota GR Supra tỷ lệ 1/24. Dễ lắp ráp, phù hợp cho người mới bắt đầu.',
-    longDescription: `## Siêu xe Nhật Bản
-
-**Toyota GR Supra** — huyền thoại trở lại. Mô hình Tamiya 1/24 tái hiện chính xác thiết kế ngoại thất, nội thất và động cơ.
-
-## Đặc điểm
-
-- **Dễ lắp ráp**: Phù hợp cho người mới, chỉ cần keo và kéo cắt
-- **Nội thất chi tiết**: Ghế, vô lăng, bảng điều khiển
-- **Lốp cao su thật**: Lốp có thể xoay
-- **Nhiều phương án sơn**: Trắng, đỏ, hoặc vàng`,
-    inStock: true,
+      'Unicorn Gundam PG 1/60 với hệ thống LED tích hợp. Chế độ Unicorn ↔ Destroy chuyển đổi thực tế.\n\n## Điểm nổi bật\n\n- LED Unit tích hợp (Psycho Frame)\n- Chuyển đổi Unicorn ↔ Destroy Mode\n- Inner Frame hoàn chỉnh PG',
+    topicId: 'topic-001',
+    assemblyMethodId: 'asm-001',
+    capabilityId: 'cap-001',
+    materialId: 'mat-001',
+    isActive: true,
+    createdAt: '2024-04-10T00:00:00Z',
+    updatedAt: '2024-04-10T00:00:00Z',
+    topic: topics[0],
+    assemblyMethod: assemblyMethods[0],
+    material: materials[0],
+    capability: capabilities[0],
+    variants: [
+      createVariant('var-008', 'prod-006', 'UNIC-W', 'Trắng', [280, 120, 400], 4_500_000, 3),
+    ],
+    rating: 4.9,
+    soldCount: 890,
   },
   {
     id: 'prod-007',
-    slug: 'sazabi-ver-ka-mg',
-    name: 'Sazabi Ver.Ka MG 1/100',
-    brand: 'Bandai',
-    category: 'Gundam',
-    price: 2_200_000,
-    originalPrice: 2_500_000,
-    rating: 4.9,
-    soldCount: 1560,
-    difficulty: 'hard',
-    image: 'https://placehold.co/600x600/1a1a2e/e0e0e0?text=Sazabi+Ver.Ka',
-    images: [
-      'https://placehold.co/600x600/1a1a2e/e0e0e0?text=Sazabi+1',
-      'https://placehold.co/600x600/1a1a2e/e0e0e0?text=Sazabi+2',
-      'https://placehold.co/600x600/1a1a2e/e0e0e0?text=Sazabi+3',
+    code: 'WD-CASA',
+    slug: 'casa-batllo-3d-puzzle',
+    name: 'Casa Batlló 3D Wooden Puzzle',
+    totalPieceCount: 220,
+    difficultLevel: 'MEDIUM',
+    estimatedBuildTime: 240,
+    thumbnailUrl: 'https://placehold.co/600x600/2e1a2e/e0e0e0?text=Casa+Batllo',
+    previewAsset: [
+      'https://placehold.co/600x600/2e1a2e/e0e0e0?text=Casa+Front',
+      'https://placehold.co/600x600/2e1a2e/e0e0e0?text=Casa+Side',
     ],
     description:
-      'MSN-04 Sazabi phiên bản Ver.Ka — Master Grade. Thiết kế bởi Katoki Hajime, chi tiết vượt trội với decal nước.',
-    longDescription: `## Sazabi — MG Ver.Ka
-
-**MSN-04 Sazabi** là mobile suit biểu tượng của Char Aznable. Phiên bản Ver.Ka nổi tiếng với kích thước lớn và chi tiết vượt trội.
-
-## Đặc điểm
-
-- **Kích thước ấn tượng**: Cao ~23cm, to hơn MG bình thường
-- **Decal nước Ver.Ka**: Bộ decal phong phú nhất dòng MG
-- **Funnel mở**: 6 funnel có thể mở và gắn trên base
-- **Khớp chắc chắn**: Khung nội tuyến cải tiến, đứng vững`,
-    inStock: true,
+      'Mô hình gỗ 3D Casa Batlló — kiệt tác kiến trúc của Gaudí tại Barcelona. Bao gồm đèn LED bên trong.',
+    topicId: 'topic-002',
+    assemblyMethodId: 'asm-002',
+    capabilityId: 'cap-001',
+    materialId: 'mat-003',
+    isActive: true,
+    createdAt: '2024-08-01T00:00:00Z',
+    updatedAt: '2024-08-01T00:00:00Z',
+    topic: topics[1],
+    assemblyMethod: assemblyMethods[1],
+    material: materials[2],
+    capability: capabilities[0],
+    variants: [
+      createVariant('var-009', 'prod-007', 'CASA-NT', 'Gỗ tự nhiên', [200, 100, 300], 780_000, 12),
+    ],
+    rating: 4.4,
+    soldCount: 1200,
   },
   {
     id: 'prod-008',
-    slug: 'ugears-amber-box',
-    name: 'Ugears Amber Box Mechanical Puzzle',
-    brand: 'Ugears',
-    category: 'Puzzle',
-    price: 890_000,
-    originalPrice: 950_000,
-    rating: 4.4,
-    soldCount: 2100,
-    difficulty: 'easy',
-    image: 'https://placehold.co/600x600/2d2d44/e0e0e0?text=Amber+Box',
-    images: [
-      'https://placehold.co/600x600/2d2d44/e0e0e0?text=Amber+Box+1',
-      'https://placehold.co/600x600/2d2d44/e0e0e0?text=Amber+Box+2',
-      'https://placehold.co/600x600/2d2d44/e0e0e0?text=Amber+Box+3',
+    code: 'GD-BARB',
+    slug: 'barbatos-lupus-rex-fm',
+    name: 'Barbatos Lupus Rex FM 1/100',
+    totalPieceCount: 310,
+    difficultLevel: 'HARD',
+    estimatedBuildTime: 300,
+    thumbnailUrl: 'https://placehold.co/600x600/1a2e2e/e0e0e0?text=Barbatos+Rex',
+    previewAsset: [
+      'https://placehold.co/600x600/1a2e2e/e0e0e0?text=Barbatos+Front',
+      'https://placehold.co/600x600/1a2e2e/e0e0e0?text=Barbatos+Side',
     ],
     description:
-      'Hộp cơ khí Amber Box — puzzle bằng gỗ với cơ chế mở khóa bí ẩn. Quà tặng tuyệt vời cho người thích giải đố.',
-    longDescription: `## Hộp bí ẩn cơ khí
-
-**Amber Box** là puzzle cơ khí bằng gỗ — bạn phải tìm cách mở khóa hộp sau khi lắp ráp xong. Quà tặng hoàn hảo!
-
-## Đặc điểm
-
-- **Cơ chế mở khóa**: Phải giải puzzle để mở hộp
-- **Có thể đựng đồ**: Bên trong chứa được trang sức nhỏ
-- **Gỗ tự nhiên**: Thiết kế trang nhã, quà tặng ý nghĩa
-- **Lắp nhanh**: Chỉ 2-3 giờ, phù hợp mọi lứa tuổi`,
-    inStock: true,
+      'Full Mechanics Barbatos Lupus Rex 1/100. Thiết kế hung hãn với Mace và Tail Blade bản to.',
+    topicId: 'topic-001',
+    assemblyMethodId: 'asm-001',
+    capabilityId: 'cap-002',
+    materialId: 'mat-001',
+    isActive: true,
+    createdAt: '2024-07-20T00:00:00Z',
+    updatedAt: '2024-07-20T00:00:00Z',
+    topic: topics[0],
+    assemblyMethod: assemblyMethods[0],
+    material: materials[0],
+    capability: capabilities[1],
+    variants: [createVariant('var-010', 'prod-008', 'BARB-GY', 'Xám', [170, 85, 240], 750_000, 18)],
+    rating: 4.7,
+    soldCount: 1890,
   },
   {
     id: 'prod-009',
-    slug: 'bandai-wing-zero-rg',
-    name: 'Wing Gundam Zero EW RG 1/144',
-    brand: 'Bandai',
-    category: 'Gundam',
-    price: 680_000,
-    originalPrice: 780_000,
-    rating: 4.7,
-    soldCount: 5600,
-    difficulty: 'medium',
-    image: 'https://placehold.co/600x600/1a1a2e/e0e0e0?text=Wing+Zero+EW',
-    images: [
-      'https://placehold.co/600x600/1a1a2e/e0e0e0?text=Wing+Zero+1',
-      'https://placehold.co/600x600/1a1a2e/e0e0e0?text=Wing+Zero+2',
-      'https://placehold.co/600x600/1a1a2e/e0e0e0?text=Wing+Zero+3',
+    code: 'ML-TITA',
+    slug: 'titanic-metal-3d',
+    name: 'RMS Titanic Metal 3D',
+    totalPieceCount: 58,
+    difficultLevel: 'MEDIUM',
+    estimatedBuildTime: 150,
+    thumbnailUrl: 'https://placehold.co/600x600/1a1a1a/c0c0c0?text=Titanic',
+    previewAsset: [
+      'https://placehold.co/600x600/1a1a1a/c0c0c0?text=Titanic+Side',
+      'https://placehold.co/600x600/1a1a1a/c0c0c0?text=Titanic+Top',
     ],
     description:
-      'Wing Gundam Zero (Endless Waltz) tỷ lệ 1/144, Real Grade. Cánh thiên thần có thể gập và mở rộng hoàn toàn.',
-    longDescription: `## Thiên thần trắng
-
-**Wing Gundam Zero EW** — thiên thần của Heero Yuy. Phiên bản Real Grade nhỏ gọn nhưng chi tiết không thua Master Grade.
-
-## Đặc điểm
-
-- **Cánh thiên thần**: Có thể gập và mở rộng hoàn toàn
-- **Real Grade**: Chi tiết cao trong tỷ lệ 1/144 nhỏ gọn
-- **Twin Buster Rifle**: Vũ khí có thể tách và kết hợp
-- **Giá hợp lý**: Entry-level cho người mới chơi Gunpla`,
-    inStock: true,
+      'Mô hình kim loại RMS Titanic với chi tiết ống khói, boong tàu và cấu trúc sàn chính xác.',
+    topicId: 'topic-003',
+    assemblyMethodId: 'asm-003',
+    capabilityId: 'cap-001',
+    materialId: 'mat-002',
+    isActive: true,
+    createdAt: '2024-06-01T00:00:00Z',
+    updatedAt: '2024-06-01T00:00:00Z',
+    topic: topics[2],
+    assemblyMethod: assemblyMethods[2],
+    material: materials[1],
+    capability: capabilities[0],
+    variants: [createVariant('var-011', 'prod-009', 'TITA-SL', 'Bạc', [140, 30, 45], 280_000, 40)],
+    rating: 4.3,
+    soldCount: 4500,
   },
   {
     id: 'prod-010',
-    slug: 'ugears-research-vessel',
-    name: 'Ugears Research Vessel',
-    brand: 'Ugears',
-    category: 'Mechanical',
-    price: 3_200_000,
-    originalPrice: 3_500_000,
-    rating: 4.8,
-    soldCount: 720,
-    difficulty: 'expert',
-    image: 'https://placehold.co/600x600/2d2d44/e0e0e0?text=Research+Vessel',
-    images: [
-      'https://placehold.co/600x600/2d2d44/e0e0e0?text=Research+Vessel+1',
-      'https://placehold.co/600x600/2d2d44/e0e0e0?text=Research+Vessel+2',
-      'https://placehold.co/600x600/2d2d44/e0e0e0?text=Research+Vessel+3',
+    code: 'GD-FRDM',
+    slug: 'freedom-gundam-mg',
+    name: 'Freedom Gundam MGEX 1/100',
+    totalPieceCount: 560,
+    difficultLevel: 'EXPERT',
+    estimatedBuildTime: 600,
+    thumbnailUrl: 'https://placehold.co/600x600/1a1a4e/e0e0e0?text=Freedom+MGEX',
+    previewAsset: [
+      'https://placehold.co/600x600/1a1a4e/e0e0e0?text=Freedom+Front',
+      'https://placehold.co/600x600/1a1a4e/e0e0e0?text=Freedom+Wing',
+      'https://placehold.co/600x600/1a1a4e/e0e0e0?text=Freedom+Side',
     ],
     description:
-      'Tàu nghiên cứu cơ khí bằng gỗ — mô hình phức tạp nhất của Ugears với hơn 500 chi tiết. Có cơ chế chuyển động thực.',
-    longDescription: `## Tàu nghiên cứu — Flagship Ugears
-
-**Research Vessel** là mô hình phức tạp và ấn tượng nhất của Ugears, với hơn 500 chi tiết gỗ và nhiều cơ chế chuyển động.
-
-## Đặc điểm
-
-- **500+ chi tiết**: Thách thức lớn nhất cho modeler
-- **Cơ chế chuyển động**: Bánh lái, cánh buồm, cần cẩu hoạt động thực
-- **Không cần keo**: Lắp hoàn toàn bằng cơ chế khớp nối
-- **Thời gian lắp**: Ước tính 25-40 giờ`,
-    inStock: false,
+      'Freedom Gundam MGEX — phiên bản Extreme cao cấp nhất. LED tích hợp dọc cánh và thân.\n\n## MGEX — Master Grade Extreme\n\n- Hệ thống LED Extreme tích hợp\n- Cánh DRAGOON System mở rộng\n- Inner Frame chi tiết cực cao',
+    topicId: 'topic-001',
+    assemblyMethodId: 'asm-001',
+    capabilityId: 'cap-001',
+    materialId: 'mat-001',
+    isActive: true,
+    createdAt: '2024-08-10T00:00:00Z',
+    updatedAt: '2024-08-10T00:00:00Z',
+    topic: topics[0],
+    assemblyMethod: assemblyMethods[0],
+    material: materials[0],
+    capability: capabilities[0],
+    variants: [
+      createVariant('var-012', 'prod-010', 'FRDM-B', 'Xanh/Trắng', [200, 100, 300], 3_200_000, 0),
+    ],
+    rating: 4.8,
+    soldCount: 1100,
   },
 ];
 
-export function getProductBySlug(slug: string): MockProduct | undefined {
+// ============ HELPERS ============
+
+export function getProductBySlug(slug: string): InstockProduct | undefined {
   return products.find((p) => p.slug === slug);
 }
 
-export function getFeaturedProducts(count = 4): MockProduct[] {
-  return products
-    .filter((p) => p.inStock)
-    .sort((a, b) => b.rating - a.rating)
-    .slice(0, count);
+export function getDefaultVariant(product: InstockProduct): InstockProductVariantWithDetails {
+  return product.variants[0];
 }
 
-export function getAllBrands(): string[] {
-  return [...new Set(products.map((p) => p.brand))];
+export function getProductPrice(product: InstockProduct): number {
+  return getDefaultVariant(product).priceDetail.unitPrice;
 }
 
-export function getRelatedProducts(slug: string, count = 4): MockProduct[] {
-  const current = products.find((p) => p.slug === slug);
+export function isProductInStock(product: InstockProduct): boolean {
+  return product.variants.some((v) => v.inventory.totalQuantity > 0);
+}
+
+export function getRelatedProducts(currentSlug: string, limit: number = 4): InstockProduct[] {
+  const current = products.find((p) => p.slug === currentSlug);
   if (!current) return [];
   return products
-    .filter(
-      (p) => p.slug !== slug && (p.brand === current.brand || p.category === current.category)
-    )
-    .slice(0, count);
+    .filter((p) => p.slug !== currentSlug && p.topicId === current.topicId)
+    .slice(0, limit);
+}
+
+export function getTopics(): Topic[] {
+  return topics;
+}
+
+export function getMaterials(): Material[] {
+  return materials;
 }

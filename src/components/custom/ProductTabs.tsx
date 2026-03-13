@@ -5,21 +5,31 @@ import ReactMarkdown from 'react-markdown';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ProductTabsProps {
-  longDescription: string;
+  description: string | null;
   specs: {
-    brand: string;
-    difficulty?: string;
-    style?: string;
-    material?: string;
+    topicName?: string;
+    partnerName?: string;
+    difficultLevel?: string;
+    materialName?: string;
+    totalPieceCount?: number;
+    estimatedBuildTime?: number;
+    assembledDimensions?: {
+      length: number;
+      width: number;
+      height: number;
+    };
   };
   isPartner?: boolean;
 }
 
-export default function ProductTabs({
-  longDescription,
-  specs,
-  isPartner = false,
-}: ProductTabsProps) {
+function formatBuildTime(minutes: number): string {
+  if (minutes < 60) return `${minutes} phút`;
+  const hours = Math.floor(minutes / 60);
+  const remaining = minutes % 60;
+  return remaining > 0 ? `${hours} giờ ${remaining} phút` : `${hours} giờ`;
+}
+
+export default function ProductTabs({ description, specs, isPartner = false }: ProductTabsProps) {
   return (
     <Tabs defaultValue="description" className="w-full">
       <TabsList className="bg-secondary/50 grid w-full grid-cols-3">
@@ -36,7 +46,7 @@ export default function ProductTabs({
 
       <TabsContent value="description" className="border-border bg-card mt-4 rounded-xl border p-6">
         <div className="prose prose-sm prose-invert prose-headings:text-foreground prose-p:text-muted-foreground prose-strong:text-foreground prose-li:text-muted-foreground prose-th:text-foreground prose-td:text-muted-foreground max-w-none">
-          <ReactMarkdown>{longDescription}</ReactMarkdown>
+          <ReactMarkdown>{description || 'Chưa có mô tả chi tiết.'}</ReactMarkdown>
         </div>
       </TabsContent>
 
@@ -46,35 +56,59 @@ export default function ProductTabs({
             <tbody>
               <tr className="border-border border-b">
                 <td className="bg-secondary/30 text-foreground w-1/3 px-4 py-3 font-semibold">
-                  Thương hiệu
+                  {isPartner ? 'Đối tác' : 'Chủ đề'}
                 </td>
-                <td className="text-muted-foreground px-4 py-3">{specs.brand}</td>
+                <td className="text-muted-foreground px-4 py-3">
+                  {specs.partnerName || specs.topicName}
+                </td>
               </tr>
-              {specs.difficulty && (
+              {specs.difficultLevel && (
                 <tr className="border-border border-b">
                   <td className="bg-secondary/30 text-foreground w-1/3 px-4 py-3 font-semibold">
                     Độ khó
                   </td>
-                  <td className="text-muted-foreground px-4 py-3 capitalize">{specs.difficulty}</td>
+                  <td className="text-muted-foreground px-4 py-3">{specs.difficultLevel}</td>
                 </tr>
               )}
-              {specs.style && (
+              {specs.materialName && (
                 <tr className="border-border border-b">
                   <td className="bg-secondary/30 text-foreground w-1/3 px-4 py-3 font-semibold">
-                    Phong cách
+                    Chất liệu
                   </td>
-                  <td className="text-muted-foreground px-4 py-3">{specs.style}</td>
+                  <td className="text-muted-foreground px-4 py-3">{specs.materialName}</td>
                 </tr>
               )}
-              <tr className="border-border border-b">
-                <td className="bg-secondary/30 text-foreground w-1/3 px-4 py-3 font-semibold">
-                  Chất liệu
-                </td>
-                <td className="text-muted-foreground px-4 py-3">
-                  {specs.material ||
-                    (isPartner ? 'Gỗ / Kim loại (tùy sản phẩm)' : 'Nhựa PS, PE, ABS')}
-                </td>
-              </tr>
+              {specs.totalPieceCount && (
+                <tr className="border-border border-b">
+                  <td className="bg-secondary/30 text-foreground w-1/3 px-4 py-3 font-semibold">
+                    Số chi tiết
+                  </td>
+                  <td className="text-muted-foreground px-4 py-3">
+                    {specs.totalPieceCount.toLocaleString('vi-VN')} mảnh
+                  </td>
+                </tr>
+              )}
+              {specs.estimatedBuildTime && (
+                <tr className="border-border border-b">
+                  <td className="bg-secondary/30 text-foreground w-1/3 px-4 py-3 font-semibold">
+                    Thời gian lắp ráp
+                  </td>
+                  <td className="text-muted-foreground px-4 py-3">
+                    ~{formatBuildTime(specs.estimatedBuildTime)}
+                  </td>
+                </tr>
+              )}
+              {specs.assembledDimensions && (
+                <tr className="border-border border-b">
+                  <td className="bg-secondary/30 text-foreground w-1/3 px-4 py-3 font-semibold">
+                    Kích thước hoàn thiện
+                  </td>
+                  <td className="text-muted-foreground px-4 py-3">
+                    {specs.assembledDimensions.length} × {specs.assembledDimensions.width} ×{' '}
+                    {specs.assembledDimensions.height} mm
+                  </td>
+                </tr>
+              )}
               <tr className="border-border border-b">
                 <td className="bg-secondary/30 text-foreground w-1/3 px-4 py-3 font-semibold">
                   Loại sản phẩm

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { getProductBySlug } from '@/lib/mockData';
+import { getProductBySlug, getProductPrice } from '@/lib/mockData';
 import { getPartnerProductBySlug } from '@/lib/partnerMockData';
 import ProductDetailContent from '@/components/custom/ProductDetailContent';
 
@@ -18,15 +18,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: 'Sản phẩm không tồn tại' };
   }
 
-  const price = instockProduct ? instockProduct.price : partnerProduct!.estimatedPrice;
+  const description = product.description?.split('\n')[0] || '';
 
   return {
     title: product.name,
-    description: product.description,
+    description,
     openGraph: {
       title: `${product.name} | PuzKit3D`,
-      description: product.description,
-      images: [{ url: product.image, width: 600, height: 600, alt: product.name }],
+      description,
+      images: [{ url: product.thumbnailUrl, width: 600, height: 600, alt: product.name }],
       type: 'website',
       url: `/shop/${slug}`,
     },

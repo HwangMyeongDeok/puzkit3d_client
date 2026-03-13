@@ -1,252 +1,284 @@
-export interface PartnerProduct {
-  id: string;
-  slug: string;
-  name: string;
-  brand: string;
-  estimatedPrice: number;
-  style: string;
-  rating: number;
-  image: string;
-  images: string[];
-  description: string;
-  longDescription: string;
-}
+import type { Partner, PartnerProduct, ImportServiceConfig } from '@/types';
+
+// ============ IMPORT SERVICE CONFIGS ============
+
+export const importServiceConfigs: ImportServiceConfig[] = [
+  {
+    id: 'isc-001',
+    code: 'JP-STD',
+    baseShippingFee: 150_000,
+    countryCode: 'JP',
+    countryName: 'Nhật Bản',
+    importTaxPercentage: 10,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'isc-002',
+    code: 'CN-STD',
+    baseShippingFee: 80_000,
+    countryCode: 'CN',
+    countryName: 'Trung Quốc',
+    importTaxPercentage: 8,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'isc-003',
+    code: 'DE-STD',
+    baseShippingFee: 250_000,
+    countryCode: 'DE',
+    countryName: 'Đức',
+    importTaxPercentage: 12,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+];
+
+// ============ PARTNERS ============
+
+export const partners: Partner[] = [
+  {
+    id: 'partner-brand-001',
+    name: 'ROKR',
+    description:
+      'Thương hiệu mô hình gỗ cơ khí hàng đầu thế giới, nổi tiếng với Marble Run và đồng hồ cơ học.',
+    contactEmail: 'wholesale@rokr.com',
+    contactPhone: '+86-400-123-4567',
+    address: 'Shenzhen, China',
+    slug: 'rokr',
+    importServiceConfigId: 'isc-002',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+    importServiceConfig: importServiceConfigs[1],
+  },
+  {
+    id: 'partner-brand-002',
+    name: 'Ugears',
+    description:
+      'Thương hiệu Ukraine chuyên mô hình gỗ cơ khí với cơ chế hoạt động thực tế, không cần pin.',
+    contactEmail: 'b2b@ugears.com',
+    contactPhone: '+380-44-123-4567',
+    address: 'Kyiv, Ukraine',
+    slug: 'ugears',
+    importServiceConfigId: 'isc-003',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+    importServiceConfig: importServiceConfigs[2],
+  },
+  {
+    id: 'partner-brand-003',
+    name: 'Piececool',
+    description: 'Thương hiệu mô hình kim loại 3D cao cấp với thiết kế Trung Hoa và phương Tây.',
+    contactEmail: 'export@piececool.cn',
+    contactPhone: '+86-755-8888-9999',
+    address: 'Guangzhou, China',
+    slug: 'piececool',
+    importServiceConfigId: 'isc-002',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+    importServiceConfig: importServiceConfigs[1],
+  },
+  {
+    id: 'partner-brand-004',
+    name: 'CubicFun',
+    description:
+      'Thương hiệu puzzle 3D nổi tiếng với các mô hình kiến trúc thế giới, LED tích hợp.',
+    contactEmail: 'partner@cubicfun.com',
+    contactPhone: '+86-20-1234-5678',
+    address: 'Guangzhou, China',
+    slug: 'cubicfun',
+    importServiceConfigId: 'isc-002',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+    importServiceConfig: importServiceConfigs[1],
+  },
+];
+
+// ============ PARTNER PRODUCTS ============
 
 export const partnerProducts: PartnerProduct[] = [
   {
-    id: 'partner-001',
+    id: 'pp-001',
+    partnerId: 'partner-brand-001',
     slug: 'rokr-marble-run-night-city',
-    name: 'ROKR Marble Run Night City 3D Wooden Puzzle',
-    brand: 'ROKR',
-    estimatedPrice: 1_850_000,
-    style: 'Mechanical',
-    rating: 4.8,
-    image: 'https://placehold.co/600x600/2a2a45/f0c040?text=ROKR+Night+City',
-    images: [
+    name: 'ROKR Marble Run Night City',
+    referencePrice: 1_850_000,
+    thumbnailUrl: 'https://placehold.co/600x600/2a2a45/f0c040?text=ROKR+Night+City',
+    previewAsset: [
       'https://placehold.co/600x600/2a2a45/f0c040?text=Night+City+1',
       'https://placehold.co/600x600/2a2a45/f0c040?text=Night+City+2',
       'https://placehold.co/600x600/2a2a45/f0c040?text=Night+City+3',
     ],
     description:
-      'Mô hình gỗ 3D ROKR Marble Run Night City với đèn LED. Bi chạy tự động qua các đường ray phức tạp.',
-    longDescription: `## Night City — Marble Run đỉnh cao
-
-**ROKR Marble Run Night City** là bộ kit marble run phức tạp và ấn tượng nhất của ROKR. Với hệ thống **LED neon** và đường ray uốn lượn, bi sẽ chạy qua thành phố lung linh.
-
-## Đặc điểm
-
-- **Đèn LED neon**: Chiếu sáng toàn bộ thành phố vào ban đêm
-- **Cơ chế tự động**: Quay tay crank để bi chạy liên tục
-- **Gỗ cắt laser**: Chính xác cao, không cần keo
-- **Thời gian lắp**: Ước tính 15-20 giờ`,
-  },
-  {
-    id: 'partner-002',
-    slug: 'piececool-uss-enterprise',
-    name: 'Piececool USS Enterprise CVN-65 Metal Model',
-    brand: 'Piececool',
-    estimatedPrice: 2_400_000,
-    style: 'Military',
-    rating: 4.9,
-    image: 'https://placehold.co/600x600/1e3a5f/e0e0e0?text=USS+Enterprise',
-    images: [
-      'https://placehold.co/600x600/1e3a5f/e0e0e0?text=Enterprise+1',
-      'https://placehold.co/600x600/1e3a5f/e0e0e0?text=Enterprise+2',
-      'https://placehold.co/600x600/1e3a5f/e0e0e0?text=Enterprise+3',
-    ],
-    description:
-      'Mô hình kim loại tàu sân bay USS Enterprise CVN-65 siêu chi tiết. Hơn 200 mảnh ghép kim loại.',
-    longDescription: `## Tàu sân bay huyền thoại
-
-**USS Enterprise CVN-65** là tàu sân bay hạt nhân đầu tiên của Hải quân Hoa Kỳ. Mô hình Piececool tái hiện chi tiết đáng kinh ngạc.
-
-## Đặc điểm
-
-- **200+ mảnh kim loại**: Chi tiết cực cao
-- **Boong tàu chi tiết**: Máy bay, radar, cần cẩu
-- **Kim loại chống gỉ**: Bền đẹp theo thời gian
-- **Đế trưng bày**: Kèm đế và biển tên`,
-  },
-  {
-    id: 'partner-003',
-    slug: 'metal-earth-iconx-millennium-falcon',
-    name: 'Metal Earth ICONX Millennium Falcon',
-    brand: 'Metal Earth',
-    estimatedPrice: 980_000,
-    style: 'Sci-Fi',
-    rating: 4.7,
-    image: 'https://placehold.co/600x600/333355/e0e0e0?text=Millennium+Falcon',
-    images: [
-      'https://placehold.co/600x600/333355/e0e0e0?text=Falcon+1',
-      'https://placehold.co/600x600/333355/e0e0e0?text=Falcon+2',
-      'https://placehold.co/600x600/333355/e0e0e0?text=Falcon+3',
-    ],
-    description:
-      'Mô hình kim loại Millennium Falcon dòng ICONX cao cấp. Chi tiết cực cao, không cần keo dán.',
-    longDescription: `## Con tàu huyền thoại Star Wars
-
-**Millennium Falcon ICONX** — phiên bản cao cấp nhất trong dòng Metal Earth. Chi tiết gấp đôi so với phiên bản tiêu chuẩn.
-
-## Đặc điểm
-
-- **Dòng ICONX**: Lớn hơn, chi tiết hơn Metal Earth thường
-- **Không cần keo**: Gập và gài kim loại
-- **Hoàn thành nhanh**: Khoảng 3-5 giờ
-- **Trung thành với phim**: Tái hiện chính xác thiết kế trong Star Wars`,
-  },
-  {
-    id: 'partner-004',
-    slug: 'rokr-luminous-globe',
-    name: 'ROKR Luminous Globe ST003 Wooden Puzzle',
-    brand: 'ROKR',
-    estimatedPrice: 1_600_000,
-    style: 'Educational',
-    rating: 4.6,
-    image: 'https://placehold.co/600x600/2a2a45/f0c040?text=Luminous+Globe',
-    images: [
-      'https://placehold.co/600x600/2a2a45/f0c040?text=Globe+1',
-      'https://placehold.co/600x600/2a2a45/f0c040?text=Globe+2',
-      'https://placehold.co/600x600/2a2a45/f0c040?text=Globe+3',
-    ],
-    description:
-      'Quả địa cầu bằng gỗ phát sáng ROKR ST003. Vừa là mô hình trang trí vừa mang tính giáo dục.',
-    longDescription: `## Địa cầu phát sáng
-
-**ROKR Luminous Globe** kết hợp giáo dục và trang trí. Quả địa cầu bằng gỗ có thể xoay và **phát sáng nhờ LED**.
-
-## Đặc điểm
-
-- **LED phát sáng**: Chiếu sáng bản đồ thế giới ban đêm
-- **Xoay 360°**: Có thể xoay giống địa cầu thật
-- **Giáo dục**: Hiển thị các châu lục và đại dương
-- **Trang trí**: Đẹp trên bàn làm việc hoặc kệ sách`,
-  },
-  {
-    id: 'partner-005',
-    slug: 'piececool-dragon-king',
-    name: 'Piececool Dragon King Metal Puzzle',
-    brand: 'Piececool',
-    estimatedPrice: 3_100_000,
-    style: 'Fantasy',
-    rating: 4.9,
-    image: 'https://placehold.co/600x600/1e3a5f/e0e0e0?text=Dragon+King',
-    images: [
-      'https://placehold.co/600x600/1e3a5f/e0e0e0?text=Dragon+1',
-      'https://placehold.co/600x600/1e3a5f/e0e0e0?text=Dragon+2',
-      'https://placehold.co/600x600/1e3a5f/e0e0e0?text=Dragon+3',
-    ],
-    description:
-      'Rồng vương kim loại Piececool — mô hình phức tạp nhất dòng Fantasy. Hơn 300 chi tiết với đế trưng bày.',
-    longDescription: `## Rồng vương — Kiệt tác kim loại
-
-**Dragon King** là mô hình phức tạp nhất và đẹp nhất trong dòng Fantasy của Piececool. Hơn 300 chi tiết kim loại, cần kiên nhẫn và kỹ năng cao.
-
-## Đặc điểm
-
-- **300+ chi tiết**: Thách thức lớn cho modeler
-- **Vảy rồng 3D**: Từng vảy được tạo hình riêng biệt
-- **Đế trưng bày**: Kèm đế mây và biển tên
-- **Kích thước lớn**: Cao ~20cm, sải cánh ~30cm`,
-  },
-  {
-    id: 'partner-006',
-    slug: 'metal-earth-black-pearl',
-    name: 'Metal Earth Black Pearl Pirate Ship',
-    brand: 'Metal Earth',
-    estimatedPrice: 750_000,
-    style: 'Fantasy',
-    rating: 4.5,
-    image: 'https://placehold.co/600x600/333355/e0e0e0?text=Black+Pearl',
-    images: [
-      'https://placehold.co/600x600/333355/e0e0e0?text=Pearl+1',
-      'https://placehold.co/600x600/333355/e0e0e0?text=Pearl+2',
-      'https://placehold.co/600x600/333355/e0e0e0?text=Pearl+3',
-    ],
-    description:
-      'Tàu cướp biển Black Pearl bằng kim loại. Thiết kế nhỏ gọn, phù hợp để trưng bày trên bàn làm việc.',
-    longDescription: `## Tàu cướp biển huyền thoại
-
-**Black Pearl** — con tàu của thuyền trưởng Jack Sparrow. Phiên bản Metal Earth nhỏ gọn nhưng chi tiết đáng ngạc nhiên.
-
-## Đặc điểm
-
-- **Nhỏ gọn**: Vừa lòng bàn tay nhưng rất chi tiết
-- **Kim loại đen**: Phù hợp với tên gọi Black Pearl
-- **Buồm chi tiết**: Cột buồm và dây thừng kim loại
-- **Lắp nhanh**: Khoảng 2-3 giờ`,
-  },
-  {
-    id: 'partner-007',
-    slug: 'rokr-music-box-starry-night',
-    name: 'ROKR Music Box Starry Night AMK51',
-    brand: 'ROKR',
-    estimatedPrice: 1_250_000,
-    style: 'Mechanical',
-    rating: 4.7,
-    image: 'https://placehold.co/600x600/2a2a45/f0c040?text=Starry+Night',
-    images: [
-      'https://placehold.co/600x600/2a2a45/f0c040?text=Starry+1',
-      'https://placehold.co/600x600/2a2a45/f0c040?text=Starry+2',
-      'https://placehold.co/600x600/2a2a45/f0c040?text=Starry+3',
-    ],
-    description:
-      'Hộp nhạc gỗ Starry Night ROKR AMK51. Phát nhạc thực sự sau khi lắp ráp, lấy cảm hứng từ Van Gogh.',
-    longDescription: `## Hộp nhạc Van Gogh
-
-**Starry Night AMK51** lấy cảm hứng từ bức tranh nổi tiếng "The Starry Night" của Van Gogh. Sau khi lắp ráp, hộp nhạc sẽ **phát giai điệu thực sự**.
-
-## Đặc điểm
-
-- **Phát nhạc thật**: Cơ chế hộp nhạc truyền thống
-- **Thiết kế nghệ thuật**: Lấy cảm hứng từ Starry Night
-- **Gỗ birch cao cấp**: Bền đẹp, mùi gỗ tự nhiên
-- **Thời gian lắp**: Ước tính 5-8 giờ`,
-  },
-  {
-    id: 'partner-008',
-    slug: 'piececool-chinese-palace',
-    name: 'Piececool Chinese Ancient Palace',
-    brand: 'Piececool',
-    estimatedPrice: 4_200_000,
-    style: 'Architecture',
+      'Mô hình gỗ 3D ROKR Marble Run Night City với đèn LED. Bi chạy tự động qua các đường ray phức tạp.\n\n## Night City — Marble Run đỉnh cao\n\n**ROKR Marble Run Night City** là bộ kit marble run phức tạp và ấn tượng nhất của ROKR. Với hệ thống **LED neon** và đường ray uốn lượn, bi sẽ chạy qua thành phố lung linh.',
+    isActive: true,
+    createdAt: '2024-06-01T00:00:00Z',
+    updatedAt: '2024-06-01T00:00:00Z',
+    partner: partners[0],
     rating: 4.8,
-    image: 'https://placehold.co/600x600/1e3a5f/e0e0e0?text=Chinese+Palace',
-    images: [
-      'https://placehold.co/600x600/1e3a5f/e0e0e0?text=Palace+1',
-      'https://placehold.co/600x600/1e3a5f/e0e0e0?text=Palace+2',
-      'https://placehold.co/600x600/1e3a5f/e0e0e0?text=Palace+3',
+  },
+  {
+    id: 'pp-002',
+    partnerId: 'partner-brand-002',
+    slug: 'ugears-hurdy-gurdy',
+    name: 'Ugears Hurdy-Gurdy Musical',
+    referencePrice: 2_200_000,
+    thumbnailUrl: 'https://placehold.co/600x600/3a2a20/f0d070?text=Ugears+Hurdy+Gurdy',
+    previewAsset: [
+      'https://placehold.co/600x600/3a2a20/f0d070?text=Hurdy+1',
+      'https://placehold.co/600x600/3a2a20/f0d070?text=Hurdy+2',
+      'https://placehold.co/600x600/3a2a20/f0d070?text=Hurdy+3',
     ],
     description:
-      'Cung điện cổ Trung Quốc bằng kim loại. Mô hình kiến trúc phức tạp nhất của Piececool với hơn 500 chi tiết.',
-    longDescription: `## Kiến trúc cổ đại
-
-**Chinese Ancient Palace** tái hiện kiến trúc cung điện triều đại nhà Thanh với **hơn 500 chi tiết kim loại**. Đây là mô hình phức tạp nhất của Piececool.
-
-## Đặc điểm
-
-- **500+ chi tiết**: Thách thức cho modeler cao cấp
-- **Mái cong chính xác**: Tái hiện kiến trúc Trung Hoa cổ
-- **Nhiều tòa nhà**: Bao gồm chính điện, cổng, hành lang
-- **Thời gian lắp**: Ước tính 20-30 giờ`,
+      'Ugears Hurdy-Gurdy — nhạc cụ cơ khí bằng gỗ có khả năng phát âm thanh thực sự. Không dùng pin, hoạt động hoàn toàn bằng cơ học.',
+    isActive: true,
+    createdAt: '2024-05-15T00:00:00Z',
+    updatedAt: '2024-05-15T00:00:00Z',
+    partner: partners[1],
+    rating: 4.9,
+  },
+  {
+    id: 'pp-003',
+    partnerId: 'partner-brand-003',
+    slug: 'piececool-dragon-king',
+    name: 'Piececool Dragon King Warship',
+    referencePrice: 1_450_000,
+    thumbnailUrl: 'https://placehold.co/600x600/2a1a1a/e0c040?text=Dragon+King',
+    previewAsset: [
+      'https://placehold.co/600x600/2a1a1a/e0c040?text=Dragon+1',
+      'https://placehold.co/600x600/2a1a1a/e0c040?text=Dragon+2',
+    ],
+    description:
+      'Mô hình kim loại 3D Dragon King Warship — tàu chiến rồng phong cách Trung Hoa. Chi tiết cực kỳ tinh xảo với hơn 300 mảnh ghép kim loại.',
+    isActive: true,
+    createdAt: '2024-07-01T00:00:00Z',
+    updatedAt: '2024-07-01T00:00:00Z',
+    partner: partners[2],
+    rating: 4.6,
+  },
+  {
+    id: 'pp-004',
+    partnerId: 'partner-brand-001',
+    slug: 'rokr-cello-music-box',
+    name: 'ROKR Cello Music Box AMK63',
+    referencePrice: 890_000,
+    thumbnailUrl: 'https://placehold.co/600x600/2a3a2a/d0e0c0?text=ROKR+Cello',
+    previewAsset: [
+      'https://placehold.co/600x600/2a3a2a/d0e0c0?text=Cello+1',
+      'https://placehold.co/600x600/2a3a2a/d0e0c0?text=Cello+2',
+    ],
+    description:
+      'ROKR Cello Music Box — mô hình gỗ cây đàn Cello tích hợp hộp nhạc. Quay tay để phát nhạc, thiết kế tinh xảo.',
+    isActive: true,
+    createdAt: '2024-06-20T00:00:00Z',
+    updatedAt: '2024-06-20T00:00:00Z',
+    partner: partners[0],
+    rating: 4.5,
+  },
+  {
+    id: 'pp-005',
+    partnerId: 'partner-brand-002',
+    slug: 'ugears-chronograph-timer',
+    name: 'Ugears Chronograph Date Navigator',
+    referencePrice: 1_650_000,
+    thumbnailUrl: 'https://placehold.co/600x600/1a2a3a/c0d0e0?text=Ugears+Chrono',
+    previewAsset: [
+      'https://placehold.co/600x600/1a2a3a/c0d0e0?text=Chrono+1',
+      'https://placehold.co/600x600/1a2a3a/c0d0e0?text=Chrono+2',
+      'https://placehold.co/600x600/1a2a3a/c0d0e0?text=Chrono+3',
+    ],
+    description:
+      'Ugears Chronograph Date Navigator — mô hình đồng hồ cơ khí tự xoay với lịch hiển thị ngày/tháng. Cơ chế chạy thực sự, không cần pin.',
+    isActive: true,
+    createdAt: '2024-07-10T00:00:00Z',
+    updatedAt: '2024-07-10T00:00:00Z',
+    partner: partners[1],
+    rating: 4.7,
+  },
+  {
+    id: 'pp-006',
+    partnerId: 'partner-brand-003',
+    slug: 'piececool-iron-star-mecha',
+    name: 'Piececool Iron Star Mecha Warrior',
+    referencePrice: 1_280_000,
+    thumbnailUrl: 'https://placehold.co/600x600/2a2a2a/c0c0e0?text=Iron+Star+Mecha',
+    previewAsset: [
+      'https://placehold.co/600x600/2a2a2a/c0c0e0?text=Mecha+1',
+      'https://placehold.co/600x600/2a2a2a/c0c0e0?text=Mecha+2',
+    ],
+    description:
+      'Mô hình kim loại 3D Iron Star Mecha Warrior — robot chiến binh phong cách sci-fi. Khớp nối linh hoạt, có thể tạo nhiều pose.',
+    isActive: true,
+    createdAt: '2024-08-05T00:00:00Z',
+    updatedAt: '2024-08-05T00:00:00Z',
+    partner: partners[2],
+    rating: 4.4,
+  },
+  {
+    id: 'pp-007',
+    partnerId: 'partner-brand-004',
+    slug: 'cubicfun-notre-dame-led',
+    name: 'CubicFun Notre-Dame LED 3D',
+    referencePrice: 750_000,
+    thumbnailUrl: 'https://placehold.co/600x600/3a3a1a/e0e0c0?text=Notre+Dame+LED',
+    previewAsset: [
+      'https://placehold.co/600x600/3a3a1a/e0e0c0?text=Notre+Dame+1',
+      'https://placehold.co/600x600/3a3a1a/e0e0c0?text=Notre+Dame+2',
+    ],
+    description:
+      'CubicFun Notre-Dame de Paris 3D Puzzle với hệ thống LED bên trong, tạo hiệu ứng lung linh về đêm.',
+    isActive: true,
+    createdAt: '2024-05-01T00:00:00Z',
+    updatedAt: '2024-05-01T00:00:00Z',
+    partner: partners[3],
+    rating: 4.3,
+  },
+  {
+    id: 'pp-008',
+    partnerId: 'partner-brand-004',
+    slug: 'cubicfun-colosseum-giant',
+    name: 'CubicFun Colosseum Giant Edition',
+    referencePrice: 1_100_000,
+    thumbnailUrl: 'https://placehold.co/600x600/2a2a1a/d0d0c0?text=Colosseum+Giant',
+    previewAsset: [
+      'https://placehold.co/600x600/2a2a1a/d0d0c0?text=Colosseum+1',
+      'https://placehold.co/600x600/2a2a1a/d0d0c0?text=Colosseum+2',
+    ],
+    description:
+      'CubicFun Colosseum Giant Edition — mô hình 3D Đấu trường La Mã kích thước lớn. Tái hiện kiến trúc cổ đại chân thực nhất.',
+    isActive: true,
+    createdAt: '2024-06-10T00:00:00Z',
+    updatedAt: '2024-06-10T00:00:00Z',
+    partner: partners[3],
+    rating: 4.5,
   },
 ];
 
-export function getPartnerBrands(): string[] {
-  return [...new Set(partnerProducts.map((p) => p.brand))];
-}
-
-export function getPartnerStyles(): string[] {
-  return [...new Set(partnerProducts.map((p) => p.style))];
-}
+// ============ HELPERS ============
 
 export function getPartnerProductBySlug(slug: string): PartnerProduct | undefined {
   return partnerProducts.find((p) => p.slug === slug);
 }
 
-export function getRelatedPartnerProducts(slug: string, count = 4): PartnerProduct[] {
-  const current = partnerProducts.find((p) => p.slug === slug);
+export function getPartnerNames(): string[] {
+  return [...new Set(partners.map((p) => p.name))];
+}
+
+export function getRelatedPartnerProducts(
+  currentSlug: string,
+  limit: number = 4
+): PartnerProduct[] {
+  const current = partnerProducts.find((p) => p.slug === currentSlug);
   if (!current) return [];
   return partnerProducts
-    .filter((p) => p.slug !== slug && (p.brand === current.brand || p.style === current.style))
-    .slice(0, count);
+    .filter((p) => p.slug !== currentSlug && p.partnerId === current.partnerId)
+    .slice(0, limit);
 }

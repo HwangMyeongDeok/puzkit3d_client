@@ -17,15 +17,15 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import type { MockProduct } from '@/lib/mockData';
-import { getRelatedProducts } from '@/lib/mockData';
-import type { PartnerProduct } from '@/lib/partnerMockData';
-import { getRelatedPartnerProducts } from '@/lib/partnerMockData';
+import type { InstockProduct, PartnerProduct, InstockProductVariantWithDetails } from '@/types';
+import { isProductInStock, getDefaultVariant } from '@/lib/mockData';
 import {
   getReviewsByProductId,
   getAverageRating,
   getRatingDistribution,
 } from '@/lib/reviewMockData';
+import { getRelatedProducts } from '@/lib/mockData';
+import { getRelatedPartnerProducts } from '@/lib/partnerMockData';
 import { formatPrice, formatNumber } from '@/lib/utils';
 import { useAppDispatch } from '@/stores';
 import { addToCart } from '@/stores/slices/cartSlice';
@@ -35,7 +35,7 @@ import ReviewSection from '@/components/custom/ReviewSection';
 import RelatedProducts from '@/components/custom/RelatedProducts';
 
 interface ProductDetailContentProps {
-  instockProduct: MockProduct | null;
+  instockProduct: InstockProduct | null;
   partnerProduct: PartnerProduct | null;
 }
 
@@ -51,6 +51,9 @@ export default function ProductDetailContent({
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [selectedVariant, setSelectedVariant] = useState<InstockProductVariantWithDetails | null>(
+    instockProduct ? getDefaultVariant(instockProduct) : null
+  );
 
   if (!product) {
     return (
@@ -70,54 +73,61 @@ export default function ProductDetailContent({
     );
   }
 
-  const displayPrice = isPartner ? partnerProduct!.estimatedPrice : instockProduct!.price;
-  const originalPrice = !isPartner ? instockProduct!.originalPrice : 0;
-  const hasDiscount = !isPartner && originalPrice > displayPrice;
-  const discountPercent = hasDiscount
-    ? Math.round(((originalPrice - displayPrice) / originalPrice) * 100)
-    : 0;
+  const displayPrice = isPartner
+    ? partnerProduct!.referencePrice
+    : selectedVariant!.priceDetail.unitPrice;
 
-  const productReviews = getReviewsByProductId(product.id);
-  const { average: avgRating, count: reviewCount } = getAverageRating(product.id);
-  const ratingDistribution = getRatingDistribution(product.id);
+  const inStock = !isPartner && instockProduct ? isProductInStock(instockProduct) : true;
+  const variantStock = selectedVariant?.inventory.totalQuantity ?? 0;
+
+  const productId = product.id;
+  const productReviews = getReviewsByProductId(productId);
+  const { average: avgRating, count: reviewCount } = getAverageRating(productId);
+  const ratingDistribution = getRatingDistribution(productId);
 
   const relatedInstock = !isPartner ? getRelatedProducts(product.slug, 4) : [];
   const relatedPartner = isPartner ? getRelatedPartnerProducts(product.slug, 4) : [];
 
   const handleAddToCart = () => {
-    dispatch(
-      addToCart({
-        productId: product.id,
-        name: product.name,
-        image: product.images[0] || product.image,
-        price: displayPrice,
-        quantity,
-        maxQuantity: isPartner ? 5 : 10,
-        itemType: isPartner ? 'partner' : 'instock',
-      })
-    );
-
     if (isPartner) {
+      dispatch(
+        addToCart({
+          itemId: product.id,
+          unitPrice: null,
+          instockProductPriceDetailId: null,
+          quantity,
+          cartType: 'PARTNER',
+          productName: product.name,
+          thumbnailUrl: product.thumbnailUrl,
+          sku: null,
+          variantColor: null,
+        })
+      );
       toast.success(`Đã thêm "${product.name}" vào yêu cầu báo giá`);
     } else {
+      dispatch(
+        addToCart({
+          itemId: selectedVariant!.id,
+          unitPrice: selectedVariant!.priceDetail.unitPrice,
+          instockProductPriceDetailId: selectedVariant!.priceDetail.id,
+          quantity,
+          cartType: 'INSTOCK',
+          productName: product.name,
+          thumbnailUrl: product.thumbnailUrl,
+          sku: selectedVariant!.sku,
+          variantColor: selectedVariant!.color,
+        })
+      );
       toast.success(`Đã thêm ${quantity}x "${product.name}" vào giỏ hàng`);
     }
   };
 
   const handleBuyNow = () => {
-    dispatch(
-      addToCart({
-        productId: product.id,
-        name: product.name,
-        image: product.images[0] || product.image,
-        price: displayPrice,
-        quantity,
-        maxQuantity: isPartner ? 5 : 10,
-        itemType: isPartner ? 'partner' : 'instock',
-      })
-    );
+    handleAddToCart();
     router.push(ROUTES.CART);
   };
+
+  const brandOrPartner = isPartner ? partnerProduct!.partner.name : instockProduct!.topic.name;
 
   return (
     <div className="container-custom py-8 lg:py-12">
@@ -140,7 +150,7 @@ export default function ProductDetailContent({
         <div className="flex flex-col gap-4">
           <div className="border-border bg-muted relative aspect-square overflow-hidden rounded-2xl border">
             <Image
-              src={product.images[selectedImage]}
+              src={product.previewAsset[selectedImage] || product.thumbnailUrl}
               alt={product.name}
               fill
               sizes="(max-width: 1024px) 100vw, 50vw"
@@ -152,15 +162,10 @@ export default function ProductDetailContent({
                 Hàng đối tác
               </span>
             )}
-            {!isPartner && hasDiscount && (
-              <span className="bg-accent text-accent-foreground absolute top-4 left-4 rounded-lg px-3 py-1 text-sm font-bold">
-                -{discountPercent}%
-              </span>
-            )}
           </div>
 
           <div className="flex gap-3">
-            {product.images.map((img, idx) => (
+            {product.previewAsset.map((img, idx) => (
               <button
                 key={idx}
                 onClick={() => setSelectedImage(idx)}
@@ -184,7 +189,7 @@ export default function ProductDetailContent({
 
         <div className="flex flex-col gap-5">
           <span className="text-brand text-xs font-bold tracking-widest uppercase">
-            {product.brand}
+            {brandOrPartner}
           </span>
 
           <h1 className="text-2xl leading-tight font-bold md:text-3xl">{product.name}</h1>
@@ -202,9 +207,9 @@ export default function ProductDetailContent({
                 </span>
                 <span className="text-muted-foreground">|</span>
                 <span
-                  className={`font-semibold ${instockProduct.inStock ? 'text-success' : 'text-destructive'}`}
+                  className={`font-semibold ${variantStock > 0 ? 'text-success' : 'text-destructive'}`}
                 >
-                  {instockProduct.inStock ? 'Còn hàng' : 'Hết hàng'}
+                  {variantStock > 0 ? `Còn ${variantStock} sản phẩm` : 'Hết hàng'}
                 </span>
               </>
             )}
@@ -221,21 +226,11 @@ export default function ProductDetailContent({
           <div className="bg-secondary/60 rounded-xl px-5 py-4">
             <div className="flex items-baseline gap-3">
               {isPartner && (
-                <span className="text-muted-foreground text-sm font-medium">Giá dự kiến:</span>
+                <span className="text-muted-foreground text-sm font-medium">Giá tham khảo:</span>
               )}
               <span className="text-accent text-3xl font-extrabold">
                 {formatPrice(displayPrice)}
               </span>
-              {hasDiscount && (
-                <>
-                  <span className="text-muted-foreground text-lg line-through">
-                    {formatPrice(originalPrice)}
-                  </span>
-                  <span className="bg-accent/15 text-accent rounded-md px-2 py-0.5 text-xs font-bold">
-                    -{discountPercent}%
-                  </span>
-                </>
-              )}
             </div>
             {isPartner && (
               <div className="text-muted-foreground mt-2 flex items-start gap-1.5 text-xs">
@@ -247,25 +242,42 @@ export default function ProductDetailContent({
             )}
           </div>
 
+          {!isPartner && instockProduct && instockProduct.variants.length > 1 && (
+            <div className="flex flex-col gap-2">
+              <span className="text-foreground text-sm font-semibold">Phiên bản:</span>
+              <div className="flex flex-wrap gap-2">
+                {instockProduct.variants.map((v) => (
+                  <button
+                    key={v.id}
+                    onClick={() => setSelectedVariant(v)}
+                    className={`cursor-pointer rounded-lg border-2 px-4 py-2 text-sm font-medium transition-all ${
+                      selectedVariant?.id === v.id
+                        ? 'border-brand bg-brand/5 text-brand'
+                        : 'border-border hover:border-muted-foreground/40'
+                    }`}
+                  >
+                    {v.color}
+                    <span className="text-muted-foreground ml-2 text-xs">
+                      {formatPrice(v.priceDetail.unitPrice)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {!isPartner && instockProduct && (
             <div className="flex items-center gap-3 text-sm">
               <span className="text-foreground font-semibold">Độ khó:</span>
-              <span className="bg-brand/10 text-brand rounded-full px-3 py-1 text-xs font-bold capitalize">
-                {instockProduct.difficulty}
+              <span className="bg-brand/10 text-brand rounded-full px-3 py-1 text-xs font-bold">
+                {instockProduct.difficultLevel}
               </span>
             </div>
           )}
 
-          {isPartner && partnerProduct && (
-            <div className="flex items-center gap-3 text-sm">
-              <span className="text-foreground font-semibold">Phong cách:</span>
-              <span className="bg-warning/10 text-warning rounded-full px-3 py-1 text-xs font-bold">
-                {partnerProduct.style}
-              </span>
-            </div>
-          )}
-
-          <p className="text-muted-foreground leading-relaxed">{product.description}</p>
+          <p className="text-muted-foreground leading-relaxed">
+            {product.description?.split('\n')[0]}
+          </p>
 
           <div className="border-border flex flex-col gap-4 border-t pt-5">
             <div className="flex items-center gap-3">
@@ -311,7 +323,7 @@ export default function ProductDetailContent({
               <div className="flex gap-3">
                 <button
                   className="border-brand text-brand hover:bg-brand/5 flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 bg-transparent px-6 py-3.5 text-sm font-bold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={!instockProduct?.inStock}
+                  disabled={variantStock <= 0}
                   onClick={handleAddToCart}
                 >
                   <ShoppingCart className="h-4 w-4" />
@@ -319,7 +331,7 @@ export default function ProductDetailContent({
                 </button>
                 <button
                   className="bg-accent text-accent-foreground flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-bold shadow-lg transition-all hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={!instockProduct?.inStock}
+                  disabled={variantStock <= 0}
                   onClick={() => {
                     handleAddToCart();
                     router.push(ROUTES.CHECKOUT);
@@ -336,11 +348,21 @@ export default function ProductDetailContent({
 
       <div className="mt-12">
         <ProductTabs
-          longDescription={product.longDescription}
+          description={product.description}
           specs={{
-            brand: product.brand,
-            difficulty: !isPartner && instockProduct ? instockProduct.difficulty : undefined,
-            style: isPartner && partnerProduct ? partnerProduct.style : undefined,
+            topicName: !isPartner ? instockProduct!.topic.name : undefined,
+            partnerName: isPartner ? partnerProduct!.partner.name : undefined,
+            difficultLevel: !isPartner ? instockProduct!.difficultLevel : undefined,
+            materialName: !isPartner ? instockProduct!.material.name : undefined,
+            totalPieceCount: !isPartner ? instockProduct!.totalPieceCount : undefined,
+            estimatedBuildTime: !isPartner ? instockProduct!.estimatedBuildTime : undefined,
+            assembledDimensions: selectedVariant
+              ? {
+                  length: selectedVariant.assembledLengthMm,
+                  width: selectedVariant.assembledWidthMm,
+                  height: selectedVariant.assembledHeightMm,
+                }
+              : undefined,
           }}
           isPartner={isPartner}
         />

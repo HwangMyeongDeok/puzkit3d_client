@@ -1,14 +1,19 @@
-export type CartItemType = 'instock' | 'partner';
+export type CartType = 'INSTOCK' | 'PARTNER';
 
 export interface CartItem {
-  productId: string;
-  name: string;
-  image: string;
-  price: number;
+  id: string;
+  cartId: string;
+  itemId: string;
+  unitPrice: number | null;
+  instockProductPriceDetailId: string | null;
   quantity: number;
-  variant?: string;
-  maxQuantity?: number;
-  itemType: CartItemType;
+  cartType: CartType;
+
+  // Denormalized display fields (from product replicas)
+  productName: string;
+  thumbnailUrl: string;
+  sku: string | null;
+  variantColor: string | null;
 }
 
 export interface CartState {
@@ -19,23 +24,24 @@ export interface CartState {
 }
 
 export interface AddToCartPayload {
-  productId: string;
-  name: string;
-  image: string;
-  price: number;
+  itemId: string;
+  unitPrice: number | null;
+  instockProductPriceDetailId: string | null;
   quantity: number;
-  variant?: string;
-  maxQuantity?: number;
-  itemType: CartItemType;
+  cartType: CartType;
+  productName: string;
+  thumbnailUrl: string;
+  sku: string | null;
+  variantColor: string | null;
 }
 
 export interface UpdateCartItemPayload {
-  productId: string;
-  variant?: string;
+  itemId: string;
+  sku: string | null;
   quantity: number;
 }
 
 export interface RemoveCartItemPayload {
-  productId: string;
-  variant?: string;
+  itemId: string;
+  sku: string | null;
 }

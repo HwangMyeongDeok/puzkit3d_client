@@ -1,10 +1,10 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-import type { CartItemType } from '@/types';
+import type { CartType } from '@/types';
 
 interface CheckoutState {
   selectedIds: string[];
-  checkoutMode: CartItemType;
+  checkoutMode: 'instock' | 'partner';
 }
 
 const initialState: CheckoutState = {
@@ -16,7 +16,10 @@ const checkoutSlice = createSlice({
   name: 'checkout',
   initialState,
   reducers: {
-    setSelectedItems: (state, action: PayloadAction<{ ids: string[]; mode: CartItemType }>) => {
+    setSelectedItems: (
+      state,
+      action: PayloadAction<{ ids: string[]; mode: 'instock' | 'partner' }>
+    ) => {
       state.selectedIds = action.payload.ids;
       state.checkoutMode = action.payload.mode;
     },

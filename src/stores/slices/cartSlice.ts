@@ -36,7 +36,12 @@ export const mergeCartOnLogin = createAsyncThunk(
 export const addToCartServer = createAsyncThunk(
   'cart/addToCartServer',
   async (item: AddToCartPayload) => {
-    const response = await addItemToServer(item);
+    const cartItem: CartItem = {
+      id: `ci-${Date.now()}`,
+      cartId: 'server-cart',
+      ...item,
+    };
+    const response = await addItemToServer(cartItem);
     if (!response.success) throw new Error(response.error || 'Failed to add item');
     return response.data;
   }
@@ -45,14 +50,14 @@ export const addToCartServer = createAsyncThunk(
 export const syncItemToServer = createAsyncThunk(
   'cart/syncItemToServer',
   async (
-    payload: { productId: string; quantity: number; variant?: string },
+    payload: { itemId: string; quantity: number; sku: string | null },
     { rejectWithValue }
   ) => {
-    const { productId, quantity, variant } = payload;
+    const { itemId, quantity, sku } = payload;
     const response =
       quantity <= 0
-        ? await removeItemFromServer(productId, variant)
-        : await updateItemQty(productId, quantity, variant);
+        ? await removeItemFromServer(itemId, sku)
+        : await updateItemQty(itemId, quantity, sku);
 
     if (!response.success) {
       return rejectWithValue(response.error || 'Sync failed');
@@ -63,8 +68,8 @@ export const syncItemToServer = createAsyncThunk(
 
 export const removeFromCartServer = createAsyncThunk(
   'cart/removeFromCartServer',
-  async (payload: { productId: string; variant?: string }) => {
-    const response = await removeItemFromServer(payload.productId, payload.variant);
+  async (payload: { itemId: string; sku: string | null }) => {
+    const response = await removeItemFromServer(payload.itemId, payload.sku);
     if (!response.success) throw new Error(response.error || 'Failed to remove item');
     return response.data;
   }
@@ -85,7 +90,10 @@ const initialState: CartState = {
 
 const recalculateTotals = (state: CartState) => {
   state.totalQuantity = state.items.reduce((sum, item) => sum + item.quantity, 0);
-  state.totalPrice = state.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  state.totalPrice = state.items.reduce(
+    (sum, item) => sum + (item.unitPrice ?? 0) * item.quantity,
+    0
+  );
 };
 
 const cartSlice = createSlice({
@@ -93,46 +101,35 @@ const cartSlice = createSlice({
   initialState,
   reducers: {
     addToCart: (state, action: PayloadAction<AddToCartPayload>) => {
-      const { productId, variant } = action.payload;
-      const existingItem = state.items.find(
-        (item) => item.productId === productId && item.variant === variant
-      );
+      const { itemId, sku } = action.payload;
+      const existingItem = state.items.find((item) => item.itemId === itemId && item.sku === sku);
 
       if (existingItem) {
-        const newQuantity = existingItem.quantity + action.payload.quantity;
-        if (existingItem.maxQuantity && newQuantity > existingItem.maxQuantity) {
-          existingItem.quantity = existingItem.maxQuantity;
-        } else {
-          existingItem.quantity = newQuantity;
-        }
+        existingItem.quantity += action.payload.quantity;
       } else {
-        state.items.push(action.payload);
+        state.items.push({
+          id: `ci-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          cartId: 'local',
+          ...action.payload,
+        });
       }
 
       recalculateTotals(state);
     },
 
     removeFromCart: (state, action: PayloadAction<RemoveCartItemPayload>) => {
-      const { productId, variant } = action.payload;
-      state.items = state.items.filter(
-        (item) => !(item.productId === productId && item.variant === variant)
-      );
+      const { itemId, sku } = action.payload;
+      state.items = state.items.filter((item) => !(item.itemId === itemId && item.sku === sku));
       recalculateTotals(state);
     },
 
     updateQuantity: (state, action: PayloadAction<UpdateCartItemPayload>) => {
-      const { productId, variant, quantity } = action.payload;
-      const item = state.items.find(
-        (item) => item.productId === productId && item.variant === variant
-      );
+      const { itemId, sku, quantity } = action.payload;
+      const item = state.items.find((item) => item.itemId === itemId && item.sku === sku);
 
       if (item) {
         if (quantity <= 0) {
-          state.items = state.items.filter(
-            (i) => !(i.productId === productId && i.variant === variant)
-          );
-        } else if (item.maxQuantity && quantity > item.maxQuantity) {
-          item.quantity = item.maxQuantity;
+          state.items = state.items.filter((i) => !(i.itemId === itemId && i.sku === sku));
         } else {
           item.quantity = quantity;
         }
@@ -142,33 +139,25 @@ const cartSlice = createSlice({
     },
 
     incrementQuantity: (state, action: PayloadAction<RemoveCartItemPayload>) => {
-      const { productId, variant } = action.payload;
-      const item = state.items.find(
-        (item) => item.productId === productId && item.variant === variant
-      );
+      const { itemId, sku } = action.payload;
+      const item = state.items.find((item) => item.itemId === itemId && item.sku === sku);
 
       if (item) {
-        if (!item.maxQuantity || item.quantity < item.maxQuantity) {
-          item.quantity += 1;
-        }
+        item.quantity += 1;
       }
 
       recalculateTotals(state);
     },
 
     decrementQuantity: (state, action: PayloadAction<RemoveCartItemPayload>) => {
-      const { productId, variant } = action.payload;
-      const item = state.items.find(
-        (item) => item.productId === productId && item.variant === variant
-      );
+      const { itemId, sku } = action.payload;
+      const item = state.items.find((item) => item.itemId === itemId && item.sku === sku);
 
       if (item) {
         if (item.quantity > 1) {
           item.quantity -= 1;
         } else {
-          state.items = state.items.filter(
-            (i) => !(i.productId === productId && i.variant === variant)
-          );
+          state.items = state.items.filter((i) => !(i.itemId === itemId && i.sku === sku));
         }
       }
 
@@ -188,18 +177,16 @@ const cartSlice = createSlice({
 
     removeSelectedItems: (state, action: PayloadAction<string[]>) => {
       const idsToRemove = new Set(action.payload);
-      state.items = state.items.filter((item) => !idsToRemove.has(item.productId));
+      state.items = state.items.filter((item) => !idsToRemove.has(item.itemId));
       recalculateTotals(state);
     },
 
     rollbackQuantity: (
       state,
-      action: PayloadAction<{ productId: string; variant?: string; previousQuantity: number }>
+      action: PayloadAction<{ itemId: string; sku: string | null; previousQuantity: number }>
     ) => {
-      const { productId, variant, previousQuantity } = action.payload;
-      const item = state.items.find(
-        (item) => item.productId === productId && item.variant === variant
-      );
+      const { itemId, sku, previousQuantity } = action.payload;
+      const item = state.items.find((item) => item.itemId === itemId && item.sku === sku);
       if (item) {
         item.quantity = previousQuantity;
         recalculateTotals(state);
@@ -296,14 +283,14 @@ export const selectCartItemCount = (state: { cart: CartState }) => state.cart.it
 export const selectCartSyncStatus = (state: { cart: CartState }) => state.cart.syncStatus;
 
 export const selectInstockItems = (state: { cart: CartState }) =>
-  state.cart.items.filter((item) => item.itemType === 'instock');
+  state.cart.items.filter((item) => item.cartType === 'INSTOCK');
 export const selectPartnerItems = (state: { cart: CartState }) =>
-  state.cart.items.filter((item) => item.itemType === 'partner');
+  state.cart.items.filter((item) => item.cartType === 'PARTNER');
 export const selectInstockTotalPrice = (state: { cart: CartState }) =>
   state.cart.items
-    .filter((item) => item.itemType === 'instock')
-    .reduce((sum, item) => sum + item.price * item.quantity, 0);
+    .filter((item) => item.cartType === 'INSTOCK')
+    .reduce((sum, item) => sum + (item.unitPrice ?? 0) * item.quantity, 0);
 export const selectPartnerTotalPrice = (state: { cart: CartState }) =>
   state.cart.items
-    .filter((item) => item.itemType === 'partner')
-    .reduce((sum, item) => sum + item.price * item.quantity, 0);
+    .filter((item) => item.cartType === 'PARTNER')
+    .reduce((sum, item) => sum + (item.unitPrice ?? 0) * item.quantity, 0);

@@ -2,15 +2,21 @@
 
 import { useState } from 'react';
 import { SlidersHorizontal, ChevronDown, Search, X } from 'lucide-react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 
-import { products, getAllBrands } from '@/lib/mockData';
-import type { MockProduct } from '@/lib/mockData';
+import { products, getTopics, getMaterials, getProductPrice } from '@/lib/mockData';
+import type { DifficultLevel } from '@/types';
 import ProductCard from '@/components/custom/ProductCard';
 
-const DIFFICULTY_OPTIONS: MockProduct['difficulty'][] = ['easy', 'medium', 'hard', 'expert'];
+const DIFFICULTY_OPTIONS: DifficultLevel[] = ['EASY', 'MEDIUM', 'HARD', 'EXPERT'];
+const DIFFICULTY_LABELS: Record<DifficultLevel, string> = {
+  EASY: 'Dễ',
+  MEDIUM: 'Trung bình',
+  HARD: 'Khó',
+  EXPERT: 'Chuyên gia',
+};
 
 const SORT_OPTIONS = [
   { value: 'popular', label: 'Phổ biến' },
@@ -24,25 +30,32 @@ type SortValue = (typeof SORT_OPTIONS)[number]['value'];
 
 export default function ShopPage() {
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-  const [selectedDifficulties, setSelectedDifficulties] = useState<MockProduct['difficulty'][]>([]);
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
+  const [selectedDifficulties, setSelectedDifficulties] = useState<DifficultLevel[]>([]);
   const [sortBy, setSortBy] = useState<SortValue>('popular');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  const allBrands = getAllBrands();
+  const allTopics = getTopics();
+  const allMaterials = getMaterials();
 
-  const toggleBrand = (brand: string) => {
-    setSelectedBrands((prev) =>
-      prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
+  const toggleTopic = (topicId: string) => {
+    setSelectedTopics((prev) =>
+      prev.includes(topicId) ? prev.filter((t) => t !== topicId) : [...prev, topicId]
     );
   };
 
-  const toggleDifficulty = (diff: MockProduct['difficulty']) => {
+  const toggleMaterial = (materialId: string) => {
+    setSelectedMaterials((prev) =>
+      prev.includes(materialId) ? prev.filter((m) => m !== materialId) : [...prev, materialId]
+    );
+  };
+
+  const toggleDifficulty = (diff: DifficultLevel) => {
     setSelectedDifficulties((prev) =>
       prev.includes(diff) ? prev.filter((d) => d !== diff) : [...prev, diff]
     );
@@ -56,19 +69,22 @@ export default function ShopPage() {
         p.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
       );
     }
-    if (selectedBrands.length > 0) {
-      results = results.filter((p) => selectedBrands.includes(p.brand));
+    if (selectedTopics.length > 0) {
+      results = results.filter((p) => selectedTopics.includes(p.topicId));
+    }
+    if (selectedMaterials.length > 0) {
+      results = results.filter((p) => selectedMaterials.includes(p.materialId));
     }
     if (selectedDifficulties.length > 0) {
-      results = results.filter((p) => selectedDifficulties.includes(p.difficulty));
+      results = results.filter((p) => selectedDifficulties.includes(p.difficultLevel));
     }
 
     switch (sortBy) {
       case 'price-asc':
-        results.sort((a, b) => a.price - b.price);
+        results.sort((a, b) => getProductPrice(a) - getProductPrice(b));
         break;
       case 'price-desc':
-        results.sort((a, b) => b.price - a.price);
+        results.sort((a, b) => getProductPrice(b) - getProductPrice(a));
         break;
       case 'rating':
         results.sort((a, b) => b.rating - a.rating);
@@ -82,6 +98,12 @@ export default function ShopPage() {
 
     return results;
   })();
+
+  const hasActiveFilters =
+    selectedTopics.length > 0 ||
+    selectedMaterials.length > 0 ||
+    selectedDifficulties.length > 0 ||
+    searchQuery !== '';
 
   const FiltersContent = (
     <div className="flex flex-col gap-6">
@@ -104,20 +126,40 @@ export default function ShopPage() {
       </div>
 
       <div>
-        <h3 className="text-foreground mb-3 text-sm font-bold">Thương hiệu</h3>
+        <h3 className="text-foreground mb-3 text-sm font-bold">Chủ đề</h3>
         <div className="flex flex-col gap-2">
-          {allBrands.map((brand) => (
+          {allTopics.map((topic) => (
             <label
-              key={brand}
+              key={topic.id}
               className="text-foreground/80 hover:text-foreground flex cursor-pointer items-center gap-2.5 text-sm transition-colors"
             >
               <input
                 type="checkbox"
-                checked={selectedBrands.includes(brand)}
-                onChange={() => toggleBrand(brand)}
+                checked={selectedTopics.includes(topic.id)}
+                onChange={() => toggleTopic(topic.id)}
                 className="border-border text-brand accent-brand h-4 w-4 rounded"
               />
-              {brand}
+              {topic.name}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-foreground mb-3 text-sm font-bold">Chất liệu</h3>
+        <div className="flex flex-col gap-2">
+          {allMaterials.map((material) => (
+            <label
+              key={material.id}
+              className="text-foreground/80 hover:text-foreground flex cursor-pointer items-center gap-2.5 text-sm transition-colors"
+            >
+              <input
+                type="checkbox"
+                checked={selectedMaterials.includes(material.id)}
+                onChange={() => toggleMaterial(material.id)}
+                className="border-border text-brand accent-brand h-4 w-4 rounded"
+              />
+              {material.name}
             </label>
           ))}
         </div>
@@ -129,7 +171,7 @@ export default function ShopPage() {
           {DIFFICULTY_OPTIONS.map((diff) => (
             <label
               key={diff}
-              className="text-foreground/80 hover:text-foreground flex cursor-pointer items-center gap-2.5 text-sm capitalize transition-colors"
+              className="text-foreground/80 hover:text-foreground flex cursor-pointer items-center gap-2.5 text-sm transition-colors"
             >
               <input
                 type="checkbox"
@@ -137,16 +179,17 @@ export default function ShopPage() {
                 onChange={() => toggleDifficulty(diff)}
                 className="border-border text-brand accent-brand h-4 w-4 rounded"
               />
-              {diff}
+              {DIFFICULTY_LABELS[diff]}
             </label>
           ))}
         </div>
       </div>
 
-      {(selectedBrands.length > 0 || selectedDifficulties.length > 0 || searchQuery !== '') && (
+      {hasActiveFilters && (
         <button
           onClick={() => {
-            setSelectedBrands([]);
+            setSelectedTopics([]);
+            setSelectedMaterials([]);
             setSelectedDifficulties([]);
             setSearchQuery('');
           }}
