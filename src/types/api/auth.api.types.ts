@@ -6,48 +6,31 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  user: User;
-  accessToken: string;
+  userId: string;
+  email: string;
+  token: string;
   refreshToken: string;
+  expiresAt: string;
 }
 
 export interface RegisterRequest {
-  fullName: string;
   email: string;
-  phone: string;
   password: string;
+  firstName: string;
+  lastName: string;
 }
 
 export interface RegisterResponse {
+  message?: string;
+}
+
+export interface LogoutResponse {
+  message?: string;
+}
+
+export interface AuthMappedResponse {
   user: User;
   accessToken: string;
   refreshToken: string;
-}
-
-export interface RefreshTokenRequest {
-  refreshToken: string;
-}
-
-export interface RefreshTokenResponse {
-  accessToken: string;
-}
-
-export interface ChangePasswordRequest {
-  currentPassword: string;
-  newPassword: string;
-}
-
-export interface ForgotPasswordRequest {
-  email: string;
-}
-
-export interface ResetPasswordRequest {
-  token: string;
-  password: string;
-}
-
-export interface UpdateProfileRequest {
-  fullName?: string;
-  phone?: string;
-  avatar?: string;
+  expiresAt: string;
 }
