@@ -1,18 +1,69 @@
-import type { PaginationParams, PaginatedResponse, SortParams } from '../common.types';
-import type { InstockProduct, ProductFilters, ProductSortBy, Topic } from '../product.types';
+import type {
+  PagedResultDto,
+  ProductDto,
+  ProductDetailDto,
+  GetVariantsResponse,
+} from '../product.types';
 
-export interface GetProductsRequest extends PaginationParams, SortParams, ProductFilters {
-  sortBy?: ProductSortBy;
+// ============ Request / Response Types ============
+
+export interface GetProductsRequest {
+  pageNumber?: number;
+  pageSize?: number;
+  searchTerm?: string;
+  isActive?: boolean;
 }
 
-export type GetProductsResponse = PaginatedResponse<InstockProduct>;
+export type GetProductsResponse = PagedResultDto<ProductDto>;
 
-export type GetProductResponse = InstockProduct;
+export type GetProductBySlugResponse = ProductDetailDto;
 
-export type GetFeaturedProductsResponse = InstockProduct[];
+/** API trả về { variants: ProductVariantDto[] } */
+export type GetProductVariantsResponse = GetVariantsResponse;
 
-export type GetRelatedProductsResponse = InstockProduct[];
+// ============ ADMIN Mutation DTOs ============
 
-export type GetTopicsResponse = Topic[];
+export interface CreateInstockProductRequestDto {
+  name: string;
+  totalPieceCount: number;
+  difficultLevel: string;
+  estimatedBuildTime: number;
+  thumbnailUrl: string;
+  previewAsset: string[];
+  description?: string;
+  topicId: string;
+  assemblyMethodId: string;
+  capabilityId: string;
+  materialId: string;
+  variants: CreateInstockProductVariantDto[];
+}
 
-export type GetTopicResponse = Topic;
+export interface CreateInstockProductVariantDto {
+  color: string;
+  assembledLengthMm: number;
+  assembledWidthMm: number;
+  assembledHeightMm: number;
+  unitPrice: number;
+  totalQuantity: number;
+}
+
+export interface UpdateInstockProductRequestDto {
+  name?: string;
+  totalPieceCount?: number;
+  difficultLevel?: string;
+  estimatedBuildTime?: number;
+  thumbnailUrl?: string;
+  previewAsset?: string[];
+  description?: string;
+  topicId?: string;
+  assemblyMethodId?: string;
+  capabilityId?: string;
+  materialId?: string;
+}
+
+export interface UpdateInstockProductVariantRequestDto {
+  color?: string;
+  assembledLengthMm?: number;
+  assembledWidthMm?: number;
+  assembledHeightMm?: number;
+}

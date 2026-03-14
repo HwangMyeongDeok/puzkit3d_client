@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -22,12 +22,21 @@ import { toast } from 'sonner';
 
 import { formatPrice } from '@/lib/utils';
 import { useAppSelector, useAppDispatch } from '@/stores';
-import { selectCartItems, removeSelectedItems } from '@/stores/slices/cartSlice';
+import { selectCurrentUser } from '@/stores/slices/authSlice';
+// Bỏ import removeSelectedItems, selectCartItems từ cartSlice vì đã bị xóa
 import {
   selectSelectedIds,
   selectCheckoutMode,
   clearSelection,
 } from '@/stores/slices/checkoutSlice';
+import { useGetCartQuery, useRemoveCartItemMutation } from '@/lib/api/endpoints/cartApi';
+import { useCreateInstockOrderMutation } from '@/lib/api/endpoints/orderApi';
+import type { CreateInstockOrderRequestDto } from '@/types/api/order.api.types';
+import {
+  useLazyGetPaymentByOrderIdQuery,
+  useCreateTransactionMutation,
+} from '@/lib/api/endpoints/paymentApi';
+import { handleApiError } from '@/lib/utils/error-handle';
 import { ROUTES } from '@/constants';
 import OrderStepper from '@/components/custom/OrderStepper';
 
@@ -43,24 +52,41 @@ import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+// Các interface cho API hành chính VN
+interface Province {
+  code: number;
+  name: string;
+}
+interface District {
+  code: number;
+  name: string;
+  province_code: number;
+}
+interface Ward {
+  code: number;
+  name: string;
+  district_code: number;
+}
 
 const PAYMENT_METHODS = [
   {
-    id: 'cod',
+    id: 'COD',
     label: 'Thanh toán khi nhận hàng (COD)',
     description: 'Trả tiền mặt khi nhận hàng',
     icon: Banknote,
   },
   {
-    id: 'card',
-    label: 'Thẻ tín dụng / Ghi nợ',
-    description: 'Visa, Mastercard, JCB',
-    icon: CreditCard,
-  },
-  {
-    id: 'ewallet',
-    label: 'MoMo / VNPay E-Wallet',
-    description: 'Thanh toán qua ví điện tử',
+    id: 'Online',
+    label: 'Thanh toán trực tuyến (VNPay)',
+    description: 'Thanh toán qua ví điện tử VNPay / Thẻ ATM',
     icon: Wallet,
   },
 ] as const;
@@ -72,10 +98,16 @@ const checkoutSchema = z.object({
   phone: z.string().regex(/^(0|\+84)(3|5|7|8|9)[0-9]{8}$/, {
     message: 'Số điện thoại không hợp lệ (Vd: 0912345678)',
   }),
-  city: z.string().min(2, { message: 'Vui lòng nhập Tỉnh / Thành phố' }),
-  district: z.string().min(2, { message: 'Vui lòng nhập Quận / Huyện' }),
+  provinceCode: z.string().min(1, { message: 'Vui lòng chọn Tỉnh / Thành phố' }),
+  provinceName: z.string().min(1, { message: 'Thiếu Tên Tỉnh / Thành phố' }),
+  districtCode: z.string().min(1, { message: 'Vui lòng chọn Quận / Huyện' }),
+  districtName: z.string().min(1, { message: 'Thiếu Tên Quận / Huyện' }),
+  wardCode: z.string().min(1, { message: 'Vui lòng chọn Phường / Xã' }),
+  wardName: z.string().min(1, { message: 'Thiếu Tên Phường / Xã' }),
   address: z.string().min(5, { message: 'Địa chỉ chi tiết phải có ít nhất 5 ký tự' }),
-  paymentMethod: z.enum(['cod', 'card', 'ewallet']).optional(),
+  paymentMethod: z.enum(['COD', 'Online'], {
+    required_error: 'Vui lòng chọn phương thức thanh toán',
+  }),
 });
 
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
@@ -83,61 +115,170 @@ type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 export default function CheckoutPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const user = useAppSelector(selectCurrentUser);
 
-  const allCartItems = useAppSelector(selectCartItems);
+  // RTK Query hooks
+  const { data: cartData, isLoading: isCartLoading } = useGetCartQuery();
+  const allCartItems = cartData?.items || [];
+
+  const [removeItemMutate] = useRemoveCartItemMutation();
+  const [createOrder] = useCreateInstockOrderMutation();
+  const [getPayment] = useLazyGetPaymentByOrderIdQuery();
+  const [createTransaction] = useCreateTransactionMutation();
+
   const selectedIds = useAppSelector(selectSelectedIds);
   const checkoutMode = useAppSelector(selectCheckoutMode);
   const isPartnerMode = checkoutMode === 'partner';
 
-  const selectedItems = (() => {
-    if (selectedIds.length === 0) return allCartItems;
+  // Lọc ra danh sách item đc chọn (Cache sync)
+  const selectedItems = useMemo(() => {
+    if (selectedIds.length === 0) return [];
     const idSet = new Set(selectedIds);
     return allCartItems.filter((item) => idSet.has(item.itemId));
-  })();
+  }, [allCartItems, selectedIds]);
 
   const subtotal = selectedItems.reduce(
     (sum, item) => sum + (item.unitPrice ?? 0) * item.quantity,
     0
   );
-  const shipping = isPartnerMode ? 0 : 30_000;
+  const shipping = isPartnerMode ? 0 : 50_000;
   const total = subtotal + shipping;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // States cho API hành chính VN
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [wards, setWards] = useState<Ward[]>([]);
 
   const form = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
       fullName: '',
       phone: '',
-      city: '',
-      district: '',
+      provinceCode: '',
+      provinceName: '',
+      districtCode: '',
+      districtName: '',
+      wardCode: '',
+      wardName: '',
       address: '',
-      paymentMethod: isPartnerMode ? undefined : 'cod',
+      paymentMethod: isPartnerMode ? undefined : 'COD',
     },
   });
 
-  const onSubmit = (data: CheckoutFormValues) => {
+  // 1. Fetch Provinces mồi
+  useState(() => {
+    fetch('https://provinces.open-api.vn/api/p/')
+      .then((res) => res.json())
+      .then((data) => setProvinces(data))
+      .catch((err) => console.error('Failed to load provinces:', err));
+  });
+
+  // Lắng nghe sự thay đổi Code để fetch cấp độ sau
+  const provinceCode = form.watch('provinceCode');
+  const districtCode = form.watch('districtCode');
+
+  useMemo(() => {
+    if (provinceCode) {
+      fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`)
+        .then((res) => res.json())
+        .then((data) => {
+          setDistricts(data.districts || []);
+          form.setValue('districtCode', '');
+          form.setValue('districtName', '');
+          form.setValue('wardCode', '');
+          form.setValue('wardName', '');
+        });
+    } else {
+      setDistricts([]);
+    }
+  }, [provinceCode]);
+
+  useMemo(() => {
+    if (districtCode) {
+      fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`)
+        .then((res) => res.json())
+        .then((data) => {
+          setWards(data.wards || []);
+          form.setValue('wardCode', '');
+          form.setValue('wardName', '');
+        });
+    } else {
+      setWards([]);
+    }
+  }, [districtCode]);
+
+  const onSubmit = async (data: CheckoutFormValues) => {
     setIsSubmitting(true);
-    const idsToRemove = selectedItems.map((item) => item.itemId);
 
-    const targetRoute = isPartnerMode ? ROUTES.CHECKOUT_SUCCESS_QUOTE : ROUTES.CHECKOUT_SUCCESS;
-    const toastMsg = isPartnerMode ? 'Yêu cầu báo giá đã được gửi!' : 'Đặt hàng thành công!';
+    try {
+      // 1. Chuẩn bị payload tạo Order theo chuẩn Swagger
+      const orderPayload: CreateInstockOrderRequestDto = {
+        customerName: data.fullName,
+        customerPhone: data.phone,
+        customerEmail: user?.email || '',
+        customerProvinceCode: data.provinceCode,
+        customerProvinceName: data.provinceName,
+        customerDistrictCode: data.districtCode,
+        customerDistrictName: data.districtName,
+        customerWardCode: data.wardCode,
+        customerWardName: data.wardName,
+        cartItems: selectedItems.map((item) => ({
+          itemId: item.itemId,
+          priceDetailId: item.inStockProductPriceDetailId || '',
+          quantity: item.quantity,
+        })),
+        shippingFee: shipping,
+        usedCoinAmount: 0,
+        grandTotalAmount: total,
+        paymentMethod: data.paymentMethod || 'COD', // Fallback to prevent empty payload
+      };
 
-    console.log(isPartnerMode ? 'Quote request submitted:' : 'Order submitted:', {
-      ...data,
-      items: selectedItems,
-      total: isPartnerMode ? subtotal : total,
-    });
+      // Gọi API tạo đơn
+      const orderId = await createOrder(orderPayload).unwrap();
 
-    setTimeout(() => {
-      dispatch(removeSelectedItems(idsToRemove));
+      // Clear rác tạm trên FE state
       dispatch(clearSelection());
-      router.push(targetRoute);
-      toast.success(toastMsg);
-    }, 800);
+
+      // 2. Xử lý logic Payment
+      if (data.paymentMethod === 'Online') {
+        // Gọi API lấy Payment ID
+        const paymentRes = await getPayment(orderId).unwrap();
+
+        // Gọi API tạo transaction VNPAY
+        const paymentUrl = await createTransaction({
+          paymentId: paymentRes.paymentId,
+          provider: 'VnPay', // Hoặc VNPAY tùy backend
+        }).unwrap();
+
+        // Chuyển hướng trình duyệt trang Thanh Toán
+        toast.info('Đang chuyển hướng sang VNPAY ...');
+        window.location.href = paymentUrl;
+        return; // Stop here, redirect takes over
+      }
+
+      // 3. Handle COD Success Route
+      router.push(isPartnerMode ? ROUTES.CHECKOUT_SUCCESS_QUOTE : ROUTES.CHECKOUT_SUCCESS);
+      toast.success(isPartnerMode ? 'Yêu cầu báo giá đã được gửi!' : 'Đặt hàng thành công!');
+    } catch (error) {
+      console.error('Failed to checkout:', error);
+      handleApiError(error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  if (selectedItems.length === 0) {
+  if (isCartLoading) {
+    return (
+      <div className="container-custom flex min-h-[60vh] flex-col items-center justify-center py-20 text-center">
+        <Loader2 className="text-brand mb-4 h-10 w-10 animate-spin" />
+        <p className="text-muted-foreground">Đang tải thông tin đơn hàng...</p>
+      </div>
+    );
+  }
+
+  if (selectedItems.length === 0 && !isSubmitting) {
     return (
       <div className="container-custom flex min-h-[60vh] flex-col items-center justify-center py-20 text-center">
         <ShoppingBag className="text-muted-foreground/40 mb-4 h-16 w-16" />
@@ -236,13 +377,31 @@ export default function CheckoutPage() {
 
                   <FormField
                     control={form.control}
-                    name="city"
+                    name="provinceCode"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Tỉnh / Thành phố *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="TP. Hồ Chí Minh" className="h-11" {...field} />
-                        </FormControl>
+                        <Select
+                          onValueChange={(val) => {
+                            field.onChange(val);
+                            const p = provinces.find((x) => x.code.toString() === val);
+                            if (p) form.setValue('provinceName', p.name);
+                          }}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="h-11">
+                              <SelectValue placeholder="Chọn Tỉnh / Thành phố" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {provinces.map((p) => (
+                              <SelectItem key={p.code} value={p.code.toString()}>
+                                {p.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -250,13 +409,65 @@ export default function CheckoutPage() {
 
                   <FormField
                     control={form.control}
-                    name="district"
+                    name="districtCode"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Quận / Huyện *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Quận 1" className="h-11" {...field} />
-                        </FormControl>
+                        <Select
+                          onValueChange={(val) => {
+                            field.onChange(val);
+                            const d = districts.find((x) => x.code.toString() === val);
+                            if (d) form.setValue('districtName', d.name);
+                          }}
+                          value={field.value}
+                          disabled={!provinceCode || districts.length === 0}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="h-11">
+                              <SelectValue placeholder="Chọn Quận / Huyện" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {districts.map((d) => (
+                              <SelectItem key={d.code} value={d.code.toString()}>
+                                {d.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="wardCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phường / Xã *</FormLabel>
+                        <Select
+                          onValueChange={(val) => {
+                            field.onChange(val);
+                            const w = wards.find((x) => x.code.toString() === val);
+                            if (w) form.setValue('wardName', w.name);
+                          }}
+                          value={field.value}
+                          disabled={!districtCode || wards.length === 0}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="h-11">
+                              <SelectValue placeholder="Chọn Phường / Xã" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {wards.map((w) => (
+                              <SelectItem key={w.code} value={w.code.toString()}>
+                                {w.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -266,14 +477,10 @@ export default function CheckoutPage() {
                     control={form.control}
                     name="address"
                     render={({ field }) => (
-                      <FormItem className="sm:col-span-2">
+                      <FormItem className="sm:col-span-1">
                         <FormLabel>Địa chỉ chi tiết *</FormLabel>
                         <FormControl>
-                          <Input
-                            placeholder="Số nhà, tên đường, phường/xã..."
-                            className="h-11"
-                            {...field}
-                          />
+                          <Input placeholder="Số nhà, đường..." className="h-11" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -297,7 +504,7 @@ export default function CheckoutPage() {
                         <FormControl>
                           <RadioGroup
                             onValueChange={field.onChange}
-                            defaultValue={field.value}
+                            value={field.value}
                             className="gap-0"
                           >
                             {PAYMENT_METHODS.map((method, idx) => (
@@ -355,8 +562,8 @@ export default function CheckoutPage() {
                     <div key={item.itemId} className="flex items-center gap-3">
                       <div className="bg-muted relative h-14 w-14 shrink-0 overflow-hidden rounded-lg">
                         <Image
-                          src={item.thumbnailUrl}
-                          alt={item.productName}
+                          src={item.productDetails?.thumbnailUrl || ''}
+                          alt={item.productDetails?.name || ''}
                           fill
                           sizes="56px"
                           className="object-cover"
@@ -367,7 +574,7 @@ export default function CheckoutPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-card-foreground truncate text-sm font-semibold">
-                          {item.productName}
+                          {item.productDetails?.name}
                         </p>
                         {isPartnerMode && (
                           <p className="text-muted-foreground text-[10px]">Giá tham khảo</p>

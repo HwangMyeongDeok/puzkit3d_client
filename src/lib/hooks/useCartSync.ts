@@ -1,105 +1,91 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
+import { useUpdateCartItemMutation, useRemoveCartItemMutation } from '../api/endpoints/cartApi';
 import { toast } from 'sonner';
 
-import { useAppDispatch, useAppSelector } from '@/stores';
-import { selectIsAuthenticated } from '@/stores/slices/authSlice';
-import {
-  incrementQuantity,
-  decrementQuantity,
-  removeFromCart,
-  addToCart,
-  rollbackQuantity,
-  syncItemToServer,
-  addToCartServer,
-  removeFromCartServer,
-} from '@/stores/slices/cartSlice';
-
-import type { AddToCartPayload, RemoveCartItemPayload } from '@/types';
-
-const DEBOUNCE_DELAY = 500;
-
 export function useCartSync() {
-  const dispatch = useAppDispatch();
-  const isAuthenticated = useAppSelector(selectIsAuthenticated);
-  const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
-  const snapshotRef = useRef<Map<string, number>>(new Map());
+  const [updateItemMutate] = useUpdateCartItemMutation();
+  const [removeItemMutate] = useRemoveCartItemMutation();
 
-  const getKey = (itemId: string, sku: string | null) => (sku ? `${itemId}::${sku}` : itemId);
+  // Lưu trữ số lượng "đang chờ" để tránh việc cộng dồn sai khi user click quá nhanh
+  const pendingQuantities = useRef<{ [key: string]: number }>({});
+  const debounceTimers = useRef<{ [key: string]: NodeJS.Timeout }>({});
 
-  const scheduleSyncToServer = (itemId: string, quantity: number, sku: string | null) => {
-    if (!isAuthenticated) return;
+  useEffect(() => {
+    return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      Object.values(debounceTimers.current).forEach(clearTimeout);
+    };
+  }, []);
 
-    const key = getKey(itemId, sku);
-    const existing = timersRef.current.get(key);
-    if (existing) clearTimeout(existing);
+  const handleUpdateQuantity = useCallback(
+    (itemId: string, newQuantity: number) => {
+      // 1. Clear timer cũ của chính item đó
+      if (debounceTimers.current[itemId]) {
+        clearTimeout(debounceTimers.current[itemId]);
+      }
 
-    const timer = setTimeout(async () => {
-      timersRef.current.delete(key);
-      try {
-        await dispatch(syncItemToServer({ itemId, quantity, sku })).unwrap();
-        snapshotRef.current.delete(key);
-      } catch {
-        const prevQty = snapshotRef.current.get(key);
-        if (prevQty !== undefined) {
-          dispatch(rollbackQuantity({ itemId, sku, previousQuantity: prevQty }));
-          snapshotRef.current.delete(key);
+      // 2. Cập nhật số lượng mới nhất vào bản ghi tạm
+      pendingQuantities.current[itemId] = newQuantity;
+
+      if (newQuantity <= 0) {
+        handleRemove(itemId);
+        return;
+      }
+
+      // 3. Debounce gọi API
+      debounceTimers.current[itemId] = setTimeout(async () => {
+        try {
+          // Lấy con số cuối cùng sau khi user ngừng spam
+          const finalQty = pendingQuantities.current[itemId];
+          await updateItemMutate({ itemId, quantity: finalQty }).unwrap();
+          // Xóa khỏi pending sau khi thành công
+          delete pendingQuantities.current[itemId];
+        } catch (error) {
+          toast.error('Không thể cập nhật số lượng, vui lòng thử lại');
         }
-        toast.error('Không thể cập nhật giỏ hàng. Vui lòng thử lại.');
+      }, 400);
+    },
+    [updateItemMutate, removeItemMutate]
+  );
+
+  const handleIncrement = useCallback(
+    (itemId: string, currentQuantity: number) => {
+      // Nếu đang có một số lượng chờ xử lý (do ấn nhanh), lấy số đó cộng tiếp
+      const baseQty = pendingQuantities.current[itemId] ?? currentQuantity;
+      handleUpdateQuantity(itemId, baseQty + 1);
+    },
+    [handleUpdateQuantity]
+  );
+
+  const handleDecrement = useCallback(
+    (itemId: string, currentQuantity: number) => {
+      const baseQty = pendingQuantities.current[itemId] ?? currentQuantity;
+      if (baseQty > 1) {
+        handleUpdateQuantity(itemId, baseQty - 1);
+      } else {
+        handleRemove(itemId);
       }
-    }, DEBOUNCE_DELAY);
+    },
+    [handleUpdateQuantity]
+  );
 
-    timersRef.current.set(key, timer);
-  };
+  const handleRemove = useCallback(
+    async (itemId: string) => {
+      // Xóa các trạng thái chờ của item này khi xóa khỏi giỏ
+      if (debounceTimers.current[itemId]) clearTimeout(debounceTimers.current[itemId]);
+      delete pendingQuantities.current[itemId];
 
-  const captureSnapshot = (itemId: string, currentQty: number, sku: string | null) => {
-    const key = getKey(itemId, sku);
-    if (!snapshotRef.current.has(key)) {
-      snapshotRef.current.set(key, currentQty);
-    }
-  };
-
-  const handleIncrement = (itemId: string, currentQty: number, sku: string | null) => {
-    captureSnapshot(itemId, currentQty, sku);
-    dispatch(incrementQuantity({ itemId, sku }));
-    scheduleSyncToServer(itemId, currentQty + 1, sku);
-  };
-
-  const handleDecrement = (itemId: string, currentQty: number, sku: string | null) => {
-    captureSnapshot(itemId, currentQty, sku);
-    dispatch(decrementQuantity({ itemId, sku }));
-    const newQty = currentQty - 1;
-    scheduleSyncToServer(itemId, newQty, sku);
-  };
-
-  const handleRemove = async (itemId: string, sku: string | null) => {
-    dispatch(removeFromCart({ itemId, sku }));
-    if (isAuthenticated) {
       try {
-        await dispatch(removeFromCartServer({ itemId, sku })).unwrap();
-      } catch {
-        toast.error('Không thể xóa sản phẩm. Vui lòng thử lại.');
+        await removeItemMutate(itemId).unwrap();
+        toast.success('Đã xóa sản phẩm khỏi giỏ hàng');
+      } catch (error) {
+        toast.error('Lỗi khi xóa sản phẩm');
       }
-    }
-  };
+    },
+    [removeItemMutate]
+  );
 
-  const handleAddToCart = async (payload: AddToCartPayload) => {
-    dispatch(addToCart(payload));
-    if (isAuthenticated) {
-      try {
-        await dispatch(addToCartServer(payload)).unwrap();
-      } catch {
-        toast.error('Không thể thêm sản phẩm. Vui lòng thử lại.');
-      }
-    }
-  };
-
-  return {
-    handleIncrement,
-    handleDecrement,
-    handleRemove,
-    handleAddToCart,
-    isAuthenticated,
-  };
+  return { handleIncrement, handleDecrement, handleRemove, handleUpdateQuantity };
 }

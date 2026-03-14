@@ -8,7 +8,7 @@ export const APP_CONFIG = {
 
   ACCESS_TOKEN_KEY: 'puzkit3d_access_token',
   REFRESH_TOKEN_KEY: 'puzkit3d_refresh_token',
-  AUTH_STORAGE_KEY: 'puzkit3d_auth',
+  AUTH_STORAGE_KEY: 'puzkit3d_auth_storage_key',
   CART_STORAGE_KEY: 'puzkit3d_cart',
 
   DEFAULT_PAGE: 1,

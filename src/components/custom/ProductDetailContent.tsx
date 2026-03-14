@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -14,11 +14,12 @@ import {
   Package,
   FileText,
   Info,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import type { InstockProduct, PartnerProduct, InstockProductVariantWithDetails } from '@/types';
-import { isProductInStock, getDefaultVariant } from '@/lib/mockData';
+import { isProductInStock, getDefaultVariant } from '@/lib/utils/product.utils';
 import {
   getReviewsByProductId,
   getAverageRating,
@@ -27,12 +28,12 @@ import {
 import { getRelatedProducts } from '@/lib/mockData';
 import { getRelatedPartnerProducts } from '@/lib/partnerMockData';
 import { formatPrice, formatNumber } from '@/lib/utils';
-import { useAppDispatch } from '@/stores';
-import { addToCart } from '@/stores/slices/cartSlice';
+import { useAddToCartMutation } from '@/lib/api/endpoints/cartApi';
 import { ROUTES } from '@/constants';
 import ProductTabs from '@/components/custom/ProductTabs';
 import ReviewSection from '@/components/custom/ReviewSection';
 import RelatedProducts from '@/components/custom/RelatedProducts';
+import { Button } from '@/components/ui/button';
 
 interface ProductDetailContentProps {
   instockProduct: InstockProduct | null;
@@ -44,7 +45,7 @@ export default function ProductDetailContent({
   partnerProduct,
 }: ProductDetailContentProps) {
   const router = useRouter();
-  const dispatch = useAppDispatch();
+  const [isPending, startTransition] = useTransition();
 
   const isPartner = !instockProduct && !!partnerProduct;
   const product = instockProduct || partnerProduct;
@@ -54,6 +55,8 @@ export default function ProductDetailContent({
   const [selectedVariant, setSelectedVariant] = useState<InstockProductVariantWithDetails | null>(
     instockProduct ? getDefaultVariant(instockProduct) : null
   );
+
+  const [addToCartMutate] = useAddToCartMutation();
 
   if (!product) {
     return (
@@ -75,62 +78,59 @@ export default function ProductDetailContent({
 
   const displayPrice = isPartner
     ? partnerProduct!.referencePrice
-    : selectedVariant!.priceDetail.unitPrice;
+    : (selectedVariant?.priceDetail.unitPrice ?? 0);
 
-  const inStock = !isPartner && instockProduct ? isProductInStock(instockProduct) : true;
   const variantStock = selectedVariant?.inventory.totalQuantity ?? 0;
 
-  const productId = product.id;
-  const productReviews = getReviewsByProductId(productId);
-  const { average: avgRating, count: reviewCount } = getAverageRating(productId);
-  const ratingDistribution = getRatingDistribution(productId);
+  const productReviews = getReviewsByProductId(product.id);
+  const { average: avgRating, count: reviewCount } = getAverageRating(product.id);
+  const ratingDistribution = getRatingDistribution(product.id);
 
   const relatedInstock = !isPartner ? getRelatedProducts(product.slug, 4) : [];
   const relatedPartner = isPartner ? getRelatedPartnerProducts(product.slug, 4) : [];
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async (showToast = true) => {
     if (isPartner) {
-      dispatch(
-        addToCart({
-          itemId: product.id,
-          unitPrice: null,
-          instockProductPriceDetailId: null,
-          quantity,
-          cartType: 'PARTNER',
-          productName: product.name,
-          thumbnailUrl: product.thumbnailUrl,
-          sku: null,
-          variantColor: null,
-        })
-      );
-      toast.success(`Đã thêm "${product.name}" vào yêu cầu báo giá`);
-    } else {
-      dispatch(
-        addToCart({
-          itemId: selectedVariant!.id,
-          unitPrice: selectedVariant!.priceDetail.unitPrice,
-          instockProductPriceDetailId: selectedVariant!.priceDetail.id,
-          quantity,
-          cartType: 'INSTOCK',
-          productName: product.name,
-          thumbnailUrl: product.thumbnailUrl,
-          sku: selectedVariant!.sku,
-          variantColor: selectedVariant!.color,
-        })
-      );
-      toast.success(`Đã thêm ${quantity}x "${product.name}" vào giỏ hàng`);
+      toast.info('Sản phẩm đối tác: Vui lòng gửi yêu cầu báo giá để Staff hỗ trợ.');
+      return false;
+    }
+
+    if (!selectedVariant) return false;
+
+    try {
+      await addToCartMutate({
+        // 1. Thêm itemId (Thường là ID của sản phẩm)
+        itemId: product.id,
+
+        // 2. Truyền ID của variant/price detail (S hoa như nãy sếp sửa)
+        inStockProductPriceDetailId: selectedVariant.priceDetail.id,
+
+        // 3. Số lượng
+        quantity,
+      }).unwrap();
+
+      if (showToast) {
+        toast.success(`Đã thêm ${quantity} sản phẩm vào giỏ hàng`);
+      }
+      return true;
+    } catch (error) {
+      console.error('Cart Error:', error);
+      toast.error('Có lỗi xảy ra khi thêm vào giỏ hàng');
+      return false;
     }
   };
-
   const handleBuyNow = () => {
-    handleAddToCart();
-    router.push(ROUTES.CART);
+    startTransition(async () => {
+      const success = await handleAddToCart(false);
+      if (success) router.push(ROUTES.CHECKOUT);
+    });
   };
 
   const brandOrPartner = isPartner ? partnerProduct!.partner.name : instockProduct!.topic.name;
 
   return (
-    <div className="container-custom py-8 lg:py-12">
+    <div className="container-custom py-8 pb-32 lg:py-12 lg:pb-12">
+      {/* Breadcrumbs */}
       <nav className="text-muted-foreground mb-6 flex items-center gap-1.5 text-sm">
         <Link href={ROUTES.HOME} className="hover:text-foreground transition-colors">
           Trang chủ
@@ -143,10 +143,11 @@ export default function ProductDetailContent({
           {isPartner ? 'Brands' : 'Shop'}
         </Link>
         <ChevronRight className="h-3.5 w-3.5" />
-        <span className="text-foreground truncate">{product.name}</span>
+        <span className="text-foreground truncate font-medium">{product.name}</span>
       </nav>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
+        {/* Left: Images */}
         <div className="flex flex-col gap-4">
           <div className="border-border bg-muted relative aspect-square overflow-hidden rounded-2xl border">
             <Image
@@ -155,16 +156,16 @@ export default function ProductDetailContent({
               fill
               sizes="(max-width: 1024px) 100vw, 50vw"
               priority
-              className="object-cover"
+              className="object-cover transition-transform duration-500 hover:scale-105"
             />
             {isPartner && (
-              <span className="bg-warning text-warning-foreground absolute top-4 left-4 rounded-lg px-3 py-1 text-sm font-bold">
+              <span className="bg-warning text-warning-foreground absolute top-4 left-4 rounded-lg px-3 py-1 text-sm font-bold shadow-sm">
                 Hàng đối tác
               </span>
             )}
           </div>
 
-          <div className="flex gap-3">
+          <div className="scrollbar-hide flex gap-3 overflow-x-auto pb-2">
             {product.previewAsset.map((img, idx) => (
               <button
                 key={idx}
@@ -187,11 +188,11 @@ export default function ProductDetailContent({
           </div>
         </div>
 
+        {/* Right: Info */}
         <div className="flex flex-col gap-5">
           <span className="text-brand text-xs font-bold tracking-widest uppercase">
             {brandOrPartner}
           </span>
-
           <h1 className="text-2xl leading-tight font-bold md:text-3xl">{product.name}</h1>
 
           <div className="border-border flex flex-wrap items-center gap-4 border-b pb-5 text-sm">
@@ -210,14 +211,6 @@ export default function ProductDetailContent({
                   className={`font-semibold ${variantStock > 0 ? 'text-success' : 'text-destructive'}`}
                 >
                   {variantStock > 0 ? `Còn ${variantStock} sản phẩm` : 'Hết hàng'}
-                </span>
-              </>
-            )}
-            {isPartner && (
-              <>
-                <span className="text-muted-foreground">|</span>
-                <span className="bg-warning/10 text-warning rounded-full px-2.5 py-0.5 text-xs font-semibold">
-                  Pre-order
                 </span>
               </>
             )}
@@ -242,8 +235,9 @@ export default function ProductDetailContent({
             )}
           </div>
 
+          {/* Variant Selector */}
           {!isPartner && instockProduct && instockProduct.variants.length > 1 && (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               <span className="text-foreground text-sm font-semibold">Phiên bản:</span>
               <div className="flex flex-wrap gap-2">
                 {instockProduct.variants.map((v) => (
@@ -257,7 +251,7 @@ export default function ProductDetailContent({
                     }`}
                   >
                     {v.color}
-                    <span className="text-muted-foreground ml-2 text-xs">
+                    <span className="text-muted-foreground ml-2 text-xs font-normal">
                       {formatPrice(v.priceDetail.unitPrice)}
                     </span>
                   </button>
@@ -266,96 +260,86 @@ export default function ProductDetailContent({
             </div>
           )}
 
-          {!isPartner && instockProduct && (
-            <div className="flex items-center gap-3 text-sm">
-              <span className="text-foreground font-semibold">Độ khó:</span>
-              <span className="bg-brand/10 text-brand rounded-full px-3 py-1 text-xs font-bold">
-                {instockProduct.difficultLevel}
-              </span>
-            </div>
-          )}
-
-          <p className="text-muted-foreground leading-relaxed">
-            {product.description?.split('\n')[0]}
-          </p>
-
-          <div className="border-border flex flex-col gap-4 border-t pt-5">
+          <div className="flex flex-col gap-4 border-t pt-5">
             <div className="flex items-center gap-3">
               <span className="text-foreground text-sm font-semibold">Số lượng:</span>
-              <div className="border-border flex items-center rounded-lg border">
+              <div className="border-border bg-card flex items-center rounded-lg border">
                 <button
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="text-foreground/60 hover:bg-secondary flex h-9 w-9 cursor-pointer items-center justify-center transition-colors"
+                  className="hover:bg-secondary flex h-9 w-9 items-center justify-center transition-colors disabled:opacity-30"
                   disabled={quantity <= 1}
                 >
                   <Minus className="h-4 w-4" />
                 </button>
-                <span className="border-border text-foreground flex h-9 w-12 items-center justify-center border-x text-sm font-bold">
+                <span className="border-border flex h-9 w-12 items-center justify-center border-x text-sm font-bold">
                   {quantity}
                 </span>
                 <button
                   onClick={() => setQuantity((q) => q + 1)}
-                  className="text-foreground/60 hover:bg-secondary flex h-9 w-9 cursor-pointer items-center justify-center transition-colors"
+                  className="hover:bg-secondary flex h-9 w-9 items-center justify-center transition-colors"
                 >
                   <Plus className="h-4 w-4" />
                 </button>
               </div>
             </div>
 
-            {isPartner ? (
-              <div className="flex gap-3">
-                <button
-                  className="bg-warning text-warning-foreground flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-bold shadow-lg transition-all hover:opacity-90 active:scale-[0.98]"
-                  onClick={handleAddToCart}
-                >
-                  <FileText className="h-4 w-4" />
-                  Yêu cầu báo giá
-                </button>
-                <button
-                  className="border-warning text-warning hover:bg-warning/5 flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 bg-transparent px-6 py-3.5 text-sm font-bold transition-all active:scale-[0.98]"
-                  onClick={handleBuyNow}
-                >
-                  <ShoppingCart className="h-4 w-4" />
-                  Thêm & xem giỏ
-                </button>
-              </div>
-            ) : (
-              <div className="flex gap-3">
-                <button
-                  className="border-brand text-brand hover:bg-brand/5 flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 bg-transparent px-6 py-3.5 text-sm font-bold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={variantStock <= 0}
-                  onClick={handleAddToCart}
-                >
-                  <ShoppingCart className="h-4 w-4" />
-                  Thêm vào giỏ
-                </button>
-                <button
-                  className="bg-accent text-accent-foreground flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-bold shadow-lg transition-all hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={variantStock <= 0}
-                  onClick={() => {
-                    handleAddToCart();
-                    router.push(ROUTES.CHECKOUT);
-                  }}
-                >
-                  <Zap className="h-4 w-4" />
-                  Mua ngay
-                </button>
-              </div>
-            )}
+            {/* Desktop Buttons */}
+            <div className="hidden gap-3 lg:flex">
+              {isPartner ? (
+                <>
+                  <Button
+                    className="bg-warning hover:bg-warning/90 h-12 flex-1 gap-2 rounded-xl font-bold"
+                    onClick={() => handleAddToCart()}
+                  >
+                    <FileText className="h-4 w-4" /> Yêu cầu báo giá
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-warning text-warning h-12 flex-1 font-bold"
+                    onClick={() => router.push(ROUTES.CART)}
+                  >
+                    <ShoppingCart className="h-4 w-4" /> Xem giỏ hàng
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    className="border-brand text-brand hover:bg-brand/5 h-12 flex-1 gap-2 rounded-xl font-bold"
+                    disabled={variantStock <= 0 || isPending}
+                    onClick={() => handleAddToCart()}
+                  >
+                    <ShoppingCart className="h-4 w-4" /> Thêm vào giỏ
+                  </Button>
+                  <Button
+                    className="bg-accent hover:bg-accent/90 h-12 flex-1 gap-2 rounded-xl font-bold"
+                    disabled={variantStock <= 0 || isPending}
+                    onClick={handleBuyNow}
+                  >
+                    {isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Zap className="h-4 w-4" />
+                    )}{' '}
+                    Mua ngay
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="mt-12">
+      {/* Tabs, Reviews, Related */}
+      <div className="mt-16 space-y-16">
         <ProductTabs
           description={product.description}
           specs={{
-            topicName: !isPartner ? instockProduct!.topic.name : undefined,
-            partnerName: isPartner ? partnerProduct!.partner.name : undefined,
-            difficultLevel: !isPartner ? instockProduct!.difficultLevel : undefined,
-            materialName: !isPartner ? instockProduct!.material.name : undefined,
-            totalPieceCount: !isPartner ? instockProduct!.totalPieceCount : undefined,
-            estimatedBuildTime: !isPartner ? instockProduct!.estimatedBuildTime : undefined,
+            topicName: !isPartner ? instockProduct?.topic.name : undefined,
+            partnerName: isPartner ? partnerProduct?.partner.name : undefined,
+            difficultLevel: !isPartner ? instockProduct?.difficultLevel : undefined,
+            materialName: !isPartner ? instockProduct?.material.name : undefined,
+            totalPieceCount: !isPartner ? instockProduct?.totalPieceCount : undefined,
             assembledDimensions: selectedVariant
               ? {
                   length: selectedVariant.assembledLengthMm,
@@ -366,19 +350,41 @@ export default function ProductDetailContent({
           }}
           isPartner={isPartner}
         />
-      </div>
-
-      <div className="mt-12">
         <ReviewSection
           reviews={productReviews}
           averageRating={avgRating}
           totalCount={reviewCount}
           distribution={ratingDistribution}
         />
+        <RelatedProducts instockProducts={relatedInstock} partnerProducts={relatedPartner} />
       </div>
 
-      <div className="mt-12">
-        <RelatedProducts instockProducts={relatedInstock} partnerProducts={relatedPartner} />
+      {/* STICKY MOBILE ACTION BAR */}
+      <div className="border-border bg-card/80 pb-safe fixed inset-x-0 bottom-0 z-50 border-t p-4 backdrop-blur-md lg:hidden">
+        <div className="flex items-center gap-3">
+          <div className="flex min-w-[100px] flex-col">
+            <span className="text-accent text-lg leading-none font-bold">
+              {formatPrice(displayPrice)}
+            </span>
+            <span className="text-muted-foreground mt-1 text-[10px]">Giao hỏa tốc 2h</span>
+          </div>
+          {isPartner ? (
+            <Button
+              className="bg-warning h-11 flex-1 rounded-xl font-bold"
+              onClick={() => handleAddToCart()}
+            >
+              Gửi yêu cầu báo giá
+            </Button>
+          ) : (
+            <Button
+              className="bg-accent h-11 flex-1 rounded-xl font-bold"
+              disabled={variantStock <= 0 || isPending}
+              onClick={handleBuyNow}
+            >
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Mua ngay'}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -14,15 +14,12 @@ export const metadata: Metadata = {
   },
 };
 
-import { products } from '@/lib/mockData';
-import ProductCard from '@/components/custom/ProductCard';
 import TrustBadges from '@/components/custom/TrustBadges';
 import HeroCarousel from '@/components/home/HeroCarousel';
 import BrandMarquee from '@/components/home/BrandMarquee';
+import FeaturedProducts from '@/components/home/FeaturedProducts';
 
 export default function Home() {
-  const featured = [...products].sort((a, b) => b.rating - a.rating).slice(0, 4);
-
   return (
     <>
       <HeroCarousel />
@@ -49,11 +46,7 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {featured.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          <FeaturedProducts />
 
           <div className="mt-8 text-center md:hidden">
             <Link

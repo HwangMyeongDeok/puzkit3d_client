@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 import type { User, AuthState, AuthCredentials } from '@/types';
+import { APP_CONFIG } from '@/constants';
 
 const initialState: AuthState = {
   user: null,
@@ -40,6 +41,9 @@ const authSlice = createSlice({
       state.refreshToken = null;
       state.isAuthenticated = false;
       state.isLoading = false;
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(APP_CONFIG.AUTH_STORAGE_KEY);
+      }
     },
 
     setLoading: (state, action: PayloadAction<boolean>) => {

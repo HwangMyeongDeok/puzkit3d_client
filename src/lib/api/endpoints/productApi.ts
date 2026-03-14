@@ -1,71 +1,110 @@
 import { apiSlice } from '@/lib/api/apiSlice';
 
-import type { InstockProduct, Topic, GetProductsRequest, GetProductsResponse } from '@/types';
+import type {
+  GetProductsRequest,
+  GetProductsResponse,
+  GetProductBySlugResponse,
+  GetProductVariantsResponse,
+  CreateInstockProductRequestDto,
+  UpdateInstockProductRequestDto,
+} from '@/types/api/product.api.types';
 
 export const productApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
+    // ========== NEW QUERY HOOKS (DTO-based) ==========
+
+    // 1. Get paginated product list
     getProducts: builder.query<GetProductsResponse, GetProductsRequest>({
       query: (params) => ({
-        url: '/products',
+        url: '/instock-products',
         method: 'GET',
         params: params as Record<string, unknown>,
       }),
       providesTags: (result) =>
         result
           ? [
-              ...result.data.map(({ id }) => ({ type: 'Product' as const, id })),
+              ...result.items.map(({ id }) => ({ type: 'Product' as const, id })),
               { type: 'Product', id: 'LIST' },
             ]
           : [{ type: 'Product', id: 'LIST' }],
     }),
 
-    getProduct: builder.query<InstockProduct, string>({
-      query: (idOrSlug) => ({
-        url: `/products/${idOrSlug}`,
+    // 2. Get product detail by slug
+    getProductBySlug: builder.query<GetProductBySlugResponse, string>({
+      query: (slug) => ({
+        url: `/instock-products/slug/${slug}`,
         method: 'GET',
       }),
-      providesTags: (_result, _error, id) => [{ type: 'Product', id }],
+      providesTags: (_result, _error, slug) => [{ type: 'Product', id: `slug-${slug}` }],
     }),
 
-    getFeaturedProducts: builder.query<InstockProduct[], void>({
-      query: () => ({
-        url: '/products/featured',
-        method: 'GET',
-      }),
-      providesTags: [{ type: 'Product', id: 'FEATURED' }],
-    }),
-
-    getRelatedProducts: builder.query<InstockProduct[], string>({
+    // 3. Get variants for a product — API returns { variants: [...] }
+    getProductVariants: builder.query<GetProductVariantsResponse, string>({
       query: (productId) => ({
-        url: `/products/${productId}/related`,
+        url: `/instock-products/${productId}/variants`,
         method: 'GET',
       }),
-      providesTags: (_result, _error, id) => [{ type: 'Product', id: `RELATED-${id}` }],
+      providesTags: (_result, _error, productId) => [
+        { type: 'Product', id: `variants-${productId}` },
+      ],
     }),
 
-    getTopics: builder.query<Topic[], void>({
-      query: () => ({
-        url: '/topics',
-        method: 'GET',
+    // ========== ADMIN MUTATIONS ==========
+
+    createInstockProduct: builder.mutation<string, CreateInstockProductRequestDto>({
+      query: (productData) => ({
+        url: '/instock-products',
+        method: 'POST',
+        data: productData,
       }),
-      providesTags: ['Category'],
+      invalidatesTags: [{ type: 'Product', id: 'LIST' }],
     }),
 
-    getTopic: builder.query<Topic, string>({
-      query: (idOrSlug) => ({
-        url: `/topics/${idOrSlug}`,
-        method: 'GET',
+    updateInstockProduct: builder.mutation<
+      void,
+      { id: string; data: UpdateInstockProductRequestDto }
+    >({
+      query: ({ id, data }) => ({
+        url: `/instock-products/${id}`,
+        method: 'PUT',
+        data,
       }),
-      providesTags: (_result, _error, id) => [{ type: 'Category', id }],
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: 'Product', id },
+        { type: 'Product', id: 'LIST' },
+      ],
+    }),
+
+    deleteInstockProduct: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `/instock-products/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: (_result, _error, id) => [
+        { type: 'Product', id },
+        { type: 'Product', id: 'LIST' },
+      ],
+    }),
+
+    activateInstockProduct: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `/instock-products/${id}/activate`,
+        method: 'PATCH',
+      }),
+      invalidatesTags: (_result, _error, id) => [
+        { type: 'Product', id },
+        { type: 'Product', id: 'LIST' },
+      ],
     }),
   }),
 });
 
 export const {
   useGetProductsQuery,
-  useGetProductQuery,
-  useGetFeaturedProductsQuery,
-  useGetRelatedProductsQuery,
-  useGetTopicsQuery,
-  useGetTopicQuery,
+  useGetProductBySlugQuery,
+  useGetProductVariantsQuery,
+  useCreateInstockProductMutation,
+  useUpdateInstockProductMutation,
+  useDeleteInstockProductMutation,
+  useActivateInstockProductMutation,
 } = productApi;

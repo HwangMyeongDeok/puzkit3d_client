@@ -4,17 +4,22 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLoginMutation } from '@/lib/api/endpoints/authApi';
+import { useAppDispatch } from '@/stores/hooks';
+import { setCredentials } from '@/stores/slices/authSlice';
+import { handleApiError } from '@/lib/utils/error-handle';
+import { toast } from 'sonner';
+import { User } from '@/types';
+import { APP_CONFIG } from '@/constants';
 
 export default function LoginForm() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const [login, { isLoading }] = useLoginMutation();
 
   const [form, setForm] = useState({
     email: '',
     password: '',
   });
-
-  const [error, setError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({
@@ -25,32 +30,31 @@ export default function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError('');
 
     if (!form.email || !form.password) {
-      setError('Vui lòng nhập email và mật khẩu.');
+      toast.error('Vui lòng nhập email và mật khẩu!');
       return;
     }
 
     try {
       const result = await login(form).unwrap();
 
-      localStorage.setItem('accessToken', result.accessToken);
-      localStorage.setItem('refreshToken', result.refreshToken);
-      localStorage.setItem('expiresAt', result.expiresAt);
-      localStorage.setItem('user', JSON.stringify(result.user));
+      const authData = {
+        user: {
+          id: result.userId,
+          email: result.email,
+        },
+        accessToken: result.token,
+        refreshToken: result.refreshToken,
+      };
 
-      router.push('/profile');
-    } catch (err: unknown) {
-      const message =
-        typeof err === 'object' &&
-        err !== null &&
-        'message' in err &&
-        typeof (err as { message?: string }).message === 'string'
-          ? (err as { message?: string }).message!
-          : 'Đăng nhập thất bại';
+      dispatch(setCredentials(authData as any));
 
-      setError(message);
+      localStorage.setItem(APP_CONFIG.AUTH_STORAGE_KEY, JSON.stringify(authData));
+
+      router.push('/');
+    } catch (err: any) {
+      handleApiError(err);
     }
   };
 
@@ -124,12 +128,6 @@ export default function LoginForm() {
                   className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-base transition outline-none focus:border-[#052a5b] focus:bg-white"
                 />
               </div>
-
-              {error && (
-                <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
-                  {error}
-                </div>
-              )}
 
               <button
                 type="submit"

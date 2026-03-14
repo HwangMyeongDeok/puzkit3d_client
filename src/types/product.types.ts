@@ -1,3 +1,55 @@
+// ============ NEW DTOs (matching backend response) ============
+
+export interface PagedResultDto<T> {
+  items: T[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface ProductDto {
+  id: string;
+  code: string;
+  slug: string;
+  name: string;
+  description: string;
+  difficultLevel: string;
+  estimatedBuildTime: number;
+  thumbnailUrl: string;
+  totalPieceCount: number;
+}
+
+export interface ProductDetailDto extends ProductDto {
+  previewAsset: string;
+  topicId: string;
+  assemblyMethodId: string;
+  capabilityId: string;
+  materialId: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProductVariantDto {
+  id: string;
+  sku: string;
+  color: string;
+  assembledLengthMm: number;
+  assembledWidthMm: number;
+  assembledHeightMm: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** API trả về object chứa mảng variants */
+export interface GetVariantsResponse {
+  variants: ProductVariantDto[];
+}
+
+// ============ LEGACY TYPES (kept for Partner/Mock compatibility) ============
+
 import type { BaseEntity } from './common.types';
 
 // ============ CATALOG TYPES ============
