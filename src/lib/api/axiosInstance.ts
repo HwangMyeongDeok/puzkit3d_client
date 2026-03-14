@@ -1,13 +1,11 @@
 import axios from 'axios';
 
-import { store } from '@/stores/store';
-import { logout, updateAccessToken } from '@/stores/slices/authSlice';
-
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: 'https://fishy-nonglobularly-eloy.ngrok-free.dev/api',
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
   },
 });
 
@@ -30,8 +28,10 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    const state = store.getState();
-    const token = state.auth.accessToken;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+
+    config.headers = config.headers ?? {};
+    config.headers['ngrok-skip-browser-warning'] = 'true';
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -47,13 +47,15 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest?._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
           .then((token) => {
+            originalRequest.headers = originalRequest.headers ?? {};
             originalRequest.headers.Authorization = `Bearer ${token}`;
+            originalRequest.headers['ngrok-skip-browser-warning'] = 'true';
             return axiosInstance(originalRequest);
           })
           .catch((err) => Promise.reject(err));
@@ -63,29 +65,49 @@ axiosInstance.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const state = store.getState();
-        const refreshToken = state.auth.refreshToken;
+        const refreshToken =
+          typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
 
         if (!refreshToken) {
           throw new Error('No refresh token');
         }
 
-        const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`, {
-          refreshToken,
-        });
+        const response = await axios.post(
+          'https://fishy-nonglobularly-eloy.ngrok-free.dev/api/auth/refresh-token',
+          { refreshToken },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+            },
+          }
+        );
 
-        const { accessToken } = response.data;
+        const accessToken = response.data?.accessToken;
 
-        store.dispatch(updateAccessToken(accessToken));
+        if (!accessToken) {
+          throw new Error('No access token returned');
+        }
+
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('accessToken', accessToken);
+        }
+
         processQueue(null, accessToken);
 
+        originalRequest.headers = originalRequest.headers ?? {};
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        originalRequest.headers['ngrok-skip-browser-warning'] = 'true';
+
         return axiosInstance(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError as Error, null);
-        store.dispatch(logout());
 
         if (typeof window !== 'undefined') {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('expiresAt');
+          localStorage.removeItem('user');
           window.location.href = '/login';
         }
 

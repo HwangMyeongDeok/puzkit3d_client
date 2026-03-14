@@ -6,48 +6,53 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  user: User;
-  accessToken: string;
+  userId: string;
+  email: string;
+  token: string;
   refreshToken: string;
+  expiresAt?: string;
 }
 
 export interface RegisterRequest {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  phone: string;
   password: string;
 }
 
 export interface RegisterResponse {
+  id?: string;
+  email?: string;
+  message?: string;
+}
+
+export interface LogoutResponse {
+  message?: string;
+}
+
+export interface AuthMappedResponse {
   user: User;
   accessToken: string;
   refreshToken: string;
+  expiresAt?: string;
 }
 
-export interface RefreshTokenRequest {
-  refreshToken: string;
-}
-
-export interface RefreshTokenResponse {
-  accessToken: string;
-}
-
-export interface ChangePasswordRequest {
-  currentPassword: string;
-  newPassword: string;
-}
-
-export interface ForgotPasswordRequest {
+export interface ProfileResponse {
+  id: string;
   email: string;
-}
-
-export interface ResetPasswordRequest {
-  token: string;
-  password: string;
-}
-
-export interface UpdateProfileRequest {
-  fullName?: string;
-  phone?: string;
-  avatar?: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string | null;
+  emailConfirmed: boolean;
+  createdAt: string;
+  updatedAt: string;
+  provinceId: string | null;
+  provinceName: string | null;
+  districtId: string | null;
+  districtName: string | null;
+  wardCode: string | null;
+  wardName: string | null;
+  streetAddress: string | null;
+  role: string;
+  isDeleted: boolean;
 }

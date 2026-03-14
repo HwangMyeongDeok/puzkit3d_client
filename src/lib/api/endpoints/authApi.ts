@@ -1,25 +1,35 @@
 import { apiSlice } from '@/lib/api/apiSlice';
-
 import type {
-  User,
   LoginRequest,
   LoginResponse,
   RegisterRequest,
   RegisterResponse,
-  ChangePasswordRequest,
-  ForgotPasswordRequest,
-  ResetPasswordRequest,
-  UpdateProfileRequest,
-} from '@/types';
+  LogoutResponse,
+  AuthMappedResponse,
+  ProfileResponse,
+} from '@/types/api/auth.api.types';
 
 export const authApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    login: builder.mutation<LoginResponse, LoginRequest>({
+    login: builder.mutation<AuthMappedResponse, LoginRequest>({
       query: (credentials) => ({
         url: '/auth/login',
         method: 'POST',
         data: credentials,
       }),
+      transformResponse: (response: LoginResponse): AuthMappedResponse => {
+        return {
+          user: {
+            id: response.userId,
+            email: response.email,
+            firstName: '',
+            lastName: '',
+          },
+          accessToken: response.token,
+          refreshToken: response.refreshToken,
+          expiresAt: response.expiresAt,
+        };
+      },
       invalidatesTags: ['User'],
     }),
 
@@ -31,7 +41,7 @@ export const authApi = apiSlice.injectEndpoints({
       }),
     }),
 
-    logout: builder.mutation<void, void>({
+    logout: builder.mutation<LogoutResponse, void>({
       query: () => ({
         url: '/auth/logout',
         method: 'POST',
@@ -39,47 +49,15 @@ export const authApi = apiSlice.injectEndpoints({
       invalidatesTags: ['User', 'Cart', 'Order'],
     }),
 
-    getProfile: builder.query<User, void>({
+    getProfile: builder.query<ProfileResponse, void>({
       query: () => ({
-        url: '/auth/profile',
+        url: '/profile',
         method: 'GET',
       }),
       providesTags: ['User'],
     }),
-
-    updateProfile: builder.mutation<User, UpdateProfileRequest>({
-      query: (userData) => ({
-        url: '/auth/profile',
-        method: 'PUT',
-        data: userData,
-      }),
-      invalidatesTags: ['User'],
-    }),
-
-    changePassword: builder.mutation<void, ChangePasswordRequest>({
-      query: (data) => ({
-        url: '/auth/change-password',
-        method: 'POST',
-        data,
-      }),
-    }),
-
-    forgotPassword: builder.mutation<void, ForgotPasswordRequest>({
-      query: (data) => ({
-        url: '/auth/forgot-password',
-        method: 'POST',
-        data,
-      }),
-    }),
-
-    resetPassword: builder.mutation<void, ResetPasswordRequest>({
-      query: (data) => ({
-        url: '/auth/reset-password',
-        method: 'POST',
-        data,
-      }),
-    }),
   }),
+  overrideExisting: false,
 });
 
 export const {
@@ -87,8 +65,5 @@ export const {
   useRegisterMutation,
   useLogoutMutation,
   useGetProfileQuery,
-  useUpdateProfileMutation,
-  useChangePasswordMutation,
-  useForgotPasswordMutation,
-  useResetPasswordMutation,
+  useLazyGetProfileQuery,
 } = authApi;

@@ -70,12 +70,13 @@ export default function Header() {
             <Search className="h-5 w-5" />
           </Link>
 
-          <button
+          <Link
+            href="/profile"
             className="text-foreground/80 hover:bg-secondary hover:text-brand-accent rounded-lg p-2 transition-colors"
             aria-label="Account"
           >
             <User className="h-5 w-5" />
-          </button>
+          </Link>
 
           {isMiniCartDisabled ? cartButton : <MiniCart>{cartButton}</MiniCart>}
 
