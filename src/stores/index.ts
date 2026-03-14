@@ -14,18 +14,4 @@ export {
   selectAuthLoading,
 } from './slices/authSlice';
 
-export {
-  addToCart,
-  removeFromCart,
-  updateQuantity,
-  incrementQuantity,
-  decrementQuantity,
-  clearCart,
-  loadCart,
-  selectCartItems,
-  selectCartTotalQuantity,
-  selectCartTotalPrice,
-  selectCartItemCount,
-} from './slices/cartSlice';
-
 export type { User, AuthState, AuthCredentials, CartItem, CartState } from '@/types';

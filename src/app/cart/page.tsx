@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -19,17 +19,13 @@ import {
 
 import { formatPrice } from '@/lib/utils';
 import { useAppDispatch, useAppSelector } from '@/stores';
-import {
-  selectInstockItems,
-  selectPartnerItems,
-  selectCartSyncStatus,
-} from '@/stores/slices/cartSlice';
 import { useCartSync } from '@/lib/hooks/useCartSync';
+import { useGetCartQuery } from '@/lib/api/endpoints/cartApi';
 import { ROUTES } from '@/constants';
-import OrderStepper from '@/components/custom/OrderStepper';
 import { setSelectedItems } from '@/stores/slices/checkoutSlice';
 
-import type { CartItem } from '@/types';
+// Đổi từ type tự define sang type chuẩn của API
+import type { CartItemDto } from '@/types/api/cart.api.types';
 
 const PARTNER_STEPS = ['Gửi yêu cầu', 'Staff báo giá', 'Thanh toán cọc', 'Giao hàng'];
 
@@ -41,15 +37,22 @@ function CartItemRow({
   onDecrement,
   onRemove,
 }: {
-  item: CartItem;
+  item: CartItemDto; // Dùng Type mới
   isChecked: boolean;
   onToggle: () => void;
   onIncrement: () => void;
   onDecrement: () => void;
   onRemove: () => void;
 }) {
-  const isPartner = item.cartType === 'PARTNER';
+  // Tạm thời fix cứng là false vì API mới không có loại giỏ hàng trong từng item
+  const isPartner = false;
   const displayPrice = item.unitPrice ?? 0;
+  const quantity = item.quantity ?? 1;
+
+  // Map data từ object productDetails
+  const productName = item.productDetails?.name || 'Sản phẩm không xác định';
+  const thumbnailUrl = item.productDetails?.thumbnailUrl || '/placeholder-image.png';
+  const variantColor = item.productDetails?.color || '';
 
   return (
     <div className="border-border bg-card flex gap-3 rounded-xl border p-4 transition-shadow hover:shadow-md">
@@ -63,24 +66,16 @@ function CartItemRow({
       </div>
 
       <div className="bg-muted relative h-20 w-20 shrink-0 overflow-hidden rounded-lg">
-        <Image
-          src={item.thumbnailUrl}
-          alt={item.productName}
-          fill
-          sizes="80px"
-          className="object-cover"
-        />
+        <Image src={thumbnailUrl} alt={productName} fill sizes="80px" className="object-cover" />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col justify-between">
         <div>
-          <p className="text-card-foreground line-clamp-1 text-sm font-semibold">
-            {item.productName}
-          </p>
+          <p className="text-card-foreground line-clamp-1 text-sm font-semibold">{productName}</p>
           <p className="text-muted-foreground mt-0.5 text-xs">
             {isPartner ? 'Giá tham khảo: ' : ''}
             {formatPrice(displayPrice)} / sản phẩm
-            {item.variantColor && <span className="ml-2">· {item.variantColor}</span>}
+            {variantColor && <span className="ml-2">· {variantColor}</span>}
           </p>
         </div>
 
@@ -93,7 +88,7 @@ function CartItemRow({
               <Minus className="h-3.5 w-3.5" />
             </button>
             <span className="border-border flex h-8 w-10 items-center justify-center border-x text-xs font-bold">
-              {item.quantity}
+              {quantity}
             </span>
             <button
               onClick={onIncrement}
@@ -104,7 +99,8 @@ function CartItemRow({
           </div>
 
           <span className="text-accent text-sm font-bold">
-            {formatPrice(displayPrice * item.quantity)}
+            {/* Ưu tiên totalPrice từ backend tính sẵn, nếu không có mới tự nhân */}
+            {formatPrice(item.totalPrice ?? displayPrice * quantity)}
           </span>
 
           <button
@@ -123,13 +119,46 @@ function CartItemRow({
 export default function CartPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const instockItems = useAppSelector(selectInstockItems);
-  const partnerItems = useAppSelector(selectPartnerItems);
-  const syncStatus = useAppSelector(selectCartSyncStatus);
-  const allItems = [...instockItems, ...partnerItems];
-  const { handleIncrement, handleDecrement, handleRemove } = useCartSync();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAppSelector((state) => state.auth);
+  // SỬA ĐỔI: Lấy data dưới dạng CartDto
+  const {
+    data: cartDto,
+    isLoading,
+    isFetching,
+  } = useGetCartQuery(undefined, {
+    skip: isAuthLoading || !isAuthenticated,
+  });
+  const allItems = cartDto?.items || [];
 
+  const { handleIncrement, handleDecrement, handleRemove } = useCartSync();
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
+
+  // Tạm thời bỏ React Compiler (nếu chưa bật) cho đoạn này đỡ lỗi
+  const instockItems: CartItemDto[] = [];
+  const partnerItems: CartItemDto[] = [];
+  let selectedTotal = 0;
+  let checkedInstockCount = 0;
+  const checkedPartnerCount = 0;
+
+  allItems.forEach((item) => {
+    // Tạm thời coi tất cả là hàng Instock do API không trả về field cartType
+    instockItems.push(item);
+    if (item.itemId && checkedIds.has(item.itemId)) {
+      checkedInstockCount++;
+      selectedTotal += item.totalPrice ?? (item.unitPrice ?? 0) * (item.quantity ?? 1);
+    }
+  });
+
+  const hasMixedSelection = checkedInstockCount > 0 && checkedPartnerCount > 0;
+  const checkoutMode: 'instock' | 'partner' | 'mixed' | 'none' = hasMixedSelection
+    ? 'mixed'
+    : checkedInstockCount > 0
+      ? 'instock'
+      : checkedPartnerCount > 0
+        ? 'partner'
+        : 'none';
+
+  const selectedCount = checkedInstockCount + checkedPartnerCount;
 
   const toggleItem = (id: string) => {
     setCheckedIds((prev) => {
@@ -140,41 +169,33 @@ export default function CartPage() {
     });
   };
 
-  const toggleSectionAll = (items: CartItem[], checked: boolean) => {
+  const toggleSectionAll = (items: CartItemDto[], checked: boolean) => {
     setCheckedIds((prev) => {
       const next = new Set(prev);
       items.forEach((item) => {
-        if (checked) next.add(item.itemId);
-        else next.delete(item.itemId);
+        if (item.itemId) {
+          if (checked) next.add(item.itemId);
+          else next.delete(item.itemId);
+        }
       });
       return next;
     });
   };
 
-  const isSectionAllChecked = (items: CartItem[]) =>
-    items.length > 0 && items.every((item) => checkedIds.has(item.itemId));
+  const isSectionAllChecked = (items: CartItemDto[]) =>
+    items.length > 0 && items.every((item) => item.itemId && checkedIds.has(item.itemId));
 
-  const isSectionPartialChecked = (items: CartItem[]) =>
-    items.some((item) => checkedIds.has(item.itemId)) && !isSectionAllChecked(items);
+  const isSectionPartialChecked = (items: CartItemDto[]) =>
+    items.some((item) => item.itemId && checkedIds.has(item.itemId)) && !isSectionAllChecked(items);
 
-  const checkedInstockCount = instockItems.filter((i) => checkedIds.has(i.itemId)).length;
-  const checkedPartnerCount = partnerItems.filter((i) => checkedIds.has(i.itemId)).length;
-
-  const hasMixedSelection = checkedInstockCount > 0 && checkedPartnerCount > 0;
-
-  const selectedTotal = allItems
-    .filter((item) => checkedIds.has(item.itemId))
-    .reduce((sum, item) => sum + (item.unitPrice ?? 0) * item.quantity, 0);
-
-  const selectedCount = checkedInstockCount + checkedPartnerCount;
-
-  const checkoutMode: 'instock' | 'partner' | 'mixed' | 'none' = hasMixedSelection
-    ? 'mixed'
-    : checkedInstockCount > 0
-      ? 'instock'
-      : checkedPartnerCount > 0
-        ? 'partner'
-        : 'none';
+  if (isLoading) {
+    return (
+      <div className="container-custom flex min-h-[60vh] flex-col items-center justify-center py-20 text-center">
+        <Loader2 className="text-brand mb-4 h-10 w-10 animate-spin" />
+        <p className="text-muted-foreground">Đang tải giỏ hàng...</p>
+      </div>
+    );
+  }
 
   if (allItems.length === 0) {
     return (
@@ -197,7 +218,7 @@ export default function CartPage() {
     <div className="container-custom pt-8 pb-28 lg:pt-12 lg:pb-12">
       <div className="mb-8 flex items-center gap-3">
         <h1 className="text-3xl font-bold md:text-4xl">Giỏ hàng</h1>
-        {syncStatus === 'syncing' && <Loader2 className="text-brand h-5 w-5 animate-spin" />}
+        {isFetching && <Loader2 className="text-brand h-5 w-5 animate-spin" />}
       </div>
 
       <div className="flex flex-col gap-8">
@@ -216,7 +237,7 @@ export default function CartPage() {
               <div className="flex items-center gap-2">
                 <Package className="text-success h-5 w-5" />
                 <h2 className="text-card-foreground text-lg font-bold">
-                  Hàng có sẵn
+                  Sản phẩm
                   <span className="text-muted-foreground ml-2 text-sm font-normal">
                     ({instockItems.length} sản phẩm)
                   </span>
@@ -227,75 +248,23 @@ export default function CartPage() {
             <div className="flex flex-col gap-3">
               {instockItems.map((item) => (
                 <CartItemRow
-                  key={item.itemId}
+                  key={item.id || item.itemId}
                   item={item}
-                  isChecked={checkedIds.has(item.itemId)}
-                  onToggle={() => toggleItem(item.itemId)}
-                  onIncrement={() => handleIncrement(item.itemId, item.quantity, item.sku)}
-                  onDecrement={() => handleDecrement(item.itemId, item.quantity, item.sku)}
-                  onRemove={() => handleRemove(item.itemId, item.sku)}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {partnerItems.length > 0 && (
-          <section>
-            <div className="border-warning/20 bg-warning/5 mb-3 overflow-x-auto rounded-xl border px-4 py-3">
-              <OrderStepper steps={PARTNER_STEPS} activeStep={0} />
-            </div>
-
-            <div className="mb-4 flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={isSectionAllChecked(partnerItems)}
-                ref={(el) => {
-                  if (el) el.indeterminate = isSectionPartialChecked(partnerItems);
-                }}
-                onChange={(e) => toggleSectionAll(partnerItems, e.target.checked)}
-                className="border-border accent-warning text-warning h-4 w-4 rounded"
-              />
-              <div className="flex items-center gap-2">
-                <FileText className="text-warning h-5 w-5" />
-                <h2 className="text-card-foreground text-lg font-bold">
-                  Hàng đặt trước
-                  <span className="text-muted-foreground ml-2 text-sm font-normal">
-                    ({partnerItems.length} sản phẩm)
-                  </span>
-                </h2>
-              </div>
-              <div className="group relative ml-auto">
-                <Info className="text-muted-foreground h-4 w-4 cursor-help" />
-                <div className="border-border bg-popover text-popover-foreground pointer-events-none absolute right-0 bottom-full z-10 mb-2 w-64 rounded-lg border p-3 text-xs opacity-0 shadow-lg transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
-                  Giá cuối cùng sẽ được Staff xác nhận dựa trên tỷ giá và phí vận chuyển thực tế
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              {partnerItems.map((item) => (
-                <CartItemRow
-                  key={item.itemId}
-                  item={item}
-                  isChecked={checkedIds.has(item.itemId)}
-                  onToggle={() => toggleItem(item.itemId)}
-                  onIncrement={() => handleIncrement(item.itemId, item.quantity, item.sku)}
-                  onDecrement={() => handleDecrement(item.itemId, item.quantity, item.sku)}
-                  onRemove={() => handleRemove(item.itemId, item.sku)}
+                  isChecked={item.itemId ? checkedIds.has(item.itemId) : false}
+                  onToggle={() => item.itemId && toggleItem(item.itemId)}
+                  onIncrement={() =>
+                    handleIncrement(item.itemId as string, item.quantity as number)
+                  }
+                  onDecrement={() =>
+                    handleDecrement(item.itemId as string, item.quantity as number)
+                  }
+                  onRemove={() => handleRemove(item.itemId as string)}
                 />
               ))}
             </div>
           </section>
         )}
       </div>
-
-      {hasMixedSelection && (
-        <div className="border-destructive/30 bg-destructive/5 text-destructive mt-6 flex items-center gap-3 rounded-xl border px-5 py-3 text-sm">
-          <AlertTriangle className="h-5 w-5 shrink-0" />
-          <p className="font-medium">Vui lòng thanh toán tách biệt hàng có sẵn và hàng đặt trước</p>
-        </div>
-      )}
 
       <div className="border-border bg-card/95 lg:bg-card fixed inset-x-0 bottom-0 z-40 border-t px-4 py-3 shadow-2xl backdrop-blur-sm lg:static lg:mt-8 lg:rounded-xl lg:border lg:px-6 lg:py-5 lg:shadow-none">
         <div className="container-custom flex items-center justify-between gap-4 lg:px-0">
@@ -314,28 +283,6 @@ export default function CartPage() {
             >
               Thanh toán
               <ArrowRight className="h-4 w-4" />
-            </button>
-          )}
-
-          {checkoutMode === 'partner' && (
-            <button
-              onClick={() => {
-                dispatch(setSelectedItems({ ids: Array.from(checkedIds), mode: 'partner' }));
-                router.push(ROUTES.CHECKOUT);
-              }}
-              className="bg-warning text-warning-foreground flex cursor-pointer items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold shadow-lg transition-all hover:opacity-90 active:scale-[0.98]"
-            >
-              <FileText className="h-4 w-4" />
-              Gửi yêu cầu báo giá
-            </button>
-          )}
-
-          {checkoutMode === 'mixed' && (
-            <button
-              disabled
-              className="bg-muted text-muted-foreground flex cursor-not-allowed items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold"
-            >
-              Thanh toán
             </button>
           )}
 

@@ -6,9 +6,8 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  userId: string;
-  email: string;
-  token: string;
+  user: User;
+  accessToken: string;
   refreshToken: string;
   expiresAt: string;
 }
@@ -28,9 +27,29 @@ export interface LogoutResponse {
   message?: string;
 }
 
-export interface AuthMappedResponse {
-  user: User;
-  accessToken: string;
+export interface LoginResponse {
+  userId: string;
+  email: string;
+  token: string;
   refreshToken: string;
-  expiresAt: string;
+}
+
+export interface ChangePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
+}
+
+export interface UpdateProfileRequest {
+  fullName?: string;
+  phone?: string;
+  avatar?: string;
 }

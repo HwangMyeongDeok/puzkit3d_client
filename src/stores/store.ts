@@ -2,8 +2,8 @@ import { configureStore } from '@reduxjs/toolkit';
 import { setupListeners } from '@reduxjs/toolkit/query';
 
 import { apiSlice } from '@/lib/api/apiSlice';
+import { injectStore } from '@/lib/api/axiosInstance';
 import authReducer from './slices/authSlice';
-import cartReducer from './slices/cartSlice';
 import checkoutReducer from './slices/checkoutSlice';
 import { persistMiddleware } from './middleware/persistMiddleware';
 
@@ -11,7 +11,6 @@ export const store = configureStore({
   reducer: {
     [apiSlice.reducerPath]: apiSlice.reducer,
     auth: authReducer,
-    cart: cartReducer,
     checkout: checkoutReducer,
   },
   middleware: (getDefaultMiddleware) =>
@@ -22,6 +21,8 @@ export const store = configureStore({
     }).concat(apiSlice.middleware, persistMiddleware),
   devTools: process.env.NODE_ENV !== 'production',
 });
+
+injectStore(store);
 
 setupListeners(store.dispatch);
 

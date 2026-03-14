@@ -5,16 +5,10 @@ import Image from 'next/image';
 import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 
 import { formatPrice } from '@/lib/utils';
-import { useAppSelector } from '@/stores';
-import {
-  selectCartItems,
-  selectCartTotalPrice,
-  selectCartTotalQuantity,
-  selectInstockItems,
-  selectPartnerItems,
-} from '@/stores/slices/cartSlice';
 import { useCartSync } from '@/lib/hooks/useCartSync';
+import { useGetCartQuery } from '@/lib/api/endpoints/cartApi';
 import { ROUTES } from '@/constants';
+import { useAppSelector } from '@/stores/hooks'; // Thêm để lấy Auth state
 
 import {
   Sheet,
@@ -34,11 +28,24 @@ interface MiniCartProps {
 
 export default function MiniCart({ children }: MiniCartProps) {
   const { handleIncrement, handleDecrement, handleRemove } = useCartSync();
-  const cartItems = useAppSelector(selectCartItems);
-  const totalPrice = useAppSelector(selectCartTotalPrice);
-  const totalQuantity = useAppSelector(selectCartTotalQuantity);
-  const instockCount = useAppSelector(selectInstockItems).length;
-  const partnerCount = useAppSelector(selectPartnerItems).length;
+
+  // 1. Lấy trạng thái Auth để chặn API gọi bậy lúc reload
+  const { isAuthenticated, isLoading: isAuthLoading } = useAppSelector((state) => state.auth);
+
+  // 2. Chỉ gọi API khi đã nạp xong Auth và người dùng đã đăng nhập
+  const { data: cartDto } = useGetCartQuery(undefined, {
+    skip: isAuthLoading || !isAuthenticated,
+  });
+
+  const cartItems = cartDto?.items || [];
+
+  // 3. Tính toán trực tiếp (Bỏ useMemo theo ý sếp)
+  let totalPrice = 0;
+  cartItems.forEach((item) => {
+    totalPrice += item.totalPrice ?? (item.unitPrice ?? 0) * (item.quantity ?? 0);
+  });
+
+  const totalQuantity = cartDto?.totalItem ?? 0;
 
   return (
     <Sheet>
@@ -50,7 +57,12 @@ export default function MiniCart({ children }: MiniCartProps) {
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-5 py-3">
-          {cartItems.length === 0 ? (
+          {/* Nếu đang nạp Auth thì hiện loading nhẹ, tránh hiện "Giỏ hàng trống" gây hiểu lầm */}
+          {isAuthLoading ? (
+            <div className="text-muted-foreground animate-pulse py-10 text-center text-xs">
+              Đang đồng bộ giỏ hàng...
+            </div>
+          ) : cartItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <ShoppingBag className="text-muted-foreground/30 mb-3 h-12 w-12" />
               <p className="text-foreground mb-1 text-sm font-semibold">Giỏ hàng trống</p>
@@ -68,15 +80,19 @@ export default function MiniCart({ children }: MiniCartProps) {
             <div className="flex flex-col gap-3">
               {cartItems.map((item) => {
                 const displayPrice = item.unitPrice ?? 0;
+                const productName = item.productDetails?.name || 'Sản phẩm không xác định';
+                const thumbnailUrl = item.productDetails?.thumbnailUrl || '/placeholder-image.png';
+                const variantColor = item.productDetails?.color || '';
+
                 return (
                   <div
-                    key={`${item.itemId}-${item.sku ?? ''}`}
+                    key={item.id || item.itemId}
                     className="border-border bg-card flex gap-3 rounded-lg border p-3"
                   >
                     <div className="bg-muted relative h-16 w-16 shrink-0 overflow-hidden rounded-md">
                       <Image
-                        src={item.thumbnailUrl}
-                        alt={item.productName}
+                        src={thumbnailUrl}
+                        alt={productName}
                         fill
                         sizes="64px"
                         className="object-cover"
@@ -85,27 +101,22 @@ export default function MiniCart({ children }: MiniCartProps) {
 
                     <div className="flex min-w-0 flex-1 flex-col justify-between">
                       <p className="text-card-foreground line-clamp-1 text-xs font-semibold">
-                        {item.productName}
+                        {productName}
                       </p>
                       <div className="flex items-center gap-1.5">
                         <p className="text-accent text-xs font-bold">{formatPrice(displayPrice)}</p>
-                        {item.cartType === 'PARTNER' && (
-                          <span className="bg-warning/15 text-warning rounded px-1.5 py-0.5 text-[9px] font-bold">
-                            Đối tác
-                          </span>
-                        )}
-                        {item.variantColor && (
-                          <span className="text-muted-foreground text-[9px]">
-                            · {item.variantColor}
-                          </span>
+                        {variantColor && (
+                          <span className="text-muted-foreground text-[9px]">· {variantColor}</span>
                         )}
                       </div>
 
                       <div className="flex items-center justify-between">
                         <div className="border-border flex items-center rounded border">
                           <button
-                            onClick={() => handleDecrement(item.itemId, item.quantity, item.sku)}
-                            className="text-foreground/50 hover:bg-secondary flex h-6 w-6 cursor-pointer items-center justify-center transition-colors"
+                            onClick={() =>
+                              handleDecrement(item.itemId as string, item.quantity as number)
+                            }
+                            className="text-foreground/50 hover:bg-secondary flex h-6 w-6 items-center justify-center transition-colors"
                           >
                             <Minus className="h-3 w-3" />
                           </button>
@@ -113,17 +124,18 @@ export default function MiniCart({ children }: MiniCartProps) {
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() => handleIncrement(item.itemId, item.quantity, item.sku)}
-                            className="text-foreground/50 hover:bg-secondary flex h-6 w-6 cursor-pointer items-center justify-center transition-colors"
+                            onClick={() =>
+                              handleIncrement(item.itemId as string, item.quantity as number)
+                            }
+                            className="text-foreground/50 hover:bg-secondary flex h-6 w-6 items-center justify-center transition-colors"
                           >
                             <Plus className="h-3 w-3" />
                           </button>
                         </div>
 
                         <button
-                          onClick={() => handleRemove(item.itemId, item.sku)}
-                          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive cursor-pointer rounded p-1 transition-colors"
-                          aria-label="Xóa"
+                          onClick={() => handleRemove(item.itemId as string)}
+                          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded p-1 transition-colors"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -137,24 +149,15 @@ export default function MiniCart({ children }: MiniCartProps) {
         </div>
 
         {cartItems.length > 0 && (
-          <SheetFooter className="border-border border-t px-5 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="text-muted-foreground text-sm font-semibold">Tạm tính</span>
-                {(instockCount > 0 || partnerCount > 0) && (
-                  <span className="text-muted-foreground text-[10px]">
-                    {instockCount > 0 && `${instockCount} có sẵn`}
-                    {instockCount > 0 && partnerCount > 0 && ' · '}
-                    {partnerCount > 0 && `${partnerCount} đặt trước`}
-                  </span>
-                )}
-              </div>
+          <SheetFooter className="border-border flex flex-col gap-3 border-t px-5 py-4">
+            <div className="flex w-full items-center justify-between">
+              <span className="text-muted-foreground text-sm font-semibold">Tạm tính</span>
               <span className="text-accent text-lg font-extrabold">{formatPrice(totalPrice)}</span>
             </div>
 
             <Separator className="my-1" />
 
-            <div className="flex flex-col gap-2">
+            <div className="flex w-full flex-col gap-2">
               <SheetClose asChild>
                 <Link href={ROUTES.CART}>
                   <Button className="w-full gap-2 rounded-xl py-5 text-sm font-bold shadow-lg">

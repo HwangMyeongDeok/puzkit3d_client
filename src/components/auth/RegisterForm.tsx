@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRegisterMutation } from '@/lib/api/endpoints/authApi';
+import { toast } from 'sonner';
+import { handleApiError } from '@/lib/utils/error-handle';
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -28,31 +30,22 @@ export default function RegisterForm() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
 
     if (!form.firstName || !form.lastName || !form.email || !form.password) {
-      setError('Vui lòng nhập đầy đủ thông tin.');
+      toast.error('Điền thiếu thông tin rồi kìa!');
       return;
     }
 
     try {
       await register(form).unwrap();
-      setSuccess('Đăng ký thành công. Đang chuyển sang trang đăng nhập...');
+
+      toast.success('Đăng ký thành công! Đang chuyển sang đăng nhập...');
 
       setTimeout(() => {
         router.push('/login');
-      }, 1200);
-    } catch (err: unknown) {
-      const message =
-        typeof err === 'object' &&
-        err !== null &&
-        'message' in err &&
-        typeof (err as { message?: string }).message === 'string'
-          ? (err as { message?: string }).message!
-          : 'Đăng ký thất bại';
-
-      setError(message);
+      }, 1500);
+    } catch (err: any) {
+      handleApiError(err);
     }
   };
 

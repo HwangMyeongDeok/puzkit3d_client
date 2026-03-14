@@ -1,14 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingCart, Menu, X, Search, User } from 'lucide-react';
+import { ShoppingCart, Menu, X, Search, User, LogOut } from 'lucide-react';
 
-import { useAppSelector } from '@/stores';
-import { selectCartTotalQuantity } from '@/stores/slices/cartSlice';
 import { ROUTES } from '@/constants';
 import MiniCart from '@/components/custom/MiniCart';
+import { useGetCartQuery } from '@/lib/api/endpoints/cartApi';
+import { toast } from 'sonner';
+import type { CartItemDto } from '@/types/api/cart.api.types';
+
+// Redux
+import { useAppSelector, useAppDispatch } from '@/stores/hooks';
+import {
+  selectIsAuthenticated,
+  selectCurrentUser,
+  logout,
+  selectAuthLoading,
+} from '@/stores/slices/authSlice';
 
 const NAV_LINKS = [
   { href: ROUTES.HOME, label: 'Home' },
@@ -20,22 +30,63 @@ const NAV_LINKS = [
 const MINI_CART_DISABLED_ROUTES = ['/cart', '/checkout'];
 
 export default function Header() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const cartCount = useAppSelector(selectCartTotalQuantity);
-  const pathname = usePathname();
+  const dispatch = useAppDispatch();
   const router = useRouter();
+  const pathname = usePathname();
+
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const user = useAppSelector(selectCurrentUser);
+  const isAuthLoading = useAppSelector(selectAuthLoading);
+
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // 1. Chỉ đánh dấu mounted khi đã chạy trên Browser
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // 2. CHỐT CHẶN API: Chỉ gọi Cart khi Auth đã nạp xong (isAuthLoading === false)
+  // và thực sự đã login (isAuthenticated === true)
+  const { data: cartData } = useGetCartQuery(undefined, {
+    skip: !mounted || isAuthLoading || !isAuthenticated,
+  });
+
+  const cartCount = useMemo(() => {
+    if (!cartData?.items) return 0;
+    return cartData.items.reduce((acc: number, item: CartItemDto) => acc + (item.quantity ?? 0), 0);
+  }, [cartData]);
 
   const isMiniCartDisabled = MINI_CART_DISABLED_ROUTES.some((route) => pathname.startsWith(route));
+
+  const handleCartClick = () => {
+    if (!isAuthenticated) {
+      toast.info('Vui lòng đăng nhập để xem giỏ hàng sếp ơi!');
+      router.push(ROUTES.LOGIN);
+      return;
+    }
+    if (isMiniCartDisabled) {
+      router.push(ROUTES.CART);
+    }
+  };
+
+  const handleLogout = () => {
+    dispatch(logout());
+    toast.success('Đã đăng xuất!');
+    router.push('/');
+  };
+
+  // 3. Tránh Hydration Mismatch: Không render gì cho đến khi Client-side mounted
+  if (!mounted) return <div className="h-16 w-full bg-white shadow-sm" />;
 
   const cartButton = (
     <button
       className="text-foreground/80 hover:bg-secondary hover:text-brand-accent relative rounded-lg p-2 transition-colors"
-      aria-label="Cart"
-      onClick={isMiniCartDisabled ? () => router.push(ROUTES.CART) : undefined}
+      onClick={handleCartClick}
     >
       <ShoppingCart className="h-5 w-5" />
-      {cartCount > 0 && (
-        <span className="bg-accent text-accent-foreground absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold">
+      {isAuthenticated && cartCount > 0 && (
+        <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#e51636] text-[10px] font-bold text-white">
           {cartCount > 99 ? '99+' : cartCount}
         </span>
       )}
@@ -43,67 +94,93 @@ export default function Header() {
   );
 
   return (
-    <header className="glass border-border fixed top-0 right-0 left-0 z-50 border-b">
+    <header className="glass border-border fixed top-0 right-0 left-0 z-50 border-b bg-white/80 backdrop-blur-md">
       <div className="container-custom flex h-16 items-center justify-between">
+        {/* LOGO */}
         <Link href="/" className="flex items-center gap-2">
-          <span className="font-heading text-brand text-xl font-bold">PuzKit3D</span>
+          <span className="text-xl font-bold tracking-tight text-[#052a5b]">PuzKit3D</span>
         </Link>
 
+        {/* DESKTOP NAV LINKS */}
         <nav className="hidden items-center gap-8 md:flex">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="text-foreground/80 hover:text-brand text-sm font-medium transition-colors"
+              className={`text-sm font-medium transition-colors hover:text-[#e51636] ${
+                pathname === link.href ? 'text-[#e51636]' : 'text-slate-600'
+              }`}
             >
               {link.label}
             </Link>
           ))}
         </nav>
 
-        <div className="flex items-center gap-1">
-          <Link
-            href={ROUTES.PRODUCTS}
-            className="text-foreground/80 hover:bg-secondary hover:text-brand-accent rounded-lg p-2 transition-colors"
-            aria-label="Search"
-          >
+        {/* ACTIONS */}
+        <div className="flex items-center gap-1 md:gap-2">
+          {/* Search */}
+          <button className="text-foreground/80 hover:bg-secondary rounded-lg p-2 transition-colors">
             <Search className="h-5 w-5" />
-          </Link>
-
-          <button
-            className="text-foreground/80 hover:bg-secondary hover:text-brand-accent rounded-lg p-2 transition-colors"
-            aria-label="Account"
-          >
-            <User className="h-5 w-5" />
           </button>
 
-          {isMiniCartDisabled ? cartButton : <MiniCart>{cartButton}</MiniCart>}
-
-          <button
-            className="text-foreground/80 hover:bg-secondary rounded-lg p-2 transition-colors md:hidden"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
+          {/* User/Profile */}
+          <Link
+            href={isAuthenticated ? '/profile' : ROUTES.LOGIN}
+            className={`flex items-center gap-2 rounded-lg p-2 transition-colors ${
+              isAuthenticated
+                ? 'bg-slate-100 text-[#052a5b]'
+                : 'text-foreground/80 hover:bg-secondary'
+            }`}
           >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            <User className="h-5 w-5" />
+            {isAuthenticated && !isAuthLoading && (
+              <span className="hidden text-xs font-semibold italic lg:block">
+                {user?.email?.split('@')[0]}
+              </span>
+            )}
+          </Link>
+
+          {/* Cart Logic: Chỉ hiện MiniCart khi thực sự đã Auth xong */}
+          {isAuthenticated && !isMiniCartDisabled && !isAuthLoading ? (
+            <MiniCart>{cartButton}</MiniCart>
+          ) : (
+            cartButton
+          )}
+
+          {/* Logout button */}
+          {isAuthenticated && (
+            <button
+              onClick={handleLogout}
+              className="ml-1 p-2 text-slate-500 transition-colors hover:text-red-600"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
+          )}
+
+          {/* Mobile Menu Toggle */}
+          <button
+            className="p-2 text-slate-600 md:hidden"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X /> : <Menu />}
           </button>
         </div>
       </div>
 
+      {/* MOBILE MENU */}
       {mobileMenuOpen && (
-        <nav className="glass animate-slide-up border-border border-t md:hidden">
-          <div className="container-custom flex flex-col gap-1 py-4">
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-foreground/80 hover:bg-secondary hover:text-brand rounded-lg px-4 py-2.5 text-sm font-medium transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
-        </nav>
+        <div className="space-y-4 border-t bg-white p-4 shadow-xl md:hidden">
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => setMobileMenuOpen(false)}
+              className="block text-base font-medium text-slate-700"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
       )}
     </header>
   );
