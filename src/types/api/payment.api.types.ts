@@ -34,8 +34,3 @@ export interface TransactionDto {
 export interface GetPaymentTransactionsResponse {
   transactions?: TransactionDto[] | null;
 }
-
-export interface VnPayIPNResponseDto {
-  rspCode?: string | null;
-  message?: string | null;
-}

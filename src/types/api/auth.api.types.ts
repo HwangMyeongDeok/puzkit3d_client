@@ -49,7 +49,15 @@ export interface ResetPasswordRequest {
 }
 
 export interface UpdateProfileRequest {
-  fullName?: string;
-  phone?: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
   avatar?: string;
+  streetAddress?: string;
+  provinceId?: string;
+  provinceName?: string;
+  districtId?: string;
+  districtName?: string;
+  wardCode?: string;
+  wardName?: string;
 }

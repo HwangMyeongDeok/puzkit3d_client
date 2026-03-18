@@ -41,7 +41,7 @@ export const authApi = apiSlice.injectEndpoints({
 
     getProfile: builder.query<User, void>({
       query: () => ({
-        url: '/auth/profile',
+        url: '/profile',
         method: 'GET',
       }),
       providesTags: ['User'],
@@ -49,7 +49,7 @@ export const authApi = apiSlice.injectEndpoints({
 
     updateProfile: builder.mutation<User, UpdateProfileRequest>({
       query: (userData) => ({
-        url: '/auth/profile',
+        url: '/profile',
         method: 'PUT',
         data: userData,
       }),
@@ -87,6 +87,7 @@ export const {
   useRegisterMutation,
   useLogoutMutation,
   useGetProfileQuery,
+  useLazyGetProfileQuery,
   useUpdateProfileMutation,
   useChangePasswordMutation,
   useForgotPasswordMutation,

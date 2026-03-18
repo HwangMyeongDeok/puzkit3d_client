@@ -14,11 +14,32 @@ export function useCartSync() {
 
   useEffect(() => {
     return () => {
+      // Cleanup timers khi component bị unmount
       // eslint-disable-next-line react-hooks/exhaustive-deps
       Object.values(debounceTimers.current).forEach(clearTimeout);
     };
   }, []);
 
+  // 1. ĐƯA handleRemove LÊN TRÊN CÙNG ĐỂ CÁC HÀM KHÁC GỌI ĐƯỢC NÓ
+  const handleRemove = useCallback(
+    async (itemId: string) => {
+      // Xóa các trạng thái chờ của item này khi xóa khỏi giỏ
+      if (debounceTimers.current[itemId]) {
+        clearTimeout(debounceTimers.current[itemId]);
+      }
+      delete pendingQuantities.current[itemId];
+
+      try {
+        await removeItemMutate(itemId).unwrap();
+        toast.success('Đã xóa sản phẩm khỏi giỏ hàng');
+      } catch (error) {
+        toast.error('Lỗi khi xóa sản phẩm');
+      }
+    },
+    [removeItemMutate]
+  );
+
+  // 2. TỚI handleUpdateQuantity
   const handleUpdateQuantity = useCallback(
     (itemId: string, newQuantity: number) => {
       // 1. Clear timer cũ của chính item đó
@@ -29,6 +50,7 @@ export function useCartSync() {
       // 2. Cập nhật số lượng mới nhất vào bản ghi tạm
       pendingQuantities.current[itemId] = newQuantity;
 
+      // Nếu số lượng <= 0 thì gọi xóa luôn (Giờ thì handleRemove đã tồn tại)
       if (newQuantity <= 0) {
         handleRemove(itemId);
         return;
@@ -39,7 +61,12 @@ export function useCartSync() {
         try {
           // Lấy con số cuối cùng sau khi user ngừng spam
           const finalQty = pendingQuantities.current[itemId];
-          await updateItemMutate({ itemId, quantity: finalQty }).unwrap();
+
+          // Kiểm tra lại lần nữa lỡ user đổi ý
+          if (finalQty > 0) {
+            await updateItemMutate({ itemId, quantity: finalQty }).unwrap();
+          }
+
           // Xóa khỏi pending sau khi thành công
           delete pendingQuantities.current[itemId];
         } catch (error) {
@@ -47,9 +74,10 @@ export function useCartSync() {
         }
       }, 400);
     },
-    [updateItemMutate, removeItemMutate]
+    [updateItemMutate, handleRemove] // Update deps
   );
 
+  // 3. CÁC HÀM TĂNG / GIẢM
   const handleIncrement = useCallback(
     (itemId: string, currentQuantity: number) => {
       // Nếu đang có một số lượng chờ xử lý (do ấn nhanh), lấy số đó cộng tiếp
@@ -68,23 +96,7 @@ export function useCartSync() {
         handleRemove(itemId);
       }
     },
-    [handleUpdateQuantity]
-  );
-
-  const handleRemove = useCallback(
-    async (itemId: string) => {
-      // Xóa các trạng thái chờ của item này khi xóa khỏi giỏ
-      if (debounceTimers.current[itemId]) clearTimeout(debounceTimers.current[itemId]);
-      delete pendingQuantities.current[itemId];
-
-      try {
-        await removeItemMutate(itemId).unwrap();
-        toast.success('Đã xóa sản phẩm khỏi giỏ hàng');
-      } catch (error) {
-        toast.error('Lỗi khi xóa sản phẩm');
-      }
-    },
-    [removeItemMutate]
+    [handleUpdateQuantity, handleRemove] // Update deps
   );
 
   return { handleIncrement, handleDecrement, handleRemove, handleUpdateQuantity };

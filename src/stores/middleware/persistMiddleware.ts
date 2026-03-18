@@ -1,28 +1,23 @@
 import type { Middleware } from '@reduxjs/toolkit';
-
 import { APP_CONFIG } from '@/constants';
 import type { RootState } from '../store';
 
-function debounce<T extends (...args: Parameters<T>) => void>(
-  fn: T,
-  delay: number
-): (...args: Parameters<T>) => void {
+function debounce<T extends (...args: any[]) => void>(fn: T, delay: number) {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
   return (...args: Parameters<T>) => {
     if (timeoutId) clearTimeout(timeoutId);
     timeoutId = setTimeout(() => fn(...args), delay);
   };
 }
 
-const persistAuth = debounce((state: RootState['auth']) => {
+const persistUser = debounce((state: RootState['auth']) => {
   try {
-    if (state.isAuthenticated && state.accessToken) {
+    if (state.isAuthenticated && state.user) {
       localStorage.setItem(
         APP_CONFIG.AUTH_STORAGE_KEY,
         JSON.stringify({
           user: state.user,
-          accessToken: state.accessToken,
-          refreshToken: state.refreshToken,
         })
       );
     } else if (!state.isLoading) {
@@ -31,51 +26,20 @@ const persistAuth = debounce((state: RootState['auth']) => {
   } catch {}
 }, 300);
 
-const persistCart = debounce((items: RootState['cart']['items']) => {
-  try {
-    localStorage.setItem(APP_CONFIG.CART_STORAGE_KEY, JSON.stringify(items));
-  } catch {}
-}, 300);
-
-const authActions = [
-  'auth/setCredentials',
-  'auth/updateAccessToken',
-  'auth/updateUser',
-  'auth/logout',
-  'auth/initializeAuth',
-];
-
-const cartActions = [
-  'cart/addToCart',
-  'cart/removeFromCart',
-  'cart/updateQuantity',
-  'cart/incrementQuantity',
-  'cart/decrementQuantity',
-  'cart/clearCart',
-  'cart/loadCart',
-  'cart/rollbackQuantity',
-];
-
 export const persistMiddleware: Middleware = (store) => (next) => (action) => {
   const result = next(action);
   const actionType = (action as { type: string }).type;
 
-  if (typeof window !== 'undefined') {
+  if (typeof window !== 'undefined' && typeof actionType === 'string') {
     const state = store.getState() as RootState;
 
-    if (authActions.includes(actionType)) {
-      persistAuth(state.auth);
-    }
-
-    if (cartActions.includes(actionType)) {
-      if (!state.auth.isAuthenticated) {
-        persistCart(state.cart.items);
-      }
+    if (actionType.startsWith('auth/')) {
+      persistUser(state.auth);
     }
 
     if (actionType === 'auth/logout') {
       try {
-        localStorage.removeItem(APP_CONFIG.CART_STORAGE_KEY);
+        localStorage.removeItem(APP_CONFIG.AUTH_STORAGE_KEY);
       } catch {}
     }
   }
