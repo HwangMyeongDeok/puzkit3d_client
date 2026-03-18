@@ -50,7 +50,14 @@ export default function LoginForm() {
 
       dispatch(setCredentials(authData as any));
 
-      localStorage.setItem(APP_CONFIG.AUTH_STORAGE_KEY, JSON.stringify(authData));
+      // Chỉ lưu thông tin user (không nhạy cảm) vào localStorage
+      localStorage.setItem(APP_CONFIG.AUTH_STORAGE_KEY, JSON.stringify(authData.user));
+
+      // Token (nhạy cảm) thì lưu thẳng vào Cookie cho an toàn
+      document.cookie = `${APP_CONFIG.ACCESS_TOKEN_KEY}=${result.token}; path=/; max-age=604800; SameSite=Lax`;
+      if (result.refreshToken) {
+        document.cookie = `${APP_CONFIG.REFRESH_TOKEN_KEY}=${result.refreshToken}; path=/; max-age=2592000; SameSite=Lax`;
+      }
 
       router.push('/');
     } catch (err: any) {

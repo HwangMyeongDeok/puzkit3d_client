@@ -1,42 +1,93 @@
 'use client';
 
+import { useState } from 'react';
 import { useGetCustomerOrdersQuery } from '@/lib/api/endpoints/orderApi';
-import { Loader2, Package, Eye, Receipt, Calendar, CreditCard, Box } from 'lucide-react';
+import { Loader2, Package, Eye, Calendar, CreditCard, Box, Receipt } from 'lucide-react';
 import Link from 'next/link';
 
-// Giả định backend trả về Int Status: 0=Pending, 1=Confirmed, 2=Shipping, 3=Completed...
-const getStatusBadge = (status?: number) => {
+import { Button } from '@/components/ui/button';
+import PaymentActionDialog from '@/components/checkout/PaymentActionDialog';
+import { InstockOrderStatus } from '@/types';
+
+const getStatusBadge = (status?: InstockOrderStatus) => {
   switch (status) {
-    case 0:
+    case 'Pending':
       return (
         <span className="rounded-md border border-yellow-500/20 bg-yellow-500/10 px-2.5 py-1 text-xs font-semibold tracking-wider text-yellow-600 uppercase">
           Chờ xác nhận
         </span>
       );
-    case 1:
+
+    case 'Waiting':
+      return (
+        <span className="rounded-md border border-yellow-500/20 bg-yellow-500/10 px-2.5 py-1 text-xs font-semibold tracking-wider text-yellow-600 uppercase">
+          Đang chờ
+        </span>
+      );
+
+    case 'Paid':
+      return (
+        <span className="rounded-md border border-yellow-500/20 bg-yellow-500/10 px-2.5 py-1 text-xs font-semibold tracking-wider text-yellow-600 uppercase">
+          Đang chờ
+        </span>
+      );
+
+    case 'Processing':
       return (
         <span className="rounded-md border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-xs font-semibold tracking-wider text-blue-600 uppercase">
           Đang xử lý
         </span>
       );
-    case 2:
+
+    case 'HandedOverToDelivery':
       return (
         <span className="rounded-md border border-indigo-500/20 bg-indigo-500/10 px-2.5 py-1 text-xs font-semibold tracking-wider text-indigo-600 uppercase">
+          Bàn giao vận chuyển
+        </span>
+      );
+
+    case 'Shipping':
+      return (
+        <span className="rounded-md border border-violet-500/20 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold tracking-wider text-violet-600 uppercase">
           Đang giao
         </span>
       );
-    case 3:
+
+    case 'Delivered':
+      return (
+        <span className="rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold tracking-wider text-emerald-600 uppercase">
+          Đã giao
+        </span>
+      );
+
+    case 'Completed':
       return (
         <span className="rounded-md border border-green-500/20 bg-green-500/10 px-2.5 py-1 text-xs font-semibold tracking-wider text-green-600 uppercase">
           Hoàn thành
         </span>
       );
-    case 4:
+
+    case 'Returned':
+      return (
+        <span className="rounded-md border border-orange-500/20 bg-orange-500/10 px-2.5 py-1 text-xs font-semibold tracking-wider text-orange-600 uppercase">
+          Trả hàng
+        </span>
+      );
+
+    case 'Cancelled':
       return (
         <span className="bg-destructive/10 text-destructive border-destructive/20 rounded-md border px-2.5 py-1 text-xs font-semibold tracking-wider uppercase">
           Đã hủy
         </span>
       );
+
+    case 'Rejected':
+      return (
+        <span className="rounded-md border border-rose-500/20 bg-rose-500/10 px-2.5 py-1 text-xs font-semibold tracking-wider text-rose-600 uppercase">
+          Bị từ chối
+        </span>
+      );
+
     default:
       return (
         <span className="bg-muted text-muted-foreground border-border rounded-md border px-2.5 py-1 text-xs font-semibold tracking-wider uppercase">
@@ -47,7 +98,11 @@ const getStatusBadge = (status?: number) => {
 };
 
 export default function OrdersPage() {
-  const { data, isLoading, isError } = useGetCustomerOrdersQuery({ pageNumber: 1, pageSize: 10 });
+  const { data, isLoading, isError } = useGetCustomerOrdersQuery(
+    { pageNumber: 1, pageSize: 10 },
+    { refetchOnMountOrArgChange: true }
+  );
+  const [paymentOrderId, setPaymentOrderId] = useState<string | null>(null);
 
   const orders = data?.items || [];
 
@@ -180,19 +235,35 @@ export default function OrdersPage() {
                     </span>
                   </div>
 
-                  <Link
-                    href={`/orders/${order.id}`}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex w-full items-center justify-center gap-2 rounded-lg px-6 py-2.5 font-semibold shadow-sm transition-colors md:w-auto"
-                  >
-                    <Eye className="h-4 w-4" />
-                    Xem chi tiết đơn hàng
-                  </Link>
+                  <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row">
+                    {!order.isPaid && order.paymentMethod === 'Online' && order.status !== 4 && (
+                      <Button
+                        onClick={() => setPaymentOrderId(order.id)}
+                        className="bg-brand hover:bg-brand/90 h-[44px] w-full gap-2 font-bold md:w-auto"
+                      >
+                        <CreditCard className="h-4 w-4" /> Thanh toán ngay
+                      </Button>
+                    )}
+                    <Link
+                      href={`/orders/${order.id}`}
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-lg px-6 py-2.5 font-semibold shadow-sm transition-colors md:w-auto"
+                    >
+                      <Eye className="h-4 w-4" />
+                      Xem chi tiết đơn hàng
+                    </Link>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      <PaymentActionDialog
+        open={!!paymentOrderId}
+        orderId={paymentOrderId}
+        onClose={() => setPaymentOrderId(null)}
+      />
     </div>
   );
 }

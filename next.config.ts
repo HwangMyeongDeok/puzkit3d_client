@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'via.placeholder.com' },
       { protocol: 'https', hostname: '**.cloudinary.com' },
       { protocol: 'https', hostname: 'example.com' },
+      { protocol: 'https', hostname: '**.s3.ap-southeast-1.amazonaws.com' },
     ],
   },
 };

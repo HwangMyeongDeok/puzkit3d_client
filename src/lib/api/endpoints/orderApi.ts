@@ -17,7 +17,13 @@ export const orderApi = apiSlice.injectEndpoints({
         method: 'GET',
         params,
       }),
-      providesTags: ['Order'],
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.items.map(({ id }) => ({ type: 'Order' as const, id })),
+              { type: 'Order', id: 'LIST' },
+            ]
+          : [{ type: 'Order', id: 'LIST' }],
     }),
     getCustomerOrderById: builder.query<GetCustomerOrderByIdResponseDto, string>({
       query: (orderId) => ({ url: `/instock-orders/${orderId}` }),
@@ -29,7 +35,7 @@ export const orderApi = apiSlice.injectEndpoints({
         method: 'POST',
         data,
       }),
-      invalidatesTags: ['Order', 'Cart'],
+      invalidatesTags: [{ type: 'Order', id: 'LIST' }, 'Cart'],
     }),
   }),
 });

@@ -1,12 +1,11 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-import type { User, AuthState, AuthCredentials } from '@/types';
-import { APP_CONFIG } from '@/constants';
+// Lưu ý: Nhớ vào file '@/types' xóa accessToken và refreshToken khỏi interface AuthState nhé!
+import type { User, AuthState } from '@/types';
 
-const initialState: AuthState = {
+// Omit để báo TypeScript tạm bỏ qua 2 field token nếu bạn chưa kịp sửa file type
+const initialState: Omit<AuthState, 'accessToken' | 'refreshToken'> = {
   user: null,
-  accessToken: null,
-  refreshToken: null,
   isAuthenticated: false,
   isLoading: true,
 };
@@ -15,18 +14,11 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setCredentials: (state, action: PayloadAction<AuthCredentials>) => {
+    // Chỉ lưu user info, bỏ token đi
+    setCredentials: (state, action: PayloadAction<{ user: User }>) => {
       state.user = action.payload.user;
-      state.accessToken = action.payload.accessToken;
-      if (action.payload.refreshToken) {
-        state.refreshToken = action.payload.refreshToken;
-      }
       state.isAuthenticated = true;
       state.isLoading = false;
-    },
-
-    updateAccessToken: (state, action: PayloadAction<string>) => {
-      state.accessToken = action.payload;
     },
 
     updateUser: (state, action: PayloadAction<Partial<User>>) => {
@@ -37,12 +29,14 @@ const authSlice = createSlice({
 
     logout: (state) => {
       state.user = null;
-      state.accessToken = null;
-      state.refreshToken = null;
       state.isAuthenticated = false;
       state.isLoading = false;
+
       if (typeof window !== 'undefined') {
-        localStorage.removeItem(APP_CONFIG.AUTH_STORAGE_KEY);
+        // Xóa cookie token (Chỉ có tác dụng nếu Cookie của bạn KHÔNG có cờ HttpOnly)
+        // Nếu backend set HttpOnly, bạn cần gọi 1 API /logout để backend tự xóa cookie
+        document.cookie = 'puzkit3d_access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        document.cookie = 'puzkit3d_refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
       }
     },
 
@@ -50,29 +44,32 @@ const authSlice = createSlice({
       state.isLoading = action.payload;
     },
 
+    // Khi F5, chỉ cần truyền user vào để khởi tạo lại state
     initializeAuth: (
       state,
       action: PayloadAction<{
         user: User | null;
-        accessToken: string | null;
-        refreshToken: string | null;
       }>
     ) => {
       state.user = action.payload.user;
-      state.accessToken = action.payload.accessToken;
-      state.refreshToken = action.payload.refreshToken;
-      state.isAuthenticated = !!action.payload.accessToken && !!action.payload.user;
+      state.isAuthenticated = !!action.payload.user;
       state.isLoading = false;
     },
   },
 });
 
-export const { setCredentials, updateAccessToken, updateUser, logout, setLoading, initializeAuth } =
-  authSlice.actions;
+// Xóa updateAccessToken ra khỏi exports
+export const { setCredentials, updateUser, logout, setLoading, initializeAuth } = authSlice.actions;
 
 export default authSlice.reducer;
 
-export const selectCurrentUser = (state: { auth: AuthState }) => state.auth.user;
-export const selectIsAuthenticated = (state: { auth: AuthState }) => state.auth.isAuthenticated;
-export const selectAccessToken = (state: { auth: AuthState }) => state.auth.accessToken;
-export const selectAuthLoading = (state: { auth: AuthState }) => state.auth.isLoading;
+// Xóa selectAccessToken ra khỏi list selectors
+export const selectCurrentUser = (state: {
+  auth: Omit<AuthState, 'accessToken' | 'refreshToken'>;
+}) => state.auth.user;
+export const selectIsAuthenticated = (state: {
+  auth: Omit<AuthState, 'accessToken' | 'refreshToken'>;
+}) => state.auth.isAuthenticated;
+export const selectAuthLoading = (state: {
+  auth: Omit<AuthState, 'accessToken' | 'refreshToken'>;
+}) => state.auth.isLoading;
