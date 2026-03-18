@@ -1,8 +1,7 @@
 import axios from 'axios';
 import type { Store } from '@reduxjs/toolkit';
 
-import { logout } from '@/stores/slices/authSlice';
-import { APP_CONFIG } from '@/constants';
+import { logout, updateAccessToken } from '@/stores/slices/authSlice';
 
 // ---------------------------------------------------------------------------
 // injectStore pattern: avoids circular dependency by deferring store reference
@@ -11,21 +10,6 @@ let store: Store;
 
 export const injectStore = (_store: Store) => {
   store = _store;
-};
-
-// ---------------------------------------------------------------------------
-// Cookie Helpers (để khỏi phải cài thêm thư viện js-cookie)
-// ---------------------------------------------------------------------------
-const getCookie = (name: string) => {
-  if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-  return match ? match[2] : null;
-};
-
-const setCookie = (name: string, value: string, maxAge: number) => {
-  if (typeof document !== 'undefined') {
-    document.cookie = `${name}=${value}; path=/; max-age=${maxAge}; SameSite=Lax`;
-  }
 };
 
 // ---------------------------------------------------------------------------
@@ -61,12 +45,11 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 };
 
 // ---------------------------------------------------------------------------
-// Request interceptor — attach Bearer token từ Cookie
+// Request interceptor — attach Bearer token
 // ---------------------------------------------------------------------------
 axiosInstance.interceptors.request.use(
   (config) => {
-    // ĐỌC TOKEN TỪ COOKIE THAY VÌ REDUX
-    const token = getCookie(APP_CONFIG.ACCESS_TOKEN_KEY);
+    const token = store?.getState()?.auth?.accessToken;
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -80,14 +63,23 @@ axiosInstance.interceptors.request.use(
 // ---------------------------------------------------------------------------
 // Response interceptor — handle 401 + token refresh
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Response interceptor — handle 401 + token refresh
+// ---------------------------------------------------------------------------
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
+    // 1. Định nghĩa các URL không được phép tự động refresh (Blacklist)
+    // Sếp kiểm tra lại các path này cho khớp với Backend của sếp nhé
     const authEndpoints = ['auth/login', 'auth/register', 'auth/refresh-token'];
     const isAuthRequest = authEndpoints.some((url) => originalRequest.url?.includes(url));
 
+    // 2. Chỉ xử lý Refresh Token nếu:
+    // - Lỗi status là 401 (Unauthorized)
+    // - Request này chưa được retry lần nào (_retry)
+    // - KHÔNG PHẢI là các request trong Blacklist (isAuthRequest)
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthRequest) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -104,12 +96,12 @@ axiosInstance.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // LẤY REFRESH TOKEN TỪ COOKIE
-        const refreshToken = getCookie(APP_CONFIG.REFRESH_TOKEN_KEY);
+        const refreshToken = store?.getState()?.auth?.refreshToken;
 
+        // Nếu không có refreshToken thì logout luôn cho rồi
         if (!refreshToken) {
-          store.dispatch(logout()); // Gọi logout để xóa Redux user + xóa sạch rác Cookie
-          return Promise.reject(error);
+          store.dispatch(logout());
+          return Promise.reject(error); // Trả về lỗi 401 gốc
         }
 
         const response = await axios.post(
@@ -120,20 +112,16 @@ axiosInstance.interceptors.response.use(
           }
         );
 
-        const accessToken = response.data.token || response.data.accessToken;
-        const newRefreshToken = response.data.refreshToken;
+        // Chỗ này sếp check xem BE trả về là "accessToken" hay "token" nhé
+        const { accessToken } = response.data;
 
-        // CẬP NHẬT TRỰC TIẾP VÀO COOKIE (Bỏ qua Redux)
-        setCookie(APP_CONFIG.ACCESS_TOKEN_KEY, accessToken, 604800); // 7 ngày
-        if (newRefreshToken) {
-          setCookie(APP_CONFIG.REFRESH_TOKEN_KEY, newRefreshToken, 2592000); // 30 ngày
-        }
-
+        store.dispatch(updateAccessToken(accessToken));
         processQueue(null, accessToken);
 
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return axiosInstance(originalRequest);
       } catch (refreshError) {
+        // Nếu API refresh cũng lỗi (hết hạn hoàn toàn), xóa sạch và bắt login lại
         processQueue(refreshError as Error, null);
         store.dispatch(logout());
         return Promise.reject(refreshError);
@@ -142,6 +130,7 @@ axiosInstance.interceptors.response.use(
       }
     }
 
+    // 3. Nếu không rơi vào các trường hợp trên, trả về lỗi gốc cho UI (LoginForm/RegisterForm)
     return Promise.reject(error);
   }
 );

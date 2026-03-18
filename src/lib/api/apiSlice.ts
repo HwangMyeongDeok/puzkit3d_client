@@ -12,7 +12,6 @@ export const tagTypes = [
   'ImportRequest',
   'CustomOrder',
   'Notification',
-  'Delivery',
 ] as const;
 
 export const apiSlice = createApi({
@@ -21,7 +20,7 @@ export const apiSlice = createApi({
   tagTypes: tagTypes,
   endpoints: () => ({}),
   keepUnusedDataFor: 60,
-  refetchOnFocus: true,
+  refetchOnFocus: false,
   refetchOnReconnect: true,
 });
 

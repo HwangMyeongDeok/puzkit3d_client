@@ -1,27 +1,25 @@
 'use client';
 
+import { useState } from 'react';
 import { Loader2, Check, Ruler } from 'lucide-react';
+
 import type { ProductVariantDto } from '@/types';
 import { useGetProductVariantsQuery } from '@/lib/api/endpoints/productApi';
 
 interface ProductVariantsProps {
   productId: string;
-  selectedVariantId?: string;
   onVariantSelect?: (variant: ProductVariantDto | null) => void;
 }
 
-export default function ProductVariants({
-  productId,
-  selectedVariantId,
-  onVariantSelect,
-}: ProductVariantsProps) {
+export default function ProductVariants({ productId, onVariantSelect }: ProductVariantsProps) {
   const { data, isLoading, isError } = useGetProductVariantsQuery(productId, {
     skip: !productId,
   });
 
+  // API trả về { variants: [...] }
   const variants = data?.variants ?? [];
 
-  // XÓA BỎ useState ở đây, dùng luôn selectedVariantId từ props!
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariantDto | null>(null);
 
   if (isLoading) {
     return (
@@ -44,9 +42,6 @@ export default function ProductVariants({
 
   const activeVariants = variants.filter((v) => v.isActive);
 
-  // Lọc ra cái Variant đang được chọn dựa theo ID của Cha truyền xuống
-  const currentSelectedVariant = activeVariants.find((v) => v.id === selectedVariantId);
-
   return (
     <div className="flex flex-col gap-4">
       <h3 className="text-foreground text-sm font-semibold">
@@ -55,14 +50,13 @@ export default function ProductVariants({
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {activeVariants.map((variant) => {
-          // Check xem ID có trùng với ID Cha truyền xuống không
-          const isSelected = selectedVariantId === variant.id;
+          const isSelected = selectedVariant?.id === variant.id;
 
           return (
             <button
               key={variant.id}
               onClick={() => {
-                // Chỉ cần báo lên cho Cha biết là tui vừa bị click
+                setSelectedVariant(variant);
                 onVariantSelect?.(variant);
               }}
               className={`relative flex flex-col gap-2 rounded-xl border-2 p-4 text-left transition-all ${
@@ -104,15 +98,12 @@ export default function ProductVariants({
       </div>
 
       {/* Selected summary */}
-      {currentSelectedVariant && (
+      {selectedVariant && (
         <div className="bg-brand/5 border-brand/20 rounded-xl border px-4 py-3">
-          <p className="text-foreground text-sm font-semibold">
-            Đã chọn: {currentSelectedVariant.sku}
-          </p>
+          <p className="text-foreground text-sm font-semibold">Đã chọn: {selectedVariant.sku}</p>
           <p className="text-muted-foreground text-xs">
-            Màu: {currentSelectedVariant.color} · Kích thước:{' '}
-            {currentSelectedVariant.assembledLengthMm} × {currentSelectedVariant.assembledWidthMm} ×{' '}
-            {currentSelectedVariant.assembledHeightMm} mm
+            Màu: {selectedVariant.color} · Kích thước: {selectedVariant.assembledLengthMm} ×{' '}
+            {selectedVariant.assembledWidthMm} × {selectedVariant.assembledHeightMm} mm
           </p>
         </div>
       )}

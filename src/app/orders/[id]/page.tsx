@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useGetCustomerOrderByIdQuery } from '@/lib/api/endpoints/orderApi';
+import { useGetPaymentByOrderIdQuery } from '@/lib/api/endpoints/paymentApi';
 import type { OrderDetailDto } from '@/types/api/order.api.types';
 import {
   Loader2,
@@ -12,9 +13,6 @@ import {
   MapPin,
   ReceiptText,
   Calendar,
-  Mail,
-  Phone,
-  Banknote,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -70,7 +68,9 @@ export default function OrderDetailsPage() {
     data: order,
     isLoading: isOrderLoading,
     isError: isOrderError,
-  } = useGetCustomerOrderByIdQuery(orderId, { refetchOnMountOrArgChange: true });
+  } = useGetCustomerOrderByIdQuery(orderId);
+  // Optional: fetch payment details for this order to see if it's paid or pending
+  const { data: payment } = useGetPaymentByOrderIdQuery(orderId, { skip: !orderId });
 
   if (isOrderLoading) {
     return (
@@ -96,21 +96,15 @@ export default function OrderDetailsPage() {
   return (
     <div className="container-custom py-8 lg:py-12">
       <div className="flex flex-col gap-6">
-        {/* Header */}
         <div className="flex items-center gap-4">
-          <Button
-            onClick={() => router.back()}
-            variant="ghost"
-            size="icon"
-            className="hover:bg-muted shrink-0"
-          >
+          <Button onClick={() => router.back()} variant="ghost" size="icon" className="shrink-0">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-2xl font-bold md:text-3xl">Chi tiết đơn hàng</h1>
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* CỘT TRÁI: Order Info & Products */}
+          {/* Order Info */}
           <div className="flex flex-col gap-6 lg:col-span-2">
             {/* Status Header Card */}
             <div className="bg-card border-border flex flex-col gap-4 rounded-xl border p-6 shadow-sm">
@@ -119,7 +113,7 @@ export default function OrderDetailsPage() {
                   <p className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
                     Mã đơn hàng
                   </p>
-                  <p className="text-foreground mt-1 text-2xl font-bold uppercase">
+                  <p className="mt-1 text-xl font-bold uppercase">
                     #{order.code || order.id.split('-')[0]}
                   </p>
                   {order.createdAt && (
@@ -146,18 +140,17 @@ export default function OrderDetailsPage() {
 
             {/* Products List Card */}
             <div className="bg-card border-border flex flex-col gap-4 rounded-xl border p-6 shadow-sm">
-              <h3 className="mb-4 flex items-center gap-2 text-lg font-bold">
+              <h3 className="mb-2 flex items-center gap-2 text-lg font-bold">
                 <Package className="text-brand h-5 w-5" />
-                Sản phẩm đã đặt ({order.orderDetails?.length || 0})
+                Sản phẩm đã đặt
               </h3>
-
               {order.orderDetails && order.orderDetails.length > 0 ? (
-                <div className="flex flex-col">
+                <div className="flex flex-col gap-4">
                   {order.orderDetails.map((item: OrderDetailDto, idx) => (
                     <div key={item.id}>
-                      {idx > 0 && <Separator className="my-5" />}
+                      {idx > 0 && <Separator className="my-4" />}
                       <div className="flex items-start gap-4">
-                        <div className="bg-muted hidden h-24 w-24 shrink-0 overflow-hidden rounded-md border shadow-sm sm:block">
+                        <div className="bg-muted hidden h-20 w-20 shrink-0 overflow-hidden rounded-md border shadow-sm sm:block">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={item.thumbnailUrl || ''}
@@ -167,24 +160,19 @@ export default function OrderDetailsPage() {
                         </div>
                         <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:justify-between">
                           <div className="flex flex-col gap-1.5">
-                            <span className="text-foreground hover:text-brand cursor-pointer text-base leading-tight font-semibold transition-colors">
+                            <span className="text-foreground text-base leading-tight font-semibold">
                               {item.productName || item.sku || item.id}
                             </span>
                             {item.variantName && (
                               <span className="text-muted-foreground text-sm">
-                                Phân loại:{' '}
-                                <span className="text-foreground font-medium">
-                                  {item.variantName}
-                                </span>
+                                Phân loại: {item.variantName}
                               </span>
                             )}
-                            <div className="text-muted-foreground mt-1 flex items-center gap-2 text-sm">
-                              <span>{item.unitPrice?.toLocaleString('vi-VN') || 0} ₫</span>
-                              <span>✕</span>
-                              <span className="text-foreground font-semibold">{item.quantity}</span>
-                            </div>
+                            <span className="bg-secondary text-secondary-foreground mt-1 w-fit rounded-md px-2 py-0.5 text-sm font-medium">
+                              Số lượng: {item.quantity}
+                            </span>
                           </div>
-                          <span className="text-brand text-lg font-bold whitespace-nowrap">
+                          <span className="text-brand font-bold">
                             {item.totalAmount ? item.totalAmount.toLocaleString('vi-VN') : 0} ₫
                           </span>
                         </div>
@@ -201,9 +189,8 @@ export default function OrderDetailsPage() {
             </div>
           </div>
 
-          {/* CỘT PHẢI: Customer, Shipping & Payment Summary */}
+          {/* Cột phải: Customer & Payment */}
           <div className="flex flex-col gap-6">
-            {/* Customer Info Card */}
             <div className="bg-card border-border flex flex-col gap-5 rounded-xl border p-6 shadow-sm">
               <h3 className="flex items-center gap-2 text-lg font-bold">
                 <User className="text-brand h-5 w-5" />
@@ -211,27 +198,21 @@ export default function OrderDetailsPage() {
               </h3>
 
               <div className="bg-muted/30 border-border/50 flex flex-col gap-3 rounded-lg border p-4 text-sm">
-                <div className="flex items-center gap-3">
-                  <User className="text-muted-foreground h-4 w-4 shrink-0" />
+                <div className="flex gap-2">
+                  <User className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
                   <p className="font-semibold">{order.customerName}</p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Phone className="text-muted-foreground h-4 w-4 shrink-0" />
+                <div className="flex gap-2">
+                  <ReceiptText className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
                   <p className="text-muted-foreground">{order.customerPhone}</p>
                 </div>
-                {order.customerEmail && (
-                  <div className="flex items-center gap-3">
-                    <Mail className="text-muted-foreground h-4 w-4 shrink-0" />
-                    <p className="text-muted-foreground truncate">{order.customerEmail}</p>
-                  </div>
-                )}
               </div>
 
               <Separator />
 
               <div>
-                <h3 className="mb-3 flex items-center gap-2 text-base font-bold">
-                  <MapPin className="text-brand h-4 w-4" />
+                <h3 className="mb-3 flex items-center gap-2 font-bold">
+                  <MapPin className="text-brand h-5 w-5" />
                   Địa chỉ giao hàng
                 </h3>
                 <p className="text-muted-foreground bg-muted/30 border-border/50 rounded-lg border p-4 text-sm leading-relaxed">
@@ -241,23 +222,22 @@ export default function OrderDetailsPage() {
               </div>
             </div>
 
-            {/* Payment Summary Card */}
             <div className="bg-card border-border flex flex-col gap-5 rounded-xl border p-6 shadow-sm">
               <h3 className="flex items-center gap-2 text-lg font-bold">
-                <Banknote className="text-brand h-5 w-5" />
-                Chi tiết thanh toán
+                <CreditCard className="text-brand h-5 w-5" />
+                Thanh toán
               </h3>
 
-              <div className="flex flex-col gap-3 text-sm">
-                <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-4 text-sm">
+                <div className="border-border flex items-center justify-between border-b border-dashed pb-3">
                   <span className="text-muted-foreground">Phương thức:</span>
-                  <span className="bg-secondary text-secondary-foreground rounded-md px-2.5 py-1 text-xs font-medium tracking-wider uppercase">
+                  <span className="bg-secondary rounded-md px-2.5 py-1 font-medium">
                     {order.paymentMethod || 'COD'}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Trạng thái:</span>
-                  {order.isPaid ? (
+                <div className="border-border flex items-center justify-between border-b border-dashed pb-3">
+                  <span className="text-muted-foreground">Tiến trình:</span>
+                  {order.isPaid || payment?.status === 'PAID' ? (
                     <span className="text-success flex items-center gap-1.5 font-medium">
                       <div className="bg-success h-2 w-2 rounded-full"></div> Đã thanh toán
                     </span>
@@ -267,42 +247,27 @@ export default function OrderDetailsPage() {
                     </span>
                   )}
                 </div>
-              </div>
-
-              <Separator className="border-dashed" />
-
-              {/* Hóa đơn chi tiết */}
-              <div className="flex flex-col gap-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Tạm tính:</span>
-                  <span className="font-medium">
-                    {order.subTotalAmount?.toLocaleString('vi-VN') || 0} ₫
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Phí vận chuyển:</span>
-                  <span className="font-medium">
-                    {order.shippingFee?.toLocaleString('vi-VN') || 0} ₫
-                  </span>
-                </div>
-
-                {(order.usedCoinAmountAsMoney ?? 0) > 0 && (
-                  <div className="text-success flex items-center justify-between">
-                    <span>Giảm giá từ xu:</span>
+                {(order.paidAt || payment?.paidAt) && (
+                  <div className="border-border flex items-center justify-between border-b border-dashed pb-3">
+                    <span className="text-muted-foreground">Thời gian:</span>
                     <span className="font-medium">
-                      -{(order.usedCoinAmountAsMoney ?? 0).toLocaleString('vi-VN')} ₫
+                      {new Date(order.paidAt || payment!.paidAt!).toLocaleDateString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </span>
                   </div>
                 )}
               </div>
 
-              {/* Tổng cộng */}
               <div className="bg-brand/5 border-brand/20 mt-2 rounded-lg border p-4">
                 <div className="flex items-center justify-between font-bold">
                   <span className="text-brand text-sm tracking-wider uppercase">Tổng cộng</span>
-                  <span className="text-brand text-2xl">
-                    {order.grandTotalAmount ? order.grandTotalAmount.toLocaleString('vi-VN') : 0} ₫
+                  <span className="text-brand text-xl">
+                    {order.grandTotalAmount
+                      ? order.grandTotalAmount.toLocaleString('vi-VN')
+                      : payment?.amount?.toLocaleString('vi-VN') || 0}{' '}
+                    ₫
                   </span>
                 </div>
               </div>

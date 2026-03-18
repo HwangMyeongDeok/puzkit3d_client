@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ShoppingCart, Menu, X, Search, User, LogOut } from 'lucide-react';
 
-import { ROUTES, APP_CONFIG } from '@/constants';
+import { ROUTES } from '@/constants';
 import MiniCart from '@/components/custom/MiniCart';
 import { useGetCartQuery } from '@/lib/api/endpoints/cartApi';
 import { toast } from 'sonner';
@@ -22,7 +22,7 @@ import {
 
 const NAV_LINKS = [
   { href: ROUTES.HOME, label: 'Home' },
-  { href: ROUTES.PRODUCTS, label: 'Shop' },
+  { href: ROUTES.PRODUCTS, label: 'Shop All' },
   { href: ROUTES.BRANDS, label: 'Brands' },
   { href: '/custom-service', label: 'Custom Service' },
 ];
@@ -60,33 +60,25 @@ export default function Header() {
   const isMiniCartDisabled = MINI_CART_DISABLED_ROUTES.some((route) => pathname.startsWith(route));
 
   const handleCartClick = () => {
-    // Nếu đang ở trang /cart hoặc /checkout thì bấm icon sẽ chuyển về trang /cart
+    if (!isAuthenticated) {
+      toast.info('Vui lòng đăng nhập để xem giỏ hàng sếp ơi!');
+      router.push(ROUTES.LOGIN);
+      return;
+    }
     if (isMiniCartDisabled) {
       router.push(ROUTES.CART);
     }
-    // Còn nếu ở trang khác thì cứ để MiniCart tự xổ ra bình thường
   };
 
   const handleLogout = () => {
-    // 1. Xóa trong Redux
     dispatch(logout());
-
-    // 2. Xóa trong LocalStorage
-    localStorage.removeItem(APP_CONFIG.AUTH_STORAGE_KEY);
-
-    // 3. Xóa Cookie bằng cách set expire về ngày hôm qua
-    document.cookie = `${APP_CONFIG.ACCESS_TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-    document.cookie = `${APP_CONFIG.REFRESH_TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-
     toast.success('Đã đăng xuất!');
     router.push('/');
-    router.refresh(); // Ép Next.js fetch lại trang để middleware nhận diện đã mất cookie
   };
 
   // 3. Tránh Hydration Mismatch: Không render gì cho đến khi Client-side mounted
   if (!mounted) return <div className="h-16 w-full bg-white shadow-sm" />;
 
-  // Định nghĩa JSX cho cái nút giỏ hàng để lát tái sử dụng cho gọn
   const cartButton = (
     <button
       className="text-foreground/80 hover:bg-secondary hover:text-brand-accent relative rounded-lg p-2 transition-colors"
@@ -149,7 +141,11 @@ export default function Header() {
           </Link>
 
           {/* Cart Logic: Chỉ hiện MiniCart khi thực sự đã Auth xong */}
-          {!isMiniCartDisabled && !isAuthLoading ? <MiniCart>{cartButton}</MiniCart> : cartButton}
+          {isAuthenticated && !isMiniCartDisabled && !isAuthLoading ? (
+            <MiniCart>{cartButton}</MiniCart>
+          ) : (
+            cartButton
+          )}
 
           {/* Logout button */}
           {isAuthenticated && (

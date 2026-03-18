@@ -18,6 +18,9 @@ export default function RegisterForm() {
     password: '',
   });
 
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({
       ...prev,
@@ -34,12 +37,10 @@ export default function RegisterForm() {
     }
 
     try {
-      // Gọi API đăng ký
       await register(form).unwrap();
 
       toast.success('Đăng ký thành công! Đang chuyển sang đăng nhập...');
 
-      // Đăng ký thành công thì đá sang trang login
       setTimeout(() => {
         router.push('/login');
       }, 1500);
@@ -153,6 +154,18 @@ export default function RegisterForm() {
                   className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-base transition outline-none focus:border-[#052a5b] focus:bg-white"
                 />
               </div>
+
+              {error && (
+                <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+                  {error}
+                </div>
+              )}
+
+              {success && (
+                <div className="rounded-2xl border border-green-100 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
+                  {success}
+                </div>
+              )}
 
               <button
                 type="submit"

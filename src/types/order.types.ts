@@ -15,18 +15,7 @@ export interface CustomerAddress {
 
 // ============ INSTOCK ORDER ============
 
-export type InstockOrderStatus =
-  | 'Pending'
-  | 'Paid'
-  | 'Processing'
-  | 'Waiting'
-  | 'Shipping'
-  | 'Delivered'
-  | 'Cancelled'
-  | 'Completed'
-  | 'Returned'
-  | 'HandedOverToDelivery'
-  | 'Rejected'; // DB uses integer status codes
+export type InstockOrderStatus = number; // DB uses integer status codes
 
 export interface InstockOrder extends BaseEntity {
   code: string;

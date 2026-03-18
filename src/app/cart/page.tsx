@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react'; // Bổ sung useEffect
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -24,6 +24,7 @@ import { useGetCartQuery } from '@/lib/api/endpoints/cartApi';
 import { ROUTES } from '@/constants';
 import { setSelectedItems } from '@/stores/slices/checkoutSlice';
 
+// Đổi từ type tự define sang type chuẩn của API
 import type { CartItemDto } from '@/types/api/cart.api.types';
 
 const PARTNER_STEPS = ['Gửi yêu cầu', 'Staff báo giá', 'Thanh toán cọc', 'Giao hàng'];
@@ -36,17 +37,19 @@ function CartItemRow({
   onDecrement,
   onRemove,
 }: {
-  item: CartItemDto;
+  item: CartItemDto; // Dùng Type mới
   isChecked: boolean;
   onToggle: () => void;
   onIncrement: () => void;
   onDecrement: () => void;
   onRemove: () => void;
 }) {
+  // Tạm thời fix cứng là false vì API mới không có loại giỏ hàng trong từng item
   const isPartner = false;
   const displayPrice = item.unitPrice ?? 0;
   const quantity = item.quantity ?? 1;
 
+  // Map data từ object productDetails
   const productName = item.productDetails?.name || 'Sản phẩm không xác định';
   const thumbnailUrl = item.productDetails?.thumbnailUrl || '/placeholder-image.png';
   const variantColor = item.productDetails?.color || '';
@@ -96,6 +99,7 @@ function CartItemRow({
           </div>
 
           <span className="text-accent text-sm font-bold">
+            {/* Ưu tiên totalPrice từ backend tính sẵn, nếu không có mới tự nhân */}
             {formatPrice(item.totalPrice ?? displayPrice * quantity)}
           </span>
 
@@ -116,7 +120,7 @@ export default function CartPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { isAuthenticated, isLoading: isAuthLoading } = useAppSelector((state) => state.auth);
-
+  // SỬA ĐỔI: Lấy data dưới dạng CartDto
   const {
     data: cartDto,
     isLoading,
@@ -129,14 +133,7 @@ export default function CartPage() {
   const { handleIncrement, handleDecrement, handleRemove } = useCartSync();
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
 
-  // 1. STATE MỚI: Quản lý hiệu ứng loading lúc bấm nút Thanh toán
-  const [isNavigating, setIsNavigating] = useState(false);
-
-  // 2. EFFECT MỚI: Ép Next.js prefetch (tải ngầm) trang Checkout ngay khi vào Giỏ hàng
-  useEffect(() => {
-    router.prefetch(ROUTES.CHECKOUT);
-  }, [router]);
-
+  // Tạm thời bỏ React Compiler (nếu chưa bật) cho đoạn này đỡ lỗi
   const instockItems: CartItemDto[] = [];
   const partnerItems: CartItemDto[] = [];
   let selectedTotal = 0;
@@ -144,6 +141,7 @@ export default function CartPage() {
   const checkedPartnerCount = 0;
 
   allItems.forEach((item) => {
+    // Tạm thời coi tất cả là hàng Instock do API không trả về field cartType
     instockItems.push(item);
     if (item.itemId && checkedIds.has(item.itemId)) {
       checkedInstockCount++;
@@ -190,9 +188,7 @@ export default function CartPage() {
   const isSectionPartialChecked = (items: CartItemDto[]) =>
     items.some((item) => item.itemId && checkedIds.has(item.itemId)) && !isSectionAllChecked(items);
 
-  const isPageLoading = isAuthLoading || isLoading || (isFetching && !cartDto);
-
-  if (isPageLoading) {
+  if (isLoading) {
     return (
       <div className="container-custom flex min-h-[60vh] flex-col items-center justify-center py-20 text-center">
         <Loader2 className="text-brand mb-4 h-10 w-10 animate-spin" />
@@ -279,25 +275,14 @@ export default function CartPage() {
 
           {checkoutMode === 'instock' && (
             <button
-              disabled={isNavigating} // 3. VÔ HIỆU HÓA nút khi đang chuyển trang
               onClick={() => {
-                setIsNavigating(true); // 4. BẬT loading state
                 dispatch(setSelectedItems({ ids: Array.from(checkedIds), mode: 'instock' }));
                 router.push(ROUTES.CHECKOUT);
               }}
-              className="bg-accent text-accent-foreground flex cursor-pointer items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold shadow-lg transition-all hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+              className="bg-accent text-accent-foreground flex cursor-pointer items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold shadow-lg transition-all hover:opacity-90 active:scale-[0.98]"
             >
-              {isNavigating ? ( // 5. ĐỔI UI sang trạng thái chờ
-                <>
-                  Đang xử lý...
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                </>
-              ) : (
-                <>
-                  Thanh toán
-                  <ArrowRight className="h-4 w-4" />
-                </>
-              )}
+              Thanh toán
+              <ArrowRight className="h-4 w-4" />
             </button>
           )}
 

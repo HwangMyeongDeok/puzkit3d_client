@@ -37,22 +37,24 @@ export interface OrderDetailDto {
 }
 
 export interface CreateInstockOrderRequestDto {
-  customerName: string;
-  customerPhone: string;
-  customerEmail: string;
-  customerProvinceName: string;
-  customerDistrictName: string;
-  customerWardName: string;
-  customerDetailAddress: string;
-  cartItems: {
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  customerProvinceCode?: string;
+  customerProvinceName?: string;
+  customerDistrictCode?: string;
+  customerDistrictName?: string;
+  customerWardCode?: string;
+  customerWardName?: string;
+  cartItems?: {
     itemId: string;
     priceDetailId: string;
     quantity: number;
   }[];
-  shippingFee: number;
-  usedCoinAmount: number;
-  grandTotalAmount: number;
-  paymentMethod: string;
+  shippingFee?: number;
+  usedCoinAmount?: number;
+  grandTotalAmount?: number;
+  paymentMethod?: string;
 }
 
 export interface GetCustomerOrderByIdResponseDto {

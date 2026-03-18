@@ -20,7 +20,6 @@ export const productApi = apiSlice.injectEndpoints({
         method: 'GET',
         params: params as Record<string, unknown>,
       }),
-
       providesTags: (result) =>
         result
           ? [
