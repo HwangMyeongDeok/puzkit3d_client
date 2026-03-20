@@ -7,95 +7,40 @@ import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import PaymentActionDialog from '@/components/checkout/PaymentActionDialog';
-import { InstockOrderStatus } from '@/types';
+import { ORDER_STATUS_MAP } from '@/constants';
+import type { InstockOrderStatus } from '@/types';
 
-const getStatusBadge = (status?: InstockOrderStatus) => {
-  switch (status) {
-    case 'Pending':
-      return (
-        <span className="rounded-md border border-yellow-500/20 bg-yellow-500/10 px-2.5 py-1 text-xs font-semibold tracking-wider text-yellow-600 uppercase">
-          Chờ xác nhận
-        </span>
-      );
-
-    case 'Waiting':
-      return (
-        <span className="rounded-md border border-yellow-500/20 bg-yellow-500/10 px-2.5 py-1 text-xs font-semibold tracking-wider text-yellow-600 uppercase">
-          Đang chờ
-        </span>
-      );
-
-    case 'Paid':
-      return (
-        <span className="rounded-md border border-yellow-500/20 bg-yellow-500/10 px-2.5 py-1 text-xs font-semibold tracking-wider text-yellow-600 uppercase">
-          Đang chờ
-        </span>
-      );
-
-    case 'Processing':
-      return (
-        <span className="rounded-md border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-xs font-semibold tracking-wider text-blue-600 uppercase">
-          Đang xử lý
-        </span>
-      );
-
-    case 'HandedOverToDelivery':
-      return (
-        <span className="rounded-md border border-indigo-500/20 bg-indigo-500/10 px-2.5 py-1 text-xs font-semibold tracking-wider text-indigo-600 uppercase">
-          Bàn giao vận chuyển
-        </span>
-      );
-
-    case 'Shipping':
-      return (
-        <span className="rounded-md border border-violet-500/20 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold tracking-wider text-violet-600 uppercase">
-          Đang giao
-        </span>
-      );
-
-    case 'Delivered':
-      return (
-        <span className="rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold tracking-wider text-emerald-600 uppercase">
-          Đã giao
-        </span>
-      );
-
-    case 'Completed':
-      return (
-        <span className="rounded-md border border-green-500/20 bg-green-500/10 px-2.5 py-1 text-xs font-semibold tracking-wider text-green-600 uppercase">
-          Hoàn thành
-        </span>
-      );
-
-    case 'Returned':
-      return (
-        <span className="rounded-md border border-orange-500/20 bg-orange-500/10 px-2.5 py-1 text-xs font-semibold tracking-wider text-orange-600 uppercase">
-          Trả hàng
-        </span>
-      );
-
-    case 'Cancelled':
-      return (
-        <span className="bg-destructive/10 text-destructive border-destructive/20 rounded-md border px-2.5 py-1 text-xs font-semibold tracking-wider uppercase">
-          Đã hủy
-        </span>
-      );
-
-    case 'Rejected':
-      return (
-        <span className="rounded-md border border-rose-500/20 bg-rose-500/10 px-2.5 py-1 text-xs font-semibold tracking-wider text-rose-600 uppercase">
-          Bị từ chối
-        </span>
-      );
-
-    default:
-      return (
-        <span className="bg-muted text-muted-foreground border-border rounded-md border px-2.5 py-1 text-xs font-semibold tracking-wider uppercase">
-          Không xác định
-        </span>
-      );
-  }
+/* ------------------------------------------------------------------ */
+/*  Reusable status badge driven by shared config                     */
+/* ------------------------------------------------------------------ */
+const colorMap: Record<string, string> = {
+  yellow: 'border-yellow-500/20  bg-yellow-500/10  text-yellow-600',
+  blue: 'border-blue-500/20    bg-blue-500/10    text-blue-600',
+  indigo: 'border-indigo-500/20  bg-indigo-500/10  text-indigo-600',
+  violet: 'border-violet-500/20  bg-violet-500/10  text-violet-600',
+  emerald: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600',
+  green: 'border-green-500/20   bg-green-500/10   text-green-600',
+  red: 'bg-destructive/10     text-destructive   border-destructive/20',
+  orange: 'border-orange-500/20  bg-orange-500/10  text-orange-600',
+  rose: 'border-rose-500/20    bg-rose-500/10    text-rose-600',
 };
+
+const badgeBase = 'rounded-md border px-2.5 py-1 text-xs font-semibold tracking-wider uppercase';
+
+function StatusBadge({ status }: { status?: InstockOrderStatus }) {
+  const info = status ? ORDER_STATUS_MAP[status] : undefined;
+  if (!info) {
+    return (
+      <span className={`${badgeBase} bg-muted text-muted-foreground border-border`}>
+        Không xác định
+      </span>
+    );
+  }
+  return <span className={`${badgeBase} ${colorMap[info.color] ?? ''}`}>{info.label}</span>;
+}
+
+/* ---------- terminal statuses that should NOT show a pay button ---- */
+const TERMINAL_STATUSES: InstockOrderStatus[] = ['Cancelled', 'Rejected', 'Returned', 'Completed'];
 
 export default function OrdersPage() {
   const { data, isLoading, isError } = useGetCustomerOrdersQuery(
@@ -165,7 +110,7 @@ export default function OrdersPage() {
                   </div>
 
                   <div className="flex items-center gap-3 self-start md:self-auto">
-                    {getStatusBadge(order.status)}
+                    <StatusBadge status={order.status} />
                     {order.isPaid ? (
                       <span className="bg-success/10 text-success border-success/20 flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold uppercase">
                         <CreditCard className="h-3 w-3" /> Đã thanh toán
@@ -236,14 +181,16 @@ export default function OrdersPage() {
                   </div>
 
                   <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row">
-                    {!order.isPaid && order.paymentMethod === 'Online' && order.status !== 4 && (
-                      <Button
-                        onClick={() => setPaymentOrderId(order.id)}
-                        className="bg-brand hover:bg-brand/90 h-[44px] w-full gap-2 font-bold md:w-auto"
-                      >
-                        <CreditCard className="h-4 w-4" /> Thanh toán ngay
-                      </Button>
-                    )}
+                    {!order.isPaid &&
+                      order.paymentMethod === 'Online' &&
+                      !TERMINAL_STATUSES.includes(order.status as InstockOrderStatus) && (
+                        <Button
+                          onClick={() => setPaymentOrderId(order.id)}
+                          className="bg-brand hover:bg-brand/90 h-[44px] w-full gap-2 font-bold md:w-auto"
+                        >
+                          <CreditCard className="h-4 w-4" /> Thanh toán ngay
+                        </Button>
+                      )}
                     <Link
                       href={`/orders/${order.id}`}
                       className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-lg px-6 py-2.5 font-semibold shadow-sm transition-colors md:w-auto"

@@ -3,6 +3,9 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useGetCustomerOrderByIdQuery } from '@/lib/api/endpoints/orderApi';
 import type { OrderDetailDto } from '@/types/api/order.api.types';
+import type { InstockOrderStatus } from '@/types';
+import { ORDER_STATUS_MAP, ORDER_STEPPER_STEPS } from '@/constants';
+import OrderStepper from '@/components/custom/OrderStepper';
 import {
   Loader2,
   ArrowLeft,
@@ -19,48 +22,38 @@ import {
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
-// Helper badge component for exact matching
-const getStatusBadge = (status?: number) => {
-  switch (status) {
-    case 0:
-      return (
-        <span className="rounded-md border border-yellow-500/20 bg-yellow-500/10 px-3 py-1.5 text-sm font-semibold tracking-wider text-yellow-600 uppercase">
-          Chờ xác nhận
-        </span>
-      );
-    case 1:
-      return (
-        <span className="rounded-md border border-blue-500/20 bg-blue-500/10 px-3 py-1.5 text-sm font-semibold tracking-wider text-blue-600 uppercase">
-          Đang xử lý
-        </span>
-      );
-    case 2:
-      return (
-        <span className="rounded-md border border-indigo-500/20 bg-indigo-500/10 px-3 py-1.5 text-sm font-semibold tracking-wider text-indigo-600 uppercase">
-          Đang giao
-        </span>
-      );
-    case 3:
-      return (
-        <span className="rounded-md border border-green-500/20 bg-green-500/10 px-3 py-1.5 text-sm font-semibold tracking-wider text-green-600 uppercase">
-          Hoàn thành
-        </span>
-      );
-    case 4:
-      return (
-        <span className="bg-destructive/10 text-destructive border-destructive/20 rounded-md border px-3 py-1.5 text-sm font-semibold tracking-wider uppercase">
-          Đã hủy
-        </span>
-      );
-    default:
-      return (
-        <span className="bg-muted text-muted-foreground border-border rounded-md border px-3 py-1.5 text-sm font-semibold tracking-wider uppercase">
-          Không xác định
-        </span>
-      );
-  }
+/* ------------------------------------------------------------------ */
+/*  Status badge — driven by shared config                            */
+/* ------------------------------------------------------------------ */
+const colorMap: Record<string, string> = {
+  yellow: 'border-yellow-500/20  bg-yellow-500/10  text-yellow-600',
+  blue: 'border-blue-500/20    bg-blue-500/10    text-blue-600',
+  indigo: 'border-indigo-500/20  bg-indigo-500/10  text-indigo-600',
+  violet: 'border-violet-500/20  bg-violet-500/10  text-violet-600',
+  emerald: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600',
+  green: 'border-green-500/20   bg-green-500/10   text-green-600',
+  red: 'bg-destructive/10     text-destructive   border-destructive/20',
+  orange: 'border-orange-500/20  bg-orange-500/10  text-orange-600',
+  rose: 'border-rose-500/20    bg-rose-500/10    text-rose-600',
 };
 
+const badgeBase = 'rounded-md border px-3 py-1.5 text-sm font-semibold tracking-wider uppercase';
+
+function StatusBadge({ status }: { status?: InstockOrderStatus }) {
+  const info = status ? ORDER_STATUS_MAP[status] : undefined;
+  if (!info) {
+    return (
+      <span className={`${badgeBase} bg-muted text-muted-foreground border-border`}>
+        Không xác định
+      </span>
+    );
+  }
+  return <span className={`${badgeBase} ${colorMap[info.color] ?? ''}`}>{info.label}</span>;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Page component                                                     */
+/* ------------------------------------------------------------------ */
 export default function OrderDetailsPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -70,7 +63,10 @@ export default function OrderDetailsPage() {
     data: order,
     isLoading: isOrderLoading,
     isError: isOrderError,
-  } = useGetCustomerOrderByIdQuery(orderId, { refetchOnMountOrArgChange: true });
+  } = useGetCustomerOrderByIdQuery(orderId!, {
+    refetchOnMountOrArgChange: true,
+    skip: !orderId, // guard against undefined during SSR shell
+  });
 
   if (isOrderLoading) {
     return (
@@ -92,6 +88,12 @@ export default function OrderDetailsPage() {
       </div>
     );
   }
+
+  /* Compute active step for the stepper */
+  const statusInfo = order.status
+    ? ORDER_STATUS_MAP[order.status as InstockOrderStatus]
+    : undefined;
+  const activeStep = statusInfo?.stepIndex ?? 0;
 
   return (
     <div className="container-custom py-8 lg:py-12">
@@ -139,9 +141,16 @@ export default function OrderDetailsPage() {
                   <p className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
                     Trạng thái
                   </p>
-                  {getStatusBadge(order.status)}
+                  <StatusBadge status={order.status} />
                 </div>
               </div>
+
+              {/* Order Stepper — only show for non-terminal statuses */}
+              {activeStep >= 0 && (
+                <div className="border-border border-t pt-4">
+                  <OrderStepper steps={[...ORDER_STEPPER_STEPS]} activeStep={activeStep} />
+                </div>
+              )}
             </div>
 
             {/* Products List Card */}
@@ -157,7 +166,8 @@ export default function OrderDetailsPage() {
                     <div key={item.id}>
                       {idx > 0 && <Separator className="my-5" />}
                       <div className="flex items-start gap-4">
-                        <div className="bg-muted hidden h-24 w-24 shrink-0 overflow-hidden rounded-md border shadow-sm sm:block">
+                        {/* Show smaller image on mobile, larger on sm+ */}
+                        <div className="bg-muted h-16 w-16 shrink-0 overflow-hidden rounded-md border shadow-sm sm:h-24 sm:w-24">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={item.thumbnailUrl || ''}

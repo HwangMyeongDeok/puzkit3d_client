@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useLoginMutation } from '@/lib/api/endpoints/authApi';
+import { useLoginMutation, useResendVerificationEmailMutation } from '@/lib/api/endpoints/authApi';
 import { useAppDispatch } from '@/stores/hooks';
 import { setCredentials } from '@/stores/slices/authSlice';
 import { handleApiError } from '@/lib/utils/error-handle';
@@ -15,6 +15,10 @@ export default function LoginForm() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [login, { isLoading }] = useLoginMutation();
+  const [resendVerificationEmail, { isLoading: isResending }] =
+    useResendVerificationEmailMutation();
+
+  const [showResend, setShowResend] = useState(false);
 
   const [form, setForm] = useState({
     email: '',
@@ -60,6 +64,30 @@ export default function LoginForm() {
       }
 
       router.push('/');
+    } catch (err: any) {
+      const errorMessage = err?.data?.message || err?.message || '';
+      if (
+        errorMessage.toLowerCase().includes('not verified') ||
+        errorMessage.toLowerCase().includes('chưa xác thực') ||
+        err?.status === 403
+      ) {
+        setShowResend(true);
+        toast.error('Tài khoản chưa được xác thực. Vui lòng kiểm tra email của bạn.');
+      } else {
+        handleApiError(err);
+      }
+    }
+  };
+
+  const handleResend = async () => {
+    if (!form.email) {
+      toast.error('Vui lòng nhập email để gửi lại xác thực.');
+      return;
+    }
+    try {
+      await resendVerificationEmail({ email: form.email }).unwrap();
+      toast.success('Đã gửi lại email xác thực! Vui lòng kiểm tra hộp thư.');
+      setShowResend(false);
     } catch (err: any) {
       handleApiError(err);
     }
@@ -136,6 +164,15 @@ export default function LoginForm() {
                 />
               </div>
 
+              <div className="text-right">
+                <Link
+                  href="/forgot-password"
+                  className="text-sm font-medium text-[#052a5b] hover:underline"
+                >
+                  Quên mật khẩu?
+                </Link>
+              </div>
+
               <button
                 type="submit"
                 disabled={isLoading}
@@ -150,6 +187,23 @@ export default function LoginForm() {
                   Đăng ký ngay
                 </Link>
               </p>
+
+              {showResend && (
+                <div className="mt-4 rounded-xl border border-red-100 bg-red-50 p-4 text-center">
+                  <p className="mb-3 text-sm text-red-800">
+                    Email của bạn chưa được xác thực. Bạn không thể đăng nhập cho đến khi xác thực
+                    email.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={isResending}
+                    className="inline-flex h-10 items-center justify-center rounded-xl bg-red-600 px-4 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isResending ? 'Đang gửi lại...' : 'Gửi lại email xác thực'}
+                  </button>
+                </div>
+              )}
             </form>
           </div>
         </div>

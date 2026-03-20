@@ -6,10 +6,14 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  user: User;
-  accessToken: string;
+  userId: string;
+  email: string;
+  token: string;
   refreshToken: string;
-  expiresAt: string;
+  /** Structured fields — used if the backend evolves */
+  user?: User;
+  accessToken?: string;
+  expiresAt?: string;
 }
 
 export interface RegisterRequest {
@@ -27,11 +31,8 @@ export interface LogoutResponse {
   message?: string;
 }
 
-export interface LoginResponse {
-  userId: string;
-  email: string;
+export interface VerifyEmailRequest {
   token: string;
-  refreshToken: string;
 }
 
 export interface ChangePasswordRequest {
@@ -46,6 +47,7 @@ export interface ForgotPasswordRequest {
 export interface ResetPasswordRequest {
   token: string;
   newPassword: string;
+  confirmPassword: string;
 }
 
 export interface UpdateProfileRequest {
@@ -60,4 +62,8 @@ export interface UpdateProfileRequest {
   districtName?: string;
   wardCode?: string;
   wardName?: string;
+}
+
+export interface ResendVerificationEmailRequest {
+  email: string;
 }
