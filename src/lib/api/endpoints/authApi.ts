@@ -9,7 +9,9 @@ import type {
   ChangePasswordRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
+  VerifyEmailRequest,
   UpdateProfileRequest,
+  ResendVerificationEmailRequest,
 } from '@/types/api/auth.api.types';
 
 export const authApi = apiSlice.injectEndpoints({
@@ -79,6 +81,23 @@ export const authApi = apiSlice.injectEndpoints({
         data,
       }),
     }),
+
+    verifyEmail: builder.mutation<void, VerifyEmailRequest>({
+      query: (data) => ({
+        url: '/auth/verify-email',
+        method: 'POST',
+        data,
+      }),
+      invalidatesTags: ['User'],
+    }),
+
+    resendVerificationEmail: builder.mutation<void, ResendVerificationEmailRequest>({
+      query: (data) => ({
+        url: '/auth/resend-verification',
+        method: 'POST',
+        data,
+      }),
+    }),
   }),
 });
 
@@ -92,4 +111,6 @@ export const {
   useChangePasswordMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
+  useVerifyEmailMutation,
+  useResendVerificationEmailMutation,
 } = authApi;

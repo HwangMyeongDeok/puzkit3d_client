@@ -2,9 +2,14 @@ import * as z from 'zod';
 
 export const checkoutSchema = z.object({
   fullName: z.string().min(2, { message: 'Họ tên phải có ít nhất 2 ký tự' }),
-  phone: z.string().regex(/^(0|\+84)(3|5|7|8|9)[0-9]{8}$/, {
-    message: 'Số điện thoại không hợp lệ (Vd: 0912345678)',
-  }),
+  phone: z
+    .string()
+    .transform((v) => v.replace(/[\s-]/g, ''))
+    .pipe(
+      z.string().regex(/^(0|\+84)(3|5|7|8|9)[0-9]{8}$/, {
+        message: 'Số điện thoại không hợp lệ (Vd: 0912345678)',
+      })
+    ),
   provinceName: z.string().min(1, { message: 'Thiếu Tên Tỉnh / Thành phố' }),
   districtName: z.string().min(1, { message: 'Thiếu Tên Quận / Huyện' }),
   wardName: z.string().min(1, { message: 'Thiếu Tên Phường / Xã' }),
@@ -12,7 +17,7 @@ export const checkoutSchema = z.object({
   paymentMethod: z.enum(['COD', 'Online'], {
     message: 'Vui lòng chọn phương thức thanh toán',
   }),
-  saveProfile: z.boolean(),
+  saveProfile: z.boolean().default(false),
 });
 
 export type CheckoutFormValues = z.infer<typeof checkoutSchema>;

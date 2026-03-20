@@ -28,23 +28,36 @@ export const DIFFICULTY_LABELS: Record<string, string> = {
   expert: 'Chuyên gia',
 };
 
-export const ORDER_STATUS = {
-  PENDING: 'pending',
-  CONFIRMED: 'confirmed',
-  PACKED: 'packed',
-  SHIPPED: 'shipped',
-  DELIVERED: 'delivered',
-  CANCELLED: 'cancelled',
+import type { InstockOrderStatus } from '@/types/order.types';
+
+/** Shared config for all order-status UI. Keyed by backend string enum. */
+export const ORDER_STATUS_MAP: Record<
+  InstockOrderStatus,
+  { label: string; color: string; stepIndex: number }
+> = {
+  Pending: { label: 'Chờ xác nhận', color: 'yellow', stepIndex: 0 },
+  Paid: { label: 'Đã thanh toán', color: 'yellow', stepIndex: 1 },
+  Processing: { label: 'Đang xử lý', color: 'blue', stepIndex: 2 },
+  Waiting: { label: 'Đang chờ', color: 'yellow', stepIndex: 2 },
+  HandedOverToDelivery: { label: 'Bàn giao vận chuyển', color: 'indigo', stepIndex: 3 },
+  Shipping: { label: 'Đang giao', color: 'violet', stepIndex: 4 },
+  Delivered: { label: 'Đã giao', color: 'emerald', stepIndex: 5 },
+  Completed: { label: 'Hoàn thành', color: 'green', stepIndex: 6 },
+  Cancelled: { label: 'Đã hủy', color: 'red', stepIndex: -1 },
+  Returned: { label: 'Trả hàng', color: 'orange', stepIndex: -1 },
+  Rejected: { label: 'Bị từ chối', color: 'rose', stepIndex: -1 },
 } as const;
 
-export const ORDER_STATUS_LABELS: Record<string, string> = {
-  pending: 'Chờ xác nhận',
-  confirmed: 'Đã xác nhận',
-  packed: 'Đang đóng gói',
-  shipped: 'Đang giao',
-  delivered: 'Đã giao',
-  cancelled: 'Đã hủy',
-};
+/** Steps shown in the OrderStepper (happy path only). */
+export const ORDER_STEPPER_STEPS = [
+  'Chờ xác nhận',
+  'Đã thanh toán',
+  'Đang xử lý',
+  'Bàn giao vận chuyển',
+  'Đang giao',
+  'Đã giao',
+  'Hoàn thành',
+] as const;
 
 export const IMPORT_REQUEST_STATUS = {
   SUBMITTED: 'submitted',

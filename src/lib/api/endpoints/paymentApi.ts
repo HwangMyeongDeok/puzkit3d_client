@@ -10,6 +10,7 @@ export const paymentApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getPaymentByOrderId: builder.query<GetPaymentByOrderIdResponse, string>({
       query: (orderId) => ({ url: `/orders/${orderId}/payments` }),
+      providesTags: ['Payment'],
     }),
     getPaymentTransactions: builder.query<GetPaymentTransactionsResponse, string>({
       query: (paymentId) => ({ url: `/payments/${paymentId}/transactions` }),
@@ -20,6 +21,7 @@ export const paymentApi = apiSlice.injectEndpoints({
         method: 'POST',
         data: { paymentId, provider },
       }),
+      invalidatesTags: ['Payment', 'Order'],
     }),
   }),
 });

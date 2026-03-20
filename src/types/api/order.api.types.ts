@@ -1,4 +1,5 @@
 // src/types/api/order.api.types.ts
+import type { InstockOrderStatus } from '../order.types';
 
 export interface OrderProductDetailsDto {
   productId?: string;
@@ -72,7 +73,7 @@ export interface GetCustomerOrderByIdResponseDto {
   usedCoinAmount?: number;
   usedCoinAmountAsMoney?: number;
   grandTotalAmount?: number;
-  status?: number;
+  status?: InstockOrderStatus;
   paymentMethod?: string;
   isPaid?: boolean;
   paidAt?: string;
@@ -94,7 +95,7 @@ export interface GetCustomerOrderResponseDto {
   code?: string;
   grandTotalAmount?: number;
   totalQuantity?: number;
-  status?: number;
+  status?: InstockOrderStatus;
   paymentMethod?: string;
   isPaid?: boolean;
   paidAt?: string;

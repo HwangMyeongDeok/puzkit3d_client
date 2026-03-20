@@ -37,12 +37,18 @@ export default function RegisterForm() {
       // Gọi API đăng ký
       await register(form).unwrap();
 
-      toast.success('Đăng ký thành công! Đang chuyển sang đăng nhập...');
+      toast.success(
+        'Registration successful! Please check your email (and spam folder) to verify your account.'
+      );
 
-      // Đăng ký thành công thì đá sang trang login
-      setTimeout(() => {
-        router.push('/login');
-      }, 1500);
+      // Do NOT redirect, let the user stay and see the message.
+      // Optional: Clear form
+      setForm({
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+      });
     } catch (err: any) {
       handleApiError(err);
     }

@@ -1,7 +1,5 @@
 import type { BaseEntity } from './common.types';
 
-// ============ SHARED ============
-
 export type PaymentMethod = 'COD' | 'ONLINE';
 
 export interface CustomerAddress {
@@ -12,8 +10,6 @@ export interface CustomerAddress {
   wardCode: string;
   wardName: string;
 }
-
-// ============ INSTOCK ORDER ============
 
 export type InstockOrderStatus =
   | 'Pending'
@@ -26,7 +22,7 @@ export type InstockOrderStatus =
   | 'Completed'
   | 'Returned'
   | 'HandedOverToDelivery'
-  | 'Rejected'; // DB uses integer status codes
+  | 'Rejected';
 
 export interface InstockOrder extends BaseEntity {
   code: string;
