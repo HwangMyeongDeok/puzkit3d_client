@@ -90,10 +90,19 @@ export default function OrderDetailsPage() {
   }
 
   /* Compute active step for the stepper */
+  const isCOD = order.paymentMethod === 'COD';
+
+  const stepperSteps = isCOD
+    ? ORDER_STEPPER_STEPS.filter((s) => s !== 'Đã thanh toán')
+    : [...ORDER_STEPPER_STEPS];
+
   const statusInfo = order.status
     ? ORDER_STATUS_MAP[order.status as InstockOrderStatus]
     : undefined;
-  const activeStep = statusInfo?.stepIndex ?? 0;
+
+  const activeStep = statusInfo
+    ? Math.max(0, (stepperSteps as string[]).indexOf(statusInfo.label))
+    : 0;
 
   return (
     <div className="container-custom py-8 lg:py-12">
@@ -148,7 +157,11 @@ export default function OrderDetailsPage() {
               {/* Order Stepper — only show for non-terminal statuses */}
               {activeStep >= 0 && (
                 <div className="border-border border-t pt-4">
-                  <OrderStepper steps={[...ORDER_STEPPER_STEPS]} activeStep={activeStep} />
+                  <OrderStepper
+                    steps={stepperSteps}
+                    activeStep={activeStep}
+                    isPaid={order.isPaid}
+                  />
                 </div>
               )}
             </div>

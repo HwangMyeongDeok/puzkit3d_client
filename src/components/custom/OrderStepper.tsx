@@ -1,14 +1,20 @@
 interface OrderStepperProps {
   steps: string[];
   activeStep?: number;
+  isPaid?: boolean; // thêm prop
 }
 
-export default function OrderStepper({ steps, activeStep = 0 }: OrderStepperProps) {
+export default function OrderStepper({ steps, activeStep = 0, isPaid = false }: OrderStepperProps) {
+  const PAID_STEP_IDX = 1;
+
   return (
     <div className="flex items-center gap-1 overflow-x-auto py-2">
       {steps.map((step, idx) => {
-        const isActive = idx === activeStep;
-        const isCompleted = idx < activeStep;
+        // Step "Đã thanh toán" chỉ completed/active khi isPaid = true
+        const blocked = idx === PAID_STEP_IDX && !isPaid;
+
+        const isCompleted = !blocked && idx <= activeStep; // <= thay vì < để active step cũng tích
+        const isActive = !blocked && idx === activeStep;
 
         return (
           <div key={step} className="flex items-center">
@@ -26,7 +32,7 @@ export default function OrderStepper({ steps, activeStep = 0 }: OrderStepperProp
               </div>
               <span
                 className={`max-w-[80px] text-center text-[10px] leading-tight font-medium ${
-                  isActive ? 'text-brand' : isCompleted ? 'text-success' : 'text-muted-foreground'
+                  isCompleted ? 'text-success' : isActive ? 'text-brand' : 'text-muted-foreground'
                 }`}
               >
                 {step}

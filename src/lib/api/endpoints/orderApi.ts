@@ -25,10 +25,12 @@ export const orderApi = apiSlice.injectEndpoints({
             ]
           : [{ type: 'Order', id: 'LIST' }],
     }),
+
     getCustomerOrderById: builder.query<GetCustomerOrderByIdResponseDto, string>({
       query: (orderId) => ({ url: `/instock-orders/${orderId}` }),
       providesTags: (_result, _error, id) => [{ type: 'Order', id }],
     }),
+
     createInstockOrder: builder.mutation<string, CreateInstockOrderRequestDto>({
       query: (data) => ({
         url: '/instock-orders',
