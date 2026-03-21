@@ -17,7 +17,7 @@ export const checkoutSchema = z.object({
   paymentMethod: z.enum(['COD', 'Online'], {
     message: 'Vui lòng chọn phương thức thanh toán',
   }),
-  saveProfile: z.boolean().default(false),
+  saveProfile: z.boolean(),
 });
 
 export type CheckoutFormValues = z.infer<typeof checkoutSchema>;

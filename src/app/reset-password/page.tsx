@@ -34,8 +34,8 @@ import {
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const token = searchParams.get('token');
+  const userId = searchParams.get('userId');
 
   const [resetPassword, { isLoading }] = useResetPasswordMutation();
   const [isSuccess, setIsSuccess] = useState(false);
@@ -83,10 +83,11 @@ function ResetPasswordContent() {
 
   const onSubmit = async (values: ResetPasswordFormValues) => {
     try {
+      const safeToken = token.replace(/ /g, '+');
       await resetPassword({
-        token,
+        userId: userId as string,
+        token: safeToken,
         newPassword: values.newPassword,
-        confirmPassword: values.confirmPassword,
       }).unwrap();
       setIsSuccess(true);
       toast.success('Mật khẩu đã được đặt lại thành công!');

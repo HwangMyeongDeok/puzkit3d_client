@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -202,60 +202,155 @@ export default function CheckoutPage() {
       setWards([]);
     }
   }, [selectedDistrictCode]);
-
+  const isAutoFilling = useRef(false);
+  const pendingWardName = useRef<string>('');
   // 1. AUTO-FILL TỪ PROFILE VÀ DRAFT (Ưu tiên Profile mới nhất cho Địa Chỉ)
   useEffect(() => {
-    // Lấy thông tin từ Profile trước
-    if (profile) {
-      const fullNameArr = [];
-      if (profile.firstName) fullNameArr.push(profile.firstName);
-      if (profile.lastName) fullNameArr.push(profile.lastName);
-      const fullName = fullNameArr.join(' ').trim();
+    if (!profile) return;
+    isAutoFilling.current = true;
+    const fullNameArr = [];
+    if (profile.firstName) fullNameArr.push(profile.firstName);
+    if (profile.lastName) fullNameArr.push(profile.lastName);
+    const fullName = fullNameArr.join(' ').trim();
 
-      if (fullName) form.setValue('fullName', fullName);
-      if (profile.phoneNumber) form.setValue('phone', profile.phoneNumber);
-      if (profile.streetAddress) form.setValue('address', profile.streetAddress);
+    if (fullName) form.setValue('fullName', fullName);
+    if (profile.phoneNumber) form.setValue('phone', profile.phoneNumber);
+    if (profile.streetAddress) form.setValue('address', profile.streetAddress);
+    if (profile.provinceName) form.setValue('provinceName', profile.provinceName);
+    if (profile.districtName) form.setValue('districtName', profile.districtName);
+    if (profile.wardName) form.setValue('wardName', profile.wardName);
+    if (profile.districtId && !selectedDistrictCode) {
+      setSelectedDistrictCode(profile.districtId);
+    }
+    form.setValue('saveProfile', !profile.streetAddress);
 
-      // Phải check kỹ mã code mới ghi vào form để tránh đụng độ
-      if (profile.provinceName) form.setValue('provinceName', profile.provinceName);
-      if (profile.districtName) form.setValue('districtName', profile.districtName);
-      if (profile.wardName) form.setValue('wardName', profile.wardName);
-      if (profile.provinceId) setSelectedProvinceCode(profile.provinceId);
-      if (profile.districtId) setSelectedDistrictCode(profile.districtId);
-
-      // Nếu user CHƯA CÓ địa chỉ, tự động tick để lưu lại. CÓ RỒI thì bỏ tick để tránh spam API.
-      form.setValue('saveProfile', !profile.streetAddress);
+    // ✅ FIX: Chỉ set code nếu provinces đã load rồi, tự tìm code từ tên
+    if (provinces.length > 0 && profile.provinceName) {
+      const p = provinces.find(
+        (x: any) =>
+          String(x.code) === profile.provinceId ||
+          x.name === profile.provinceName ||
+          x.name.includes(profile.provinceName!) ||
+          profile.provinceName!.includes(x.name)
+      );
+      if (p) setSelectedProvinceCode(String(p.code));
+    } else if (profile.provinceId) {
+      // provinces chưa load, set code trước để khi provinces load sẽ trigger
+      setSelectedProvinceCode(profile.provinceId);
     }
 
-    // Sau đó đắp thêm từ Draft nếu có trường nào còn trống
+    if (profile.districtId) setSelectedDistrictCode(profile.districtId);
+
+    // Draft fallback...
     const savedDraft = localStorage.getItem(APP_CONFIG.DRAFT_KEY);
     if (savedDraft) {
       try {
         const parsed = JSON.parse(savedDraft) as Partial<CheckoutFormValues>;
-
-        // Chỉ ghi đè từ nháp nếu Profile không có sẵn (Giúp fix lỗi form kẹt địa chỉ cũ)
-        if (!profile?.streetAddress && parsed.address) form.setValue('address', parsed.address);
         if (!profile?.phoneNumber && parsed.phone) form.setValue('phone', parsed.phone);
-
-        const currentFullName = form.getValues('fullName');
-        if (!currentFullName && parsed.fullName) form.setValue('fullName', parsed.fullName);
-
-        // Nạp Phương thức thanh toán từ nháp dĩ nhiên
+        if (!profile?.streetAddress && parsed.address) form.setValue('address', parsed.address);
+        if (!form.getValues('fullName') && parsed.fullName)
+          form.setValue('fullName', parsed.fullName);
         if (parsed.paymentMethod) form.setValue('paymentMethod', parsed.paymentMethod);
       } catch (e) {
         localStorage.removeItem(APP_CONFIG.DRAFT_KEY);
       }
     }
-  }, [profile, form]);
+    if (profile.wardName) {
+      pendingWardName.current = profile.wardName;
+    }
+  }, [profile, provinces]); // 👈 THÊM provinces vào dependency
 
-  // 2. LƯU NHÁP REALTIME KHI TYPE
+  // ĐỒNG BỘ: Tự tìm code Tỉnh/Quận thông qua Name nếu ID bị thiếu (trường hợp user khởi tạo hoặc thiếu ID từ Backend)
   useEffect(() => {
-    const subscription = form.watch((value) => {
-      localStorage.setItem(APP_CONFIG.DRAFT_KEY, JSON.stringify(value));
-    });
-    return () => subscription.unsubscribe();
-  }, [form.watch]);
+    if (provinces.length > 0 && provinceName) {
+      // Ưu tiên tìm theo ID trước, nếu không có ID thì tìm theo tên tương đối
+      const p = provinces.find(
+        (x: any) =>
+          String(x.code) === selectedProvinceCode ||
+          x.name === provinceName ||
+          x.name.includes(provinceName) ||
+          provinceName.includes(x.name)
+      );
 
+      if (p) {
+        // Kích hoạt lấy Quận/Huyện
+        if (selectedProvinceCode !== String(p.code)) {
+          setSelectedProvinceCode(String(p.code));
+        }
+        // Ép Form nhận đúng tên chuẩn của API để Select Shadcn chịu hiển thị label
+        if (p.name !== provinceName) {
+          form.setValue('provinceName', p.name, { shouldValidate: true });
+        }
+      }
+    }
+  }, [provinces, provinceName, selectedProvinceCode, form]);
+
+  // 2. Đồng bộ & Chuẩn hóa tên Quận/Huyện
+  useEffect(() => {
+    if (districts.length === 0 || !districtName) return;
+
+    const d = districts.find(
+      (x: any) =>
+        String(x.code) === selectedDistrictCode ||
+        x.name === districtName ||
+        x.name.includes(districtName) ||
+        districtName.includes(x.name)
+    );
+
+    if (d) {
+      if (selectedDistrictCode !== String(d.code)) {
+        setSelectedDistrictCode(String(d.code)); // Trigger fetch wards
+      }
+      if (d.name !== districtName) {
+        form.setValue('districtName', d.name, { shouldValidate: true });
+      }
+    }
+  }, [districts, districtName]);
+
+  // 3. Đồng bộ & Chuẩn hóa tên Phường/Xã (Code cũ của ông bị thiếu block này)
+  useEffect(() => {
+    if (wards.length === 0) return;
+
+    // 👇 Nếu đang auto-fill và có wardName chờ restore
+    if (isAutoFilling.current && pendingWardName.current) {
+      const w = wards.find(
+        (x: any) =>
+          x.name === pendingWardName.current ||
+          x.name.includes(pendingWardName.current) ||
+          pendingWardName.current.includes(x.name)
+      );
+      if (w) {
+        form.setValue('wardName', w.name, { shouldValidate: true });
+      }
+      pendingWardName.current = '';
+      isAutoFilling.current = false; // 👈 Tắt cờ SAU KHI wards đã về và restore xong
+      return;
+    }
+
+    // Logic chuẩn hóa tên bình thường khi user tự chọn
+    if (wardName) {
+      const w = wards.find(
+        (x: any) => x.name === wardName || x.name.includes(wardName) || wardName.includes(x.name)
+      );
+      if (w && w.name !== wardName) {
+        form.setValue('wardName', w.name, { shouldValidate: true });
+      }
+    }
+  }, [wards]);
+  useEffect(() => {
+    console.log(
+      'Districts loaded:',
+      districts.length,
+      '| districtName:',
+      districtName,
+      '| selectedDistrictCode:',
+      selectedDistrictCode
+    );
+  }, [districts, districtName, selectedDistrictCode]);
+
+  useEffect(() => {
+    console.log('Wards loaded:', wards.length, '| wardName:', wardName);
+  }, [wards, wardName]);
   const onSubmit = async (data: CheckoutFormValues) => {
     setIsSubmitting(true);
 
@@ -484,13 +579,15 @@ export default function CheckoutPage() {
                       <FormItem>
                         <FormLabel>Quận / Huyện *</FormLabel>
                         <Select
+                          key={`district-${selectedProvinceCode}`}
                           onValueChange={(val) => {
                             field.onChange(val);
                             const d = districts?.find((x: any) => x.name === val);
                             setSelectedDistrictCode(d ? String(d.code) : '');
-
-                            // RESET PHƯỜNG
-                            form.setValue('wardName', '');
+                            if (!isAutoFilling.current) {
+                              // 👈 chỉ reset khi user tự bấm
+                              form.setValue('wardName', '');
+                            }
                           }}
                           value={field.value || undefined}
                           // 2. KHÓA MÕM: Chỉ khóa khi chưa chọn Tỉnh
@@ -534,6 +631,7 @@ export default function CheckoutPage() {
                       <FormItem>
                         <FormLabel>Phường / Xã *</FormLabel>
                         <Select
+                          key={`ward-${selectedDistrictCode}`}
                           onValueChange={(val) => {
                             field.onChange(val);
                             // Ép chuỗi cẩn thận lúc tìm kiếm
