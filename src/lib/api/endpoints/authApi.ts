@@ -7,6 +7,7 @@ import type {
   RegisterRequest,
   RegisterResponse,
   ChangePasswordRequest,
+  ConfirmEmailRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
   VerifyEmailRequest,
@@ -82,21 +83,13 @@ export const authApi = apiSlice.injectEndpoints({
       }),
     }),
 
-    verifyEmail: builder.mutation<void, VerifyEmailRequest>({
+    confirmEmail: builder.mutation<void, ConfirmEmailRequest>({
       query: (data) => ({
-        url: '/auth/verify-email',
+        url: '/auth/confirm-email',
         method: 'POST',
         data,
       }),
       invalidatesTags: ['User'],
-    }),
-
-    resendVerificationEmail: builder.mutation<void, ResendVerificationEmailRequest>({
-      query: (data) => ({
-        url: '/auth/resend-verification',
-        method: 'POST',
-        data,
-      }),
     }),
   }),
 });
@@ -111,6 +104,5 @@ export const {
   useChangePasswordMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
-  useVerifyEmailMutation,
-  useResendVerificationEmailMutation,
+  useConfirmEmailMutation,
 } = authApi;

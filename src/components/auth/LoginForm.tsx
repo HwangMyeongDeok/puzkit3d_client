@@ -3,22 +3,19 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useLoginMutation, useResendVerificationEmailMutation } from '@/lib/api/endpoints/authApi';
+import { useLoginMutation } from '@/lib/api/endpoints/authApi';
 import { useAppDispatch } from '@/stores/hooks';
 import { setCredentials } from '@/stores/slices/authSlice';
 import { handleApiError } from '@/lib/utils/error-handle';
 import { toast } from 'sonner';
-import { User } from '@/types';
 import { APP_CONFIG } from '@/constants';
 
 export default function LoginForm() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [login, { isLoading }] = useLoginMutation();
-  const [resendVerificationEmail, { isLoading: isResending }] =
-    useResendVerificationEmailMutation();
 
-  const [showResend, setShowResend] = useState(false);
+  const [notVerifiedError, setNotVerifiedError] = useState(false);
 
   const [form, setForm] = useState({
     email: '',
@@ -26,6 +23,9 @@ export default function LoginForm() {
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Ẩn thông báo lỗi khi người dùng gõ lại
+    if (notVerifiedError) setNotVerifiedError(false);
+
     setForm((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
@@ -34,6 +34,7 @@ export default function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setNotVerifiedError(false);
 
     if (!form.email || !form.password) {
       toast.error('Vui lòng nhập email và mật khẩu!');
@@ -71,25 +72,11 @@ export default function LoginForm() {
         errorMessage.toLowerCase().includes('chưa xác thực') ||
         err?.status === 403
       ) {
-        setShowResend(true);
-        toast.error('Tài khoản chưa được xác thực. Vui lòng kiểm tra email của bạn.');
+        setNotVerifiedError(true);
+        toast.error('Tài khoản chưa được xác thực.');
       } else {
         handleApiError(err);
       }
-    }
-  };
-
-  const handleResend = async () => {
-    if (!form.email) {
-      toast.error('Vui lòng nhập email để gửi lại xác thực.');
-      return;
-    }
-    try {
-      await resendVerificationEmail({ email: form.email }).unwrap();
-      toast.success('Đã gửi lại email xác thực! Vui lòng kiểm tra hộp thư.');
-      setShowResend(false);
-    } catch (err: any) {
-      handleApiError(err);
     }
   };
 
@@ -188,20 +175,16 @@ export default function LoginForm() {
                 </Link>
               </p>
 
-              {showResend && (
+              {/* Thông báo lỗi khi tài khoản chưa xác thực */}
+              {notVerifiedError && (
                 <div className="mt-4 rounded-xl border border-red-100 bg-red-50 p-4 text-center">
-                  <p className="mb-3 text-sm text-red-800">
-                    Email của bạn chưa được xác thực. Bạn không thể đăng nhập cho đến khi xác thực
-                    email.
+                  <p className="text-sm text-red-800">
+                    Tài khoản của bạn chưa được xác thực. Vui lòng kiểm tra lại email hoặc{' '}
+                    <Link href="/register" className="font-bold underline hover:text-red-900">
+                      đăng ký lại
+                    </Link>{' '}
+                    để nhận link mới.
                   </p>
-                  <button
-                    type="button"
-                    onClick={handleResend}
-                    disabled={isResending}
-                    className="inline-flex h-10 items-center justify-center rounded-xl bg-red-600 px-4 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {isResending ? 'Đang gửi lại...' : 'Gửi lại email xác thực'}
-                  </button>
                 </div>
               )}
             </form>

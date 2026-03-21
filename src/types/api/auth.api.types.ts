@@ -35,6 +35,11 @@ export interface VerifyEmailRequest {
   token: string;
 }
 
+export interface ConfirmEmailRequest {
+  userId: string;
+  token: string;
+}
+
 export interface ChangePasswordRequest {
   oldPassword: string;
   newPassword: string;
@@ -45,9 +50,9 @@ export interface ForgotPasswordRequest {
 }
 
 export interface ResetPasswordRequest {
+  userId: string;
   token: string;
   newPassword: string;
-  confirmPassword: string;
 }
 
 export interface UpdateProfileRequest {
