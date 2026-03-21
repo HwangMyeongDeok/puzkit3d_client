@@ -10,9 +10,6 @@ import PaymentActionDialog from '@/components/checkout/PaymentActionDialog';
 import { ORDER_STATUS_MAP } from '@/constants';
 import type { InstockOrderStatus } from '@/types';
 
-/* ------------------------------------------------------------------ */
-/*  Reusable status badge driven by shared config                     */
-/* ------------------------------------------------------------------ */
 const colorMap: Record<string, string> = {
   yellow: 'border-yellow-500/20  bg-yellow-500/10  text-yellow-600',
   blue: 'border-blue-500/20    bg-blue-500/10    text-blue-600',
@@ -39,7 +36,6 @@ function StatusBadge({ status }: { status?: InstockOrderStatus }) {
   return <span className={`${badgeBase} ${colorMap[info.color] ?? ''}`}>{info.label}</span>;
 }
 
-/* ---------- terminal statuses that should NOT show a pay button ---- */
 const TERMINAL_STATUSES: InstockOrderStatus[] = ['Cancelled', 'Rejected', 'Returned', 'Completed'];
 
 export default function OrdersPage() {
