@@ -28,9 +28,7 @@ function StatusBadge({ status }: { status?: InstockOrderStatus }) {
   const info = status ? ORDER_STATUS_MAP[status] : undefined;
   if (!info) {
     return (
-      <span className={`${badgeBase} bg-muted text-muted-foreground border-border`}>
-        Không xác định
-      </span>
+      <span className={`${badgeBase} bg-muted text-muted-foreground border-border`}>Unknown</span>
     );
   }
   return <span className={`${badgeBase} ${colorMap[info.color] ?? ''}`}>{info.label}</span>;
@@ -65,13 +63,13 @@ export default function OrdersPage() {
   return (
     <div className="container-custom py-8 lg:py-12">
       <div className="flex flex-col gap-6">
-        <h1 className="text-2xl font-bold md:text-3xl">Lịch sử mua hàng</h1>
+        <h1 className="text-2xl font-bold md:text-3xl">Order History</h1>
 
         {/* --- KHU VỰC FILTER STATUS --- */}
         <div className="scrollbar-hide flex items-center gap-2 overflow-x-auto pb-2">
           <div className="text-muted-foreground mr-2 hidden items-center gap-2 text-sm font-medium md:flex">
             <Filter className="h-4 w-4" />
-            <span>Lọc:</span>
+            <span>Filter:</span>
           </div>
           <Button
             variant={selectedStatus === '' ? 'default' : 'outline'}
@@ -79,7 +77,7 @@ export default function OrdersPage() {
             className="rounded-full px-5 whitespace-nowrap"
             size="sm"
           >
-            Tất cả
+            All
           </Button>
           {STATUS_OPTIONS.map((opt) => (
             <Button
@@ -101,18 +99,18 @@ export default function OrdersPage() {
           </div>
         ) : isError ? (
           <div className="bg-destructive/10 text-destructive rounded-xl p-6 text-center">
-            <p>Có lỗi xảy ra khi tải lịch sử đơn hàng.</p>
+            <p>An error occurred while loading order history.</p>
           </div>
         ) : orders.length === 0 ? (
           <div className="bg-card border-border flex flex-col items-center justify-center rounded-xl border py-16 text-center">
             <Receipt className="text-muted-foreground/40 mb-4 h-16 w-16" />
             <h2 className="mb-2 text-xl font-bold">
-              {selectedStatus ? 'Không tìm thấy đơn hàng nào' : 'Chưa có đơn hàng nào'}
+              {selectedStatus ? 'No orders found' : 'No orders yet'}
             </h2>
             <p className="text-muted-foreground mb-6">
               {selectedStatus
-                ? 'Thử chọn trạng thái khác xem sao nhé.'
-                : 'Bạn chưa thực hiện bất kỳ giao dịch nào.'}
+                ? 'Please try selecting a different status.'
+                : "You haven't made any transactions yet."}
             </p>
             {!selectedStatus && (
               <Link
@@ -120,7 +118,7 @@ export default function OrdersPage() {
                 className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-xl px-6 py-2.5 font-semibold transition-colors"
               >
                 <Package className="h-4 w-4" />
-                Khám phá sản phẩm
+                Discover Products
               </Link>
             )}
           </div>
@@ -139,19 +137,19 @@ export default function OrdersPage() {
                     </div>
                     <div>
                       <h3 className="mb-1 text-lg leading-none font-bold">
-                        Đơn hàng #{order.code || order.id.split('-')[0].toUpperCase()}
+                        Order #{order.code || order.id.split('-')[0].toUpperCase()}
                       </h3>
                       <div className="text-muted-foreground mt-2 flex items-center gap-2 text-sm">
                         <Calendar className="h-4 w-4" />
                         {order.createdAt
-                          ? new Date(order.createdAt).toLocaleDateString('vi-VN', {
+                          ? new Date(order.createdAt).toLocaleDateString('en-US', {
                               day: '2-digit',
                               month: '2-digit',
                               year: 'numeric',
                               hour: '2-digit',
                               minute: '2-digit',
                             })
-                          : 'Đang cập nhật'}
+                          : 'Updating'}
                       </div>
                     </div>
                   </div>
@@ -160,11 +158,11 @@ export default function OrdersPage() {
                     <StatusBadge status={order.status} />
                     {order.isPaid ? (
                       <span className="bg-success/10 text-success border-success/20 flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold uppercase">
-                        <CreditCard className="h-3 w-3" /> Đã thanh toán
+                        <CreditCard className="h-3 w-3" /> Paid
                       </span>
                     ) : (
                       <span className="bg-muted text-muted-foreground border-border flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold uppercase">
-                        <CreditCard className="h-3 w-3" /> Chưa thanh toán
+                        <CreditCard className="h-3 w-3" /> Unpaid
                       </span>
                     )}
                   </div>
@@ -204,14 +202,12 @@ export default function OrdersPage() {
                       ))}
                       {order.orderDetailsPreview.length > 3 && (
                         <div className="border-border text-muted-foreground bg-muted/10 flex h-full min-h-16 items-center justify-center rounded-lg border border-dashed text-xs font-medium">
-                          +{order.orderDetailsPreview.length - 3} sản phẩm khác
+                          +{order.orderDetailsPreview.length - 3} other products
                         </div>
                       )}
                     </div>
                   ) : (
-                    <p className="text-muted-foreground text-sm italic">
-                      Không có hình ảnh xem trước.
-                    </p>
+                    <p className="text-muted-foreground text-sm italic">No preview images.</p>
                   )}
                 </div>
 
@@ -219,11 +215,11 @@ export default function OrdersPage() {
                 <div className="border-border flex flex-col justify-between gap-4 border-t pt-4 md:flex-row md:items-center">
                   <div className="flex flex-col">
                     <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-                      Tổng cộng
+                      Total
                     </span>
                     <span className="text-brand text-xl font-bold">
-                      {order.grandTotalAmount ? order.grandTotalAmount.toLocaleString('vi-VN') : 0}{' '}
-                      ₫
+                      {order.grandTotalAmount ? order.grandTotalAmount.toLocaleString('en-US') : 0}{' '}
+                      VND
                     </span>
                   </div>
 
@@ -235,7 +231,7 @@ export default function OrdersPage() {
                           onClick={() => setPaymentOrderId(order.id)}
                           className="bg-brand hover:bg-brand/90 h-11 w-full gap-2 font-bold md:w-auto"
                         >
-                          <CreditCard className="h-4 w-4" /> Thanh toán ngay
+                          <CreditCard className="h-4 w-4" /> Pay Now
                         </Button>
                       )}
                     <Link
@@ -243,7 +239,7 @@ export default function OrdersPage() {
                       className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg px-6 py-2.5 font-semibold shadow-sm transition-colors md:w-auto"
                     >
                       <Eye className="h-4 w-4" />
-                      Xem chi tiết đơn hàng
+                      View Order Details
                     </Link>
                   </div>
                 </div>

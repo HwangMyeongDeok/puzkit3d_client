@@ -92,7 +92,7 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
       fetch('https://provinces.open-api.vn/api/v1/p/')
         .then((res) => res.json())
         .then((data) => setProvinces(data))
-        .catch((err) => console.error('Lỗi lấy dữ liệu Tỉnh:', err));
+        .catch((err) => console.error('Error fetching provinces:', err));
     }
   }, [open]);
 
@@ -103,7 +103,7 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
       fetch(`https://provinces.open-api.vn/api/v1/p/${provinceCode}?depth=2`)
         .then((res) => res.json())
         .then((data) => setDistricts(data.districts || []))
-        .catch((err) => console.error('Lỗi lấy dữ liệu Quận:', err));
+        .catch((err) => console.error('Error fetching districts:', err));
     } else {
       setDistricts([]);
     }
@@ -116,7 +116,7 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
       fetch(`https://provinces.open-api.vn/api/v1/d/${districtCode}?depth=2`)
         .then((res) => res.json())
         .then((data) => setWards(data.wards || []))
-        .catch((err) => console.error('Lỗi lấy dữ liệu Xã:', err));
+        .catch((err) => console.error('Error fetching wards:', err));
     } else {
       setWards([]);
     }
@@ -141,11 +141,11 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
         wardName: data.wardName,
       }).unwrap();
 
-      toast.success('Cập nhật địa chỉ thành công!');
+      toast.success('Address updated successfully!');
       onOpenChange(false);
     } catch (err: any) {
-      console.error('Lỗi cập nhật địa chỉ:', err);
-      toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi cập nhật.');
+      console.error('Error updating address:', err);
+      toast.error(err?.data?.message || err?.message || 'An error occurred while updating.');
     }
   };
 
@@ -155,10 +155,10 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <MapPin className="text-brand h-6 w-6" />
-            Cập nhật địa chỉ giao hàng
+            Update Shipping Address
           </DialogTitle>
           <DialogDescription>
-            Cung cấp thông tin địa chỉ chính xác để PuzKit3D giao hàng nhanh chóng nhất.
+            Provide accurate address information for faster delivery from PuzKit3D.
           </DialogDescription>
         </DialogHeader>
 
@@ -170,9 +170,9 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
                 name="fullName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Người nhận *</FormLabel>
+                    <FormLabel>Recipient *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Nguyễn Văn A" {...field} />
+                      <Input placeholder="John Doe" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -184,7 +184,7 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Số điện thoại *</FormLabel>
+                    <FormLabel>Phone Number *</FormLabel>
                     <FormControl>
                       <Input type="tel" placeholder="0912 345 678" {...field} />
                     </FormControl>
@@ -198,7 +198,7 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
                 name="provinceCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tỉnh / Thành phố *</FormLabel>
+                    <FormLabel>Province / City *</FormLabel>
                     <Select
                       onValueChange={(val) => {
                         field.onChange(val);
@@ -214,7 +214,7 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Chọn Tỉnh / Thành phố" />
+                          <SelectValue placeholder="Select Province / City" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="max-h-60 w-[var(--radix-select-trigger-width)] overflow-y-auto">
@@ -235,7 +235,7 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
                 name="districtCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Quận / Huyện *</FormLabel>
+                    <FormLabel>District *</FormLabel>
                     <Select
                       onValueChange={(val) => {
                         field.onChange(val);
@@ -251,7 +251,9 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue
-                            placeholder={!provinceCode ? 'Chọn Tỉnh trước' : 'Chọn Quận / Huyện'}
+                            placeholder={
+                              !provinceCode ? 'Select Province first' : 'Select District'
+                            }
                           />
                         </SelectTrigger>
                       </FormControl>
@@ -264,7 +266,7 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
                           ))
                         ) : (
                           <SelectItem value="empty" disabled>
-                            Chưa có dữ liệu...
+                            No data available...
                           </SelectItem>
                         )}
                       </SelectContent>
@@ -279,7 +281,7 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
                 name="wardCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phường / Xã *</FormLabel>
+                    <FormLabel>Ward *</FormLabel>
                     <Select
                       onValueChange={(val) => {
                         field.onChange(val);
@@ -291,7 +293,7 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Chọn Phường / Xã" />
+                          <SelectValue placeholder="Select Ward" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="max-h-60 w-[var(--radix-select-trigger-width)] overflow-y-auto">
@@ -303,7 +305,7 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
                           ))
                         ) : (
                           <SelectItem value="empty" disabled>
-                            Chưa có dữ liệu...
+                            No data available...
                           </SelectItem>
                         )}
                       </SelectContent>
@@ -318,9 +320,9 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
                 name="address"
                 render={({ field }) => (
                   <FormItem className="sm:col-span-1">
-                    <FormLabel>Địa chỉ chi tiết *</FormLabel>
+                    <FormLabel>Detailed Address *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Số nhà, tên đường..." {...field} />
+                      <Input placeholder="House number, street name..." {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -335,11 +337,11 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
                 onClick={() => onOpenChange(false)}
                 disabled={isUpdating}
               >
-                Hủy bỏ
+                Cancel
               </Button>
               <Button type="submit" disabled={isUpdating} className="min-w-[120px]">
                 {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Lưu địa chỉ
+                Save Address
               </Button>
             </div>
           </form>

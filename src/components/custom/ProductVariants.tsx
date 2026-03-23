@@ -27,19 +27,19 @@ export default function ProductVariants({
     return (
       <div className="flex items-center gap-2 py-4">
         <Loader2 className="text-brand h-5 w-5 animate-spin" />
-        <span className="text-muted-foreground text-sm">Đang tải biến thể...</span>
+        <span className="text-muted-foreground text-sm">Loading variants...</span>
       </div>
     );
   }
 
   if (isError) {
     return (
-      <p className="text-destructive py-4 text-sm">Không thể tải biến thể. Vui lòng thử lại.</p>
+      <p className="text-destructive py-4 text-sm">Failed to load variants. Please try again.</p>
     );
   }
 
   if (variants.length === 0) {
-    return <p className="text-muted-foreground py-4 text-sm">Sản phẩm này chưa có biến thể nào.</p>;
+    return <p className="text-muted-foreground py-4 text-sm">This product has no variants yet.</p>;
   }
 
   const activeVariants = variants.filter((v) => v.isActive);
@@ -50,7 +50,7 @@ export default function ProductVariants({
   return (
     <div className="flex flex-col gap-4">
       <h3 className="text-foreground text-sm font-semibold">
-        Chọn phiên bản ({activeVariants.length})
+        Select Variant ({activeVariants.length})
       </h3>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -107,10 +107,10 @@ export default function ProductVariants({
       {currentSelectedVariant && (
         <div className="bg-brand/5 border-brand/20 rounded-xl border px-4 py-3">
           <p className="text-foreground text-sm font-semibold">
-            Đã chọn: {currentSelectedVariant.sku}
+            Selected: {currentSelectedVariant.sku}
           </p>
           <p className="text-muted-foreground text-xs">
-            Màu: {currentSelectedVariant.color} · Kích thước:{' '}
+            Color: {currentSelectedVariant.color} · Dimensions:{' '}
             {currentSelectedVariant.assembledLengthMm} × {currentSelectedVariant.assembledWidthMm} ×{' '}
             {currentSelectedVariant.assembledHeightMm} mm
           </p>

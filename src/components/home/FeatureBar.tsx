@@ -4,22 +4,22 @@ const FEATURES = [
   {
     icon: ShieldCheck,
     title: 'Authentic 100%',
-    description: 'Chính hãng từ nhà sản xuất',
+    description: 'Genuine products from manufacturers',
   },
   {
     icon: Truck,
     title: 'Fast Shipping',
-    description: 'Giao hàng nhanh toàn quốc',
+    description: 'Fast nationwide delivery',
   },
   {
     icon: Wrench,
     title: 'Expert Support',
-    description: 'Hỗ trợ kỹ thuật chuyên nghiệp',
+    description: 'Professional technical support',
   },
   {
     icon: RotateCcw,
     title: 'Easy Returns',
-    description: 'Đổi trả trong 7 ngày',
+    description: '7-day easy returns',
   },
 ];
 

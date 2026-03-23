@@ -7,11 +7,11 @@ export const MATERIAL = {
 } as const;
 
 export const MATERIAL_LABELS: Record<string, string> = {
-  paper: 'Giấy',
-  plastic: 'Nhựa',
-  wood: 'Gỗ',
-  metal: 'Kim loại',
-  screw: 'Ốc vít',
+  paper: 'Paper',
+  plastic: 'Plastic',
+  wood: 'Wood',
+  metal: 'Metal',
+  screw: 'Screw',
 };
 
 export const DIFFICULTY = {
@@ -22,10 +22,10 @@ export const DIFFICULTY = {
 } as const;
 
 export const DIFFICULTY_LABELS: Record<string, string> = {
-  easy: 'Dễ',
-  medium: 'Trung bình',
-  hard: 'Khó',
-  expert: 'Chuyên gia',
+  easy: 'Easy',
+  medium: 'Medium',
+  hard: 'Hard',
+  expert: 'Expert',
 };
 
 import type { InstockOrderStatus } from '@/types/order.types';
@@ -35,28 +35,28 @@ export const ORDER_STATUS_MAP: Record<
   InstockOrderStatus,
   { label: string; color: string; stepIndex: number }
 > = {
-  Pending: { label: 'Chờ xác nhận', color: 'yellow', stepIndex: 0 },
-  Paid: { label: 'Đã thanh toán', color: 'yellow', stepIndex: 1 },
-  Processing: { label: 'Đang xử lý', color: 'blue', stepIndex: 2 },
-  Waiting: { label: 'Đang chờ', color: 'yellow', stepIndex: 2 },
-  HandedOverToDelivery: { label: 'Bàn giao vận chuyển', color: 'indigo', stepIndex: 3 },
-  Shipping: { label: 'Đang giao', color: 'violet', stepIndex: 4 },
-  Delivered: { label: 'Đã giao', color: 'emerald', stepIndex: 5 },
-  Completed: { label: 'Hoàn thành', color: 'green', stepIndex: 6 },
-  Cancelled: { label: 'Đã hủy', color: 'red', stepIndex: -1 },
-  Returned: { label: 'Trả hàng', color: 'orange', stepIndex: -1 },
-  Rejected: { label: 'Bị từ chối', color: 'rose', stepIndex: -1 },
+  Pending: { label: 'Pending', color: 'yellow', stepIndex: 0 },
+  Paid: { label: 'Paid', color: 'yellow', stepIndex: 1 },
+  Processing: { label: 'Processing', color: 'blue', stepIndex: 2 },
+  Waiting: { label: 'Waiting', color: 'yellow', stepIndex: 2 },
+  HandedOverToDelivery: { label: 'Handed Over', color: 'indigo', stepIndex: 3 },
+  Shipping: { label: 'Shipping', color: 'violet', stepIndex: 4 },
+  Delivered: { label: 'Delivered', color: 'emerald', stepIndex: 5 },
+  Completed: { label: 'Completed', color: 'green', stepIndex: 6 },
+  Cancelled: { label: 'Cancelled', color: 'red', stepIndex: -1 },
+  Returned: { label: 'Returned', color: 'orange', stepIndex: -1 },
+  Rejected: { label: 'Rejected', color: 'rose', stepIndex: -1 },
 } as const;
 
 /** Steps shown in the OrderStepper (happy path only). */
 export const ORDER_STEPPER_STEPS = [
-  'Chờ xác nhận',
-  'Đã thanh toán',
-  'Đang xử lý',
-  'Bàn giao vận chuyển',
-  'Đang giao',
-  'Đã giao',
-  'Hoàn thành',
+  'Pending',
+  'Paid',
+  'Processing',
+  'Handed Over',
+  'Shipping',
+  'Delivered',
+  'Completed',
 ] as const;
 
 export const IMPORT_REQUEST_STATUS = {
@@ -71,14 +71,14 @@ export const IMPORT_REQUEST_STATUS = {
 } as const;
 
 export const IMPORT_REQUEST_STATUS_LABELS: Record<string, string> = {
-  submitted: 'Đã gửi yêu cầu',
-  reviewing: 'Đang xem xét',
-  quote_sent: 'Đã báo giá',
-  deposit_paid: 'Đã đặt cọc',
-  ordered: 'Đã đặt hàng',
-  arrived: 'Đã về kho',
-  delivered: 'Đã giao',
-  cancelled: 'Đã hủy',
+  submitted: 'Request Submitted',
+  reviewing: 'Under Review',
+  quote_sent: 'Quote Sent',
+  deposit_paid: 'Deposit Paid',
+  ordered: 'Ordered',
+  arrived: 'Arrived at Warehouse',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
 };
 
 export const PAYMENT_METHOD = {
@@ -89,21 +89,61 @@ export const PAYMENT_METHOD = {
 } as const;
 
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  cod: 'Thanh toán khi nhận hàng',
-  bank_transfer: 'Chuyển khoản ngân hàng',
-  momo: 'Ví MoMo',
+  cod: 'Cash on Delivery',
+  bank_transfer: 'Bank Transfer',
+  momo: 'MoMo E-Wallet',
   vnpay: 'VNPay',
 };
 
 export const SORT_OPTIONS = [
-  { value: 'createdAt:desc', label: 'Mới nhất' },
-  { value: 'createdAt:asc', label: 'Cũ nhất' },
-  { value: 'price:asc', label: 'Giá thấp đến cao' },
-  { value: 'price:desc', label: 'Giá cao đến thấp' },
-  { value: 'name:asc', label: 'Tên A-Z' },
-  { value: 'name:desc', label: 'Tên Z-A' },
-  { value: 'rating:desc', label: 'Đánh giá cao nhất' },
+  { value: 'createdAt:desc', label: 'Newest First' },
+  { value: 'createdAt:asc', label: 'Oldest First' },
+  { value: 'price:asc', label: 'Price: Low to High' },
+  { value: 'price:desc', label: 'Price: High to Low' },
+  { value: 'name:asc', label: 'Name: A-Z' },
+  { value: 'name:desc', label: 'Name: Z-A' },
+  { value: 'rating:desc', label: 'Highest Rated' },
 ] as const;
 
 export const DEFAULT_PAGE_SIZE = 12;
 export const PAGE_SIZE_OPTIONS = [12, 24, 48] as const;
+export const APP_CONFIG = {
+  APP_NAME: 'PuzKit3D',
+  APP_DESCRIPTION: '3D Intellectual Assembly Model Ordering & Custom Design Application',
+  APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+
+  API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
+  API_TIMEOUT: 15000,
+
+  ACCESS_TOKEN_KEY: 'puzkit3d_access_token',
+  REFRESH_TOKEN_KEY: 'puzkit3d_refresh_token',
+  AUTH_STORAGE_KEY: 'puzkit3d_auth_storage_key',
+
+  DEFAULT_PAGE: 1,
+  DEFAULT_PAGE_SIZE: 12,
+
+  DEFAULT_PRODUCT_IMAGE: '/images/placeholder-product.png',
+  DRAFT_KEY: 'puzkit_checkout_draft',
+  DEFAULT_AVATAR: '/images/placeholder-avatar.png',
+
+  CURRENCY: 'VND',
+  CURRENCY_LOCALE: 'vi-VN',
+
+  DATE_FORMAT: 'dd/MM/yyyy',
+  DATETIME_FORMAT: 'dd/MM/yyyy HH:mm',
+  TIMEZONE: 'Asia/Ho_Chi_Minh',
+} as const;
+
+export const SOCIAL_LINKS = {
+  FACEBOOK: 'https://facebook.com/puzkit3d',
+  INSTAGRAM: 'https://instagram.com/puzkit3d',
+  YOUTUBE: 'https://youtube.com/@puzkit3d',
+  TIKTOK: 'https://tiktok.com/@puzkit3d',
+} as const;
+
+export const CONTACT_INFO = {
+  EMAIL: 'contact@puzkit3d.com',
+  PHONE: '1900-xxxx',
+  ADDRESS: 'Ho Chi Minh City, Vietnam',
+  WORKING_HOURS: 'Mon - Sat: 8:00 AM - 6:00 PM',
+} as const;

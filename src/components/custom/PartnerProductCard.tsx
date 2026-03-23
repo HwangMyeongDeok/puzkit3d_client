@@ -8,7 +8,6 @@ import { toast } from 'sonner';
 import type { PartnerProduct } from '@/types';
 import { formatPrice } from '@/lib/utils';
 import { useAppDispatch } from '@/stores';
-import { addToCart } from '@/stores/slices/cartSlice';
 import { ROUTES } from '@/constants';
 
 type PartnerProductCardProps = {
@@ -20,21 +19,7 @@ export default function PartnerProductCard({ product }: PartnerProductCardProps)
 
   const handleRequestQuote = (e: React.MouseEvent) => {
     e.preventDefault();
-
-    dispatch(
-      addToCart({
-        itemId: product.id,
-        unitPrice: null,
-        instockProductPriceDetailId: null,
-        quantity: 1,
-        cartType: 'PARTNER',
-        productName: product.name,
-        thumbnailUrl: product.thumbnailUrl,
-        sku: null,
-        variantColor: null,
-      })
-    );
-    toast.success(`Đã thêm "${product.name}" vào yêu cầu báo giá`);
+    toast.success(`Added "${product.name}" to quote request`);
   };
 
   return (
@@ -49,7 +34,7 @@ export default function PartnerProductCard({ product }: PartnerProductCardProps)
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
           <span className="bg-warning text-warning-foreground absolute top-2 left-2 rounded-md px-2 py-0.5 text-xs font-bold">
-            Hàng đối tác
+            Partner Product
           </span>
         </div>
 
@@ -63,7 +48,7 @@ export default function PartnerProductCard({ product }: PartnerProductCardProps)
           </h3>
 
           <div className="flex flex-col gap-0.5">
-            <span className="text-muted-foreground text-[10px] font-medium">Giá tham khảo</span>
+            <span className="text-muted-foreground text-[10px] font-medium">Reference Price</span>
             <span className="text-accent text-base font-bold">
               {formatPrice(product.referencePrice)}
             </span>
@@ -82,10 +67,11 @@ export default function PartnerProductCard({ product }: PartnerProductCardProps)
             onClick={handleRequestQuote}
           >
             <FileText className="h-3.5 w-3.5" />
-            Yêu cầu báo giá
+            Request Quote
           </button>
         </div>
       </div>
     </Link>
   );
+  s;
 }

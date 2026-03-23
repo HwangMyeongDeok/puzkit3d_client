@@ -8,7 +8,7 @@ import { formatPrice } from '@/lib/utils';
 import { useCartSync } from '@/lib/hooks/useCartSync';
 import { useGetCartQuery } from '@/lib/api/endpoints/cartApi';
 import { ROUTES } from '@/constants';
-import { useAppSelector } from '@/stores/hooks'; // Thêm để lấy Auth state
+import { useAppSelector } from '@/stores/hooks';
 
 import {
   Sheet,
@@ -29,17 +29,14 @@ interface MiniCartProps {
 export default function MiniCart({ children }: MiniCartProps) {
   const { handleIncrement, handleDecrement, handleRemove } = useCartSync();
 
-  // 1. Lấy trạng thái Auth để chặn API gọi bậy lúc reload
   const { isAuthenticated, isLoading: isAuthLoading } = useAppSelector((state) => state.auth);
 
-  // 2. Chỉ gọi API khi đã nạp xong Auth và người dùng đã đăng nhập
   const { data: cartDto } = useGetCartQuery(undefined, {
     skip: isAuthLoading || !isAuthenticated,
   });
 
   const cartItems = cartDto?.items || [];
 
-  // 3. Tính toán trực tiếp (Bỏ useMemo theo ý sếp)
   let totalPrice = 0;
   cartItems.forEach((item) => {
     totalPrice += item.totalPrice ?? (item.unitPrice ?? 0) * (item.quantity ?? 0);
@@ -53,26 +50,27 @@ export default function MiniCart({ children }: MiniCartProps) {
 
       <SheetContent side="right" className="flex flex-col p-0">
         <SheetHeader className="border-border border-b px-5 py-4">
-          <SheetTitle className="text-base font-bold">Giỏ hàng ({totalQuantity})</SheetTitle>
+          <SheetTitle className="text-base font-bold">Cart ({totalQuantity})</SheetTitle>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-5 py-3">
-          {/* Nếu đang nạp Auth thì hiện loading nhẹ, tránh hiện "Giỏ hàng trống" gây hiểu lầm */}
           {isAuthLoading ? (
             <div className="text-muted-foreground animate-pulse py-10 text-center text-xs">
-              Đang đồng bộ giỏ hàng...
+              Syncing your cart...
             </div>
           ) : cartItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <ShoppingBag className="text-muted-foreground/30 mb-3 h-12 w-12" />
-              <p className="text-foreground mb-1 text-sm font-semibold">Giỏ hàng trống</p>
-              <p className="text-muted-foreground text-xs">Hãy thêm sản phẩm yêu thích vào giỏ.</p>
+              <p className="text-foreground mb-1 text-sm font-semibold">Your cart is empty</p>
+              <p className="text-muted-foreground text-xs">
+                Add your favorite products to the cart.
+              </p>
               <SheetClose asChild>
                 <Link
                   href={ROUTES.PRODUCTS}
                   className="bg-primary text-primary-foreground mt-4 rounded-lg px-5 py-2 text-xs font-semibold"
                 >
-                  Khám phá sản phẩm
+                  Explore Products
                 </Link>
               </SheetClose>
             </div>
@@ -80,7 +78,7 @@ export default function MiniCart({ children }: MiniCartProps) {
             <div className="flex flex-col gap-3">
               {cartItems.map((item) => {
                 const displayPrice = item.unitPrice ?? 0;
-                const productName = item.productDetails?.name || 'Sản phẩm không xác định';
+                const productName = item.productDetails?.name || 'Unknown product';
                 const thumbnailUrl = item.productDetails?.thumbnailUrl || '/placeholder-image.png';
                 const variantColor = item.productDetails?.color || '';
 
@@ -151,7 +149,7 @@ export default function MiniCart({ children }: MiniCartProps) {
         {cartItems.length > 0 && (
           <SheetFooter className="border-border flex flex-col gap-3 border-t px-5 py-4">
             <div className="flex w-full items-center justify-between">
-              <span className="text-muted-foreground text-sm font-semibold">Tạm tính</span>
+              <span className="text-muted-foreground text-sm font-semibold">Subtotal</span>
               <span className="text-accent text-lg font-extrabold">{formatPrice(totalPrice)}</span>
             </div>
 
@@ -161,7 +159,7 @@ export default function MiniCart({ children }: MiniCartProps) {
               <SheetClose asChild>
                 <Link href={ROUTES.CART}>
                   <Button className="w-full gap-2 rounded-xl py-5 text-sm font-bold shadow-lg">
-                    Xem giỏ hàng & thanh toán
+                    View Cart & Checkout
                   </Button>
                 </Link>
               </SheetClose>
@@ -172,7 +170,7 @@ export default function MiniCart({ children }: MiniCartProps) {
                     variant="outline"
                     className="w-full rounded-xl py-5 text-sm font-semibold"
                   >
-                    Tiếp tục mua sắm
+                    Continue Shopping
                   </Button>
                 </Link>
               </SheetClose>

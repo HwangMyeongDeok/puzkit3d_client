@@ -64,14 +64,14 @@ import PaymentActionDialog from '@/components/checkout/PaymentActionDialog';
 const PAYMENT_METHODS = [
   {
     id: 'COD',
-    label: 'Thanh toán khi nhận hàng (COD)',
-    description: 'Trả tiền mặt khi nhận hàng',
+    label: 'Cash on Delivery (COD)',
+    description: 'Pay with cash upon delivery',
     icon: Banknote,
   },
   {
     id: 'Online',
-    label: 'Thanh toán trực tuyến',
-    description: 'Thanh toán qua ví điện tử VNPay / MOMO',
+    label: 'Online Payment',
+    description: 'Pay via VNPay / MOMO e-wallet',
     icon: Wallet,
   },
 ] as const;
@@ -174,7 +174,7 @@ export default function CheckoutPage() {
     fetch('https://provinces.open-api.vn/api/v1/p/')
       .then((res) => res.json())
       .then((data) => setProvinces(data))
-      .catch((err) => console.error('Lỗi lấy dữ liệu Tỉnh:', err));
+      .catch((err) => console.error('Error fetching Province data:', err));
   }, []);
 
   // FETCH QUẬN/HUYỆN MỖI KHI TỈNH THAY ĐỔI
@@ -184,7 +184,7 @@ export default function CheckoutPage() {
       fetch(`https://provinces.open-api.vn/api/v1/p/${selectedProvinceCode}?depth=2`)
         .then((res) => res.json())
         .then((data) => setDistricts(data.districts || []))
-        .catch((err) => console.error('Lỗi lấy dữ liệu Quận:', err));
+        .catch((err) => console.error('Error fetching District data:', err));
     } else {
       setDistricts([]);
     }
@@ -197,7 +197,7 @@ export default function CheckoutPage() {
       fetch(`https://provinces.open-api.vn/api/v1/d/${selectedDistrictCode}?depth=2`)
         .then((res) => res.json())
         .then((data) => setWards(data.wards || []))
-        .catch((err) => console.error('Lỗi lấy dữ liệu Xã:', err));
+        .catch((err) => console.error('Error fetching Ward data:', err));
     } else {
       setWards([]);
     }
@@ -412,12 +412,12 @@ export default function CheckoutPage() {
             wardName: data.wardName,
           }).unwrap();
         } catch (updateErr: any) {
-          console.error('Lỗi cập nhật profile tự động:', updateErr);
+          console.error('Error automatically updating profile:', updateErr);
           toast.error(
-            'Lưu thông tin thất bại: ' +
+            'Failed to save information: ' +
               (updateErr?.data?.message ||
                 updateErr?.message ||
-                'Vui lòng cập nhật thủ công trong hồ sơ')
+                'Please update manually in your profile')
           );
         }
       }
@@ -429,7 +429,7 @@ export default function CheckoutPage() {
         setShowPaymentDialog(true);
       } else {
         setIsRedirecting(true);
-        toast.success('Đặt hàng thành công!');
+        toast.success('Order placed successfully!');
         router.push(`${ROUTES.CHECKOUT_SUCCESS}?orderId=${orderId}`);
       }
     } catch (error) {
@@ -444,7 +444,7 @@ export default function CheckoutPage() {
     return (
       <div className="container-custom flex min-h-[60vh] flex-col items-center justify-center py-20 text-center">
         <Loader2 className="text-brand mb-4 h-10 w-10 animate-spin" />
-        <p className="text-muted-foreground">Đang tải thông tin đơn hàng...</p>
+        <p className="text-muted-foreground">Loading order details...</p>
       </div>
     );
   }
@@ -453,15 +453,15 @@ export default function CheckoutPage() {
     return (
       <div className="container-custom flex min-h-[60vh] flex-col items-center justify-center py-20 text-center">
         <ShoppingBag className="text-muted-foreground/40 mb-4 h-16 w-16" />
-        <h1 className="mb-2 text-2xl font-bold">Không có sản phẩm nào được chọn</h1>
+        <h1 className="mb-2 text-2xl font-bold">No products selected</h1>
         <p className="text-muted-foreground mb-6">
-          Vui lòng quay lại giỏ hàng và chọn sản phẩm để thanh toán.
+          Please return to the cart and select products to checkout.
         </p>
         <Link
           href={ROUTES.CART}
           className="bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold"
         >
-          Quay lại giỏ hàng
+          Return to Cart
           <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
@@ -476,13 +476,15 @@ export default function CheckoutPage() {
             <div className="bg-brand/20 absolute -inset-4 animate-pulse rounded-full blur-xl" />
             <Loader2 className="text-brand relative h-12 w-12 animate-spin" />
           </div>
-          <p className="text-foreground text-xl font-bold tracking-tight">Đang xử lý đơn hàng...</p>
-          <p className="text-muted-foreground animate-pulse">Vui lòng không tắt trình duyệt</p>
+          <p className="text-foreground text-xl font-bold tracking-tight">
+            Processing your order...
+          </p>
+          <p className="text-muted-foreground animate-pulse">Please do not refresh the browser</p>
         </div>
       )}
 
       <div className="container-custom py-8 lg:py-12">
-        <h1 className="mb-8 text-3xl font-bold md:text-4xl">Thanh toán</h1>
+        <h1 className="mb-8 text-3xl font-bold md:text-4xl">Checkout</h1>
 
         <Form {...form}>
           <form
@@ -495,7 +497,7 @@ export default function CheckoutPage() {
               <div className="border-border bg-card rounded-xl border p-6">
                 <h2 className="text-card-foreground mb-5 flex items-center gap-2 text-lg font-bold">
                   <ShieldCheck className="text-brand h-5 w-5" />
-                  Địa chỉ giao hàng
+                  Shipping Address
                 </h2>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -504,9 +506,9 @@ export default function CheckoutPage() {
                     name="fullName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Họ và tên *</FormLabel>
+                        <FormLabel>Full Name *</FormLabel>
                         <FormControl>
-                          <Input placeholder="Nguyễn Văn A" className="h-11" {...field} />
+                          <Input placeholder="John Doe" className="h-11" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -518,7 +520,7 @@ export default function CheckoutPage() {
                     name="phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Số điện thoại *</FormLabel>
+                        <FormLabel>Phone Number *</FormLabel>
                         <FormControl>
                           <Input
                             type="tel"
@@ -540,7 +542,7 @@ export default function CheckoutPage() {
                     name="provinceName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Tỉnh / Thành phố *</FormLabel>
+                        <FormLabel>Province / City *</FormLabel>
                         <Select
                           onValueChange={(val) => {
                             field.onChange(val);
@@ -556,7 +558,7 @@ export default function CheckoutPage() {
                         >
                           <FormControl>
                             <SelectTrigger className="h-11">
-                              <SelectValue placeholder="Chọn Tỉnh / Thành phố" />
+                              <SelectValue placeholder="Select Province/City" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent className="max-h-60 overflow-y-auto">
@@ -577,7 +579,7 @@ export default function CheckoutPage() {
                     name="districtName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Quận / Huyện *</FormLabel>
+                        <FormLabel>District *</FormLabel>
                         <Select
                           key={`district-${selectedProvinceCode}`}
                           onValueChange={(val) => {
@@ -598,8 +600,8 @@ export default function CheckoutPage() {
                               <SelectValue
                                 placeholder={
                                   !selectedProvinceCode
-                                    ? 'Vui lòng chọn Tỉnh trước'
-                                    : 'Chọn Quận / Huyện'
+                                    ? 'Please select Province first'
+                                    : 'Select District'
                                 }
                               />
                             </SelectTrigger>
@@ -614,7 +616,7 @@ export default function CheckoutPage() {
                             ) : (
                               // 3. THAY div BẰNG SelectItem bị disabled để Radix không bị ngu
                               <SelectItem value="empty" disabled>
-                                Chưa có dữ liệu...
+                                No data available...
                               </SelectItem>
                             )}
                           </SelectContent>
@@ -629,7 +631,7 @@ export default function CheckoutPage() {
                     name="wardName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Phường / Xã *</FormLabel>
+                        <FormLabel>Ward / Commune *</FormLabel>
                         <Select
                           key={`ward-${selectedDistrictCode}`}
                           onValueChange={(val) => {
@@ -643,7 +645,7 @@ export default function CheckoutPage() {
                         >
                           <FormControl>
                             <SelectTrigger className="h-11">
-                              <SelectValue placeholder="Chọn Phường / Xã" />
+                              <SelectValue placeholder="Select Ward/Commune" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent className="max-h-60 overflow-y-auto">
@@ -655,7 +657,7 @@ export default function CheckoutPage() {
                               ))
                             ) : (
                               <SelectItem value="empty" disabled>
-                                Chưa có dữ liệu Phường/Xã...
+                                No Ward/Commune data...
                               </SelectItem>
                             )}
                           </SelectContent>
@@ -670,9 +672,13 @@ export default function CheckoutPage() {
                     name="address"
                     render={({ field }) => (
                       <FormItem className="sm:col-span-1">
-                        <FormLabel>Địa chỉ chi tiết *</FormLabel>
+                        <FormLabel>Detailed Address *</FormLabel>
                         <FormControl>
-                          <Input placeholder="Số nhà, đường..." className="h-11" {...field} />
+                          <Input
+                            placeholder="House number, street..."
+                            className="h-11"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -690,10 +696,10 @@ export default function CheckoutPage() {
                       </FormControl>
                       <div className="space-y-1 leading-none">
                         <FormLabel className="cursor-pointer text-sm font-semibold">
-                          Lưu thông tin giao hàng làm mặc định
+                          Save delivery information as default
                         </FormLabel>
                         <p className="text-muted-foreground mt-1 text-xs">
-                          Hệ thống sẽ cập nhật thông tin này vào Hồ sơ cá nhân của bạn.
+                          The system will update this information in your Profile.
                         </p>
                       </div>
                     </FormItem>
@@ -705,7 +711,7 @@ export default function CheckoutPage() {
               <div className="border-border bg-card rounded-xl border p-6">
                 <h2 className="text-card-foreground mb-5 flex items-center gap-2 text-lg font-bold">
                   <CreditCard className="text-brand h-5 w-5" />
-                  Phương thức thanh toán
+                  Payment Method
                 </h2>
 
                 <FormField
@@ -762,7 +768,7 @@ export default function CheckoutPage() {
             <div className="lg:col-span-2">
               <div className="border-border bg-card sticky top-20 rounded-xl border p-6 shadow-sm">
                 <h2 className="text-card-foreground mb-5 text-lg font-bold">
-                  Đơn hàng của bạn ({selectedItems.length} sản phẩm)
+                  Your Order ({selectedItems.length} items)
                 </h2>
 
                 <div className="flex max-h-60 flex-col gap-4 overflow-y-auto pr-1">
@@ -796,13 +802,13 @@ export default function CheckoutPage() {
 
                 <div className="flex flex-col gap-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tạm tính</span>
+                    <span className="text-muted-foreground">Subtotal</span>
                     <span className="text-card-foreground font-semibold">
                       {formatPrice(subtotal)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Phí vận chuyển</span>
+                    <span className="text-muted-foreground">Shipping Fee</span>
                     <span className="text-card-foreground font-semibold">
                       {isShippingFeeLoading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -816,7 +822,7 @@ export default function CheckoutPage() {
                 <Separator className="my-5" />
 
                 <div className="flex items-center justify-between">
-                  <span className="text-card-foreground text-base font-bold">Tổng cộng</span>
+                  <span className="text-card-foreground text-base font-bold">Total</span>
                   <span className="text-accent text-xl font-extrabold">{formatPrice(total)}</span>
                 </div>
 
@@ -833,12 +839,11 @@ export default function CheckoutPage() {
                   className="mt-6 w-full gap-2 rounded-xl py-6 text-base font-bold shadow-lg transition-all"
                 >
                   <Lock className="h-4 w-4" />
-                  {isSubmitting ? 'Đang xử lý...' : 'Đặt hàng'}
+                  {isSubmitting ? 'Processing...' : 'Place Order'}
                 </Button>
 
                 <p className="text-muted-foreground mt-4 text-center text-[11px] leading-relaxed">
-                  Bằng việc đặt hàng, bạn đồng ý với Điều khoản dịch vụ và Chính sách bảo mật của
-                  PuzKit3D.
+                  By placing an order, you agree to PuzKit3D's Terms of Service and Privacy Policy.
                 </p>
               </div>
             </div>

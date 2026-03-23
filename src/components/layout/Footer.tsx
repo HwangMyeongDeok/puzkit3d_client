@@ -17,8 +17,8 @@ export default function Footer() {
           <div>
             <h3 className="mb-4 text-lg font-bold">PuzKit3D</h3>
             <p className="text-primary-foreground/70 text-sm leading-relaxed">
-              Đặt mua mô hình lắp ráp 3D chất lượng cao. Đa dạng chất liệu: giấy, nhựa, gỗ, kim
-              loại. Hỗ trợ đặt hàng nước ngoài và thiết kế theo yêu cầu.
+              Shop premium 3D assembly model kits. Available in paper, plastic, wood, and metal.
+              International ordering and custom design services available.
             </p>
           </div>
 

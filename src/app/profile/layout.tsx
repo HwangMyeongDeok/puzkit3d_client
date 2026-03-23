@@ -15,7 +15,7 @@ export default function ProfileLayout({ children }: { children: ReactNode }) {
 
   const handleLogout = () => {
     dispatch(logout());
-    toast.success('Đã đăng xuất thành công!');
+    toast.success('Logged out successfully!');
     router.push('/');
   };
   return (
@@ -30,21 +30,21 @@ export default function ProfileLayout({ children }: { children: ReactNode }) {
                 className="hover:bg-muted text-card-foreground flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors"
               >
                 <User className="text-muted-foreground h-5 w-5" />
-                Hồ sơ cá nhân
+                Profile
               </Link>
               <Link
                 href="/orders"
                 className="hover:bg-muted text-card-foreground flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors"
               >
                 <Receipt className="text-muted-foreground h-5 w-5" />
-                Lịch sử mua hàng
+                Order History
               </Link>
               <Link
                 href="#"
                 className="hover:bg-muted text-card-foreground flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors"
               >
                 <Settings className="text-muted-foreground h-5 w-5" />
-                Cài đặt
+                Settings
               </Link>
               <div className="bg-border my-2 h-px w-full" />
               <button
@@ -52,7 +52,7 @@ export default function ProfileLayout({ children }: { children: ReactNode }) {
                 onClick={handleLogout}
               >
                 <LogOut className="h-5 w-5" />
-                Đăng xuất
+                Logout
               </button>
             </nav>
           </div>

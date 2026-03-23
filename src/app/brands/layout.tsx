@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Exclusive Partner Collections',
   description:
-    'Đặt hàng theo yêu cầu từ các thương hiệu đối tác quốc tế: ROKR, Piececool, Metal Earth. Giá dự kiến, Staff báo giá trong 24h.',
+    'Pre-order custom items from international partner brands: ROKR, Piececool, Metal Earth. Estimated prices, Staff quotes within 24 hours.',
   openGraph: {
     title: 'Brands | PuzKit3D',
     description: 'Bộ sưu tập độc quyền từ đối tác quốc tế — đặt hàng theo yêu cầu tại PuzKit3D.',
