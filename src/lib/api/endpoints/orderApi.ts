@@ -39,6 +39,18 @@ export const orderApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: [{ type: 'Order', id: 'LIST' }, 'Cart', 'Payment'],
     }),
+
+    completeOrder: builder.mutation<void, string>({
+      query: (orderId) => ({
+        url: `/instock-orders/${orderId}/status`,
+        method: 'PATCH',
+        data: { newStatus: 'Completed' },
+      }),
+      invalidatesTags: (_result, _error, id) => [
+        { type: 'Order', id },
+        { type: 'Order', id: 'LIST' },
+      ],
+    }),
   }),
 });
 
@@ -46,4 +58,5 @@ export const {
   useGetCustomerOrdersQuery,
   useGetCustomerOrderByIdQuery,
   useCreateInstockOrderMutation,
+  useCompleteOrderMutation,
 } = orderApi;

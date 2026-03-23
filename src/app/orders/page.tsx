@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useGetCustomerOrdersQuery } from '@/lib/api/endpoints/orderApi';
-import { Loader2, Package, Eye, Calendar, CreditCard, Box, Receipt } from 'lucide-react';
+import { Loader2, Package, Eye, Calendar, CreditCard, Box, Receipt, Filter } from 'lucide-react';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -38,12 +38,27 @@ function StatusBadge({ status }: { status?: InstockOrderStatus }) {
 
 const TERMINAL_STATUSES: InstockOrderStatus[] = ['Cancelled', 'Rejected', 'Returned', 'Completed'];
 
+// Lấy danh sách options từ ORDER_STATUS_MAP để render ra các nút filter
+const STATUS_OPTIONS = Object.entries(ORDER_STATUS_MAP).map(([key, info]) => ({
+  value: key as InstockOrderStatus,
+  label: info.label,
+}));
+
 export default function OrdersPage() {
+  const [paymentOrderId, setPaymentOrderId] = useState<string | null>(null);
+
+  // State lưu trạng thái filter hiện tại
+  const [selectedStatus, setSelectedStatus] = useState<InstockOrderStatus | ''>('');
+
+  // Truyền thêm filter status vào API (nếu '' thì không gửi param status)
   const { data, isLoading, isError } = useGetCustomerOrdersQuery(
-    { pageNumber: 1, pageSize: 10 },
+    {
+      pageNumber: 1,
+      pageSize: 10,
+      ...(selectedStatus ? { status: selectedStatus } : {}),
+    },
     { refetchOnMountOrArgChange: true }
   );
-  const [paymentOrderId, setPaymentOrderId] = useState<string | null>(null);
 
   const orders = data?.items || [];
 
@@ -51,6 +66,34 @@ export default function OrdersPage() {
     <div className="container-custom py-8 lg:py-12">
       <div className="flex flex-col gap-6">
         <h1 className="text-2xl font-bold md:text-3xl">Lịch sử mua hàng</h1>
+
+        {/* --- KHU VỰC FILTER STATUS --- */}
+        <div className="scrollbar-hide flex items-center gap-2 overflow-x-auto pb-2">
+          <div className="text-muted-foreground mr-2 hidden items-center gap-2 text-sm font-medium md:flex">
+            <Filter className="h-4 w-4" />
+            <span>Lọc:</span>
+          </div>
+          <Button
+            variant={selectedStatus === '' ? 'default' : 'outline'}
+            onClick={() => setSelectedStatus('')}
+            className="rounded-full px-5 whitespace-nowrap"
+            size="sm"
+          >
+            Tất cả
+          </Button>
+          {STATUS_OPTIONS.map((opt) => (
+            <Button
+              key={opt.value}
+              variant={selectedStatus === opt.value ? 'default' : 'outline'}
+              onClick={() => setSelectedStatus(opt.value)}
+              className="rounded-full px-5 whitespace-nowrap"
+              size="sm"
+            >
+              {opt.label}
+            </Button>
+          ))}
+        </div>
+        {/* ----------------------------- */}
 
         {isLoading ? (
           <div className="flex min-h-[40vh] items-center justify-center">
@@ -63,15 +106,23 @@ export default function OrdersPage() {
         ) : orders.length === 0 ? (
           <div className="bg-card border-border flex flex-col items-center justify-center rounded-xl border py-16 text-center">
             <Receipt className="text-muted-foreground/40 mb-4 h-16 w-16" />
-            <h2 className="mb-2 text-xl font-bold">Chưa có đơn hàng nào</h2>
-            <p className="text-muted-foreground mb-6">Bạn chưa thực hiện bất kỳ giao dịch nào.</p>
-            <Link
-              href="/shop"
-              className="bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-xl px-6 py-2.5 font-semibold"
-            >
-              <Package className="h-4 w-4" />
-              Khám phá sản phẩm
-            </Link>
+            <h2 className="mb-2 text-xl font-bold">
+              {selectedStatus ? 'Không tìm thấy đơn hàng nào' : 'Chưa có đơn hàng nào'}
+            </h2>
+            <p className="text-muted-foreground mb-6">
+              {selectedStatus
+                ? 'Thử chọn trạng thái khác xem sao nhé.'
+                : 'Bạn chưa thực hiện bất kỳ giao dịch nào.'}
+            </p>
+            {!selectedStatus && (
+              <Link
+                href="/shop"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-xl px-6 py-2.5 font-semibold transition-colors"
+              >
+                <Package className="h-4 w-4" />
+                Khám phá sản phẩm
+              </Link>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-4">
@@ -152,7 +203,7 @@ export default function OrdersPage() {
                         </div>
                       ))}
                       {order.orderDetailsPreview.length > 3 && (
-                        <div className="border-border text-muted-foreground bg-muted/10 flex h-full min-h-[4rem] items-center justify-center rounded-lg border border-dashed text-xs font-medium">
+                        <div className="border-border text-muted-foreground bg-muted/10 flex h-full min-h-16 items-center justify-center rounded-lg border border-dashed text-xs font-medium">
                           +{order.orderDetailsPreview.length - 3} sản phẩm khác
                         </div>
                       )}
@@ -182,14 +233,14 @@ export default function OrdersPage() {
                       !TERMINAL_STATUSES.includes(order.status as InstockOrderStatus) && (
                         <Button
                           onClick={() => setPaymentOrderId(order.id)}
-                          className="bg-brand hover:bg-brand/90 h-[44px] w-full gap-2 font-bold md:w-auto"
+                          className="bg-brand hover:bg-brand/90 h-11 w-full gap-2 font-bold md:w-auto"
                         >
                           <CreditCard className="h-4 w-4" /> Thanh toán ngay
                         </Button>
                       )}
                     <Link
                       href={`/orders/${order.id}`}
-                      className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-lg px-6 py-2.5 font-semibold shadow-sm transition-colors md:w-auto"
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg px-6 py-2.5 font-semibold shadow-sm transition-colors md:w-auto"
                     >
                       <Eye className="h-4 w-4" />
                       Xem chi tiết đơn hàng
