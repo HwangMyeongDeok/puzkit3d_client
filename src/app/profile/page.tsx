@@ -25,7 +25,7 @@ export default function ProfilePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold md:text-3xl">Hồ sơ cá nhân</h1>
+      <h1 className="text-2xl font-bold md:text-3xl">Profile</h1>
 
       {isLoading ? (
         <div className="flex justify-center py-12">
@@ -41,12 +41,12 @@ export default function ProfilePage() {
               <h2 className="text-xl font-bold uppercase">
                 {user?.firstName
                   ? `${user.firstName} ${user.lastName || ''}`
-                  : user?.email?.split('@')[0] || 'Khách hàng'}
+                  : user?.email?.split('@')[0] || 'Customer'}
               </h2>
               <p className="text-muted-foreground">{user?.email}</p>
               {user?.role && (
                 <span className="bg-secondary text-secondary-foreground mt-2 inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold uppercase">
-                  Vai trò: {user.role}
+                  Role: {user.role}
                 </span>
               )}
             </div>
@@ -56,22 +56,22 @@ export default function ProfilePage() {
             {/* Thông tin liên hệ */}
             <div className="flex flex-col gap-5">
               <h3 className="flex items-center gap-2 text-lg font-bold">
-                <Mail className="text-brand h-5 w-5" /> Liên hệ
+                <Mail className="text-brand h-5 w-5" /> Contact
               </h3>
 
               <div className="flex flex-col gap-2">
                 <label className="text-muted-foreground text-sm font-medium">Email</label>
                 <div className="bg-muted flex items-center gap-3 rounded-lg p-3">
                   <Mail className="text-muted-foreground h-5 w-5" />
-                  <span>{user?.email || 'Chưa cập nhật'}</span>
+                  <span>{user?.email || 'Not updated'}</span>
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-muted-foreground text-sm font-medium">Số điện thoại</label>
+                <label className="text-muted-foreground text-sm font-medium">Phone Number</label>
                 <div className="bg-muted flex items-center gap-3 rounded-lg p-3">
                   <Phone className="text-muted-foreground h-5 w-5" />
-                  <span>{user?.phoneNumber || 'Chưa cập nhật'}</span>
+                  <span>{user?.phoneNumber || 'Not updated'}</span>
                 </div>
               </div>
             </div>
@@ -79,29 +79,27 @@ export default function ProfilePage() {
             {/* Địa chỉ & Bảo mật */}
             <div className="flex flex-col gap-5">
               <h3 className="flex items-center gap-2 text-lg font-bold">
-                <ShieldCheck className="text-brand h-5 w-5" /> Bảo mật & Khác
+                <ShieldCheck className="text-brand h-5 w-5" /> Security & Other
               </h3>
 
               <div className="flex flex-col gap-2">
-                <label className="text-muted-foreground text-sm font-medium">
-                  Trạng thái tài khoản
-                </label>
+                <label className="text-muted-foreground text-sm font-medium">Account Status</label>
                 <div
                   className={`flex items-center gap-3 rounded-lg p-3 font-medium ${user?.emailConfirmed ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}
                 >
                   <ShieldCheck className="h-5 w-5" />
-                  <span>{user?.emailConfirmed ? 'Đã xác thực' : 'Đang xử lý'}</span>
+                  <span>{user?.emailConfirmed ? 'Verified' : 'Pending'}</span>
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-muted-foreground text-sm font-medium">Ngày tham gia</label>
+                <label className="text-muted-foreground text-sm font-medium">Joined Date</label>
                 <div className="bg-muted flex items-center gap-3 rounded-lg p-3">
                   <Calendar className="text-muted-foreground h-5 w-5" />
                   <span>
                     {user?.createdAt
-                      ? new Date(user.createdAt).toLocaleDateString('vi-VN')
-                      : 'Không xác định'}
+                      ? new Date(user.createdAt).toLocaleDateString('en-US')
+                      : 'Unknown'}
                   </span>
                 </div>
               </div>
@@ -111,7 +109,7 @@ export default function ProfilePage() {
             <div className="mt-2 flex flex-col gap-2 md:col-span-2">
               <div className="flex items-center justify-between">
                 <label className="text-muted-foreground text-sm font-medium">
-                  Địa chỉ giao hàng mặc định
+                  Default Shipping Address
                 </label>
                 <Button
                   variant="ghost"
@@ -120,7 +118,7 @@ export default function ProfilePage() {
                   onClick={() => setIsModalOpen(true)}
                 >
                   <Edit2 className="mr-2 h-4 w-4" />
-                  Cập nhật
+                  Update
                 </Button>
               </div>
               <div className="bg-muted flex flex-col gap-3 rounded-lg p-4 sm:flex-row sm:items-center">
@@ -128,7 +126,7 @@ export default function ProfilePage() {
                 {user?.provinceName ? (
                   <div className="flex flex-col">
                     <span className="font-semibold">
-                      {user.streetAddress || 'Chưa có địa chỉ chi tiết'}
+                      {user.streetAddress || 'No detailed address yet'}
                     </span>
                     <span className="text-muted-foreground text-sm">
                       {user.wardName}, {user.districtName}, {user.provinceName}
@@ -136,7 +134,7 @@ export default function ProfilePage() {
                   </div>
                 ) : (
                   <span className="text-muted-foreground italic">
-                    Bạn chưa cập nhật địa chỉ giao hàng.
+                    You have not updated your shipping address yet.
                   </span>
                 )}
               </div>

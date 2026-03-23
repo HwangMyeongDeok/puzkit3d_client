@@ -21,17 +21,17 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: {
-    default: 'PuzKit3D - Mô hình Lắp ráp Trí tuệ 3D',
+    default: 'PuzKit3D - 3D Intelligence Assembly Model',
     template: '%s | PuzKit3D',
   },
   description:
-    'Đặt mua mô hình lắp ráp 3D chất lượng cao. Đa dạng chất liệu: giấy, nhựa, gỗ, kim loại. Hỗ trợ đặt hàng nước ngoài và thiết kế theo yêu cầu.',
-  keywords: ['mô hình 3D', 'lắp ráp', 'puzzle 3D', 'Gundam', 'model kit', 'PuzKit3D'],
+    'Order high-quality 3D assembly models. Various materials: paper, plastic, wood, metal. Support for international orders and custom designs.',
+  keywords: ['3D model', 'assembly', 'puzzle 3D', 'Gundam', 'model kit', 'PuzKit3D'],
   authors: [{ name: 'PuzKit3D Team' }],
   creator: 'PuzKit3D',
   openGraph: {
     type: 'website',
-    locale: 'vi_VN',
+    locale: 'en_US',
     siteName: 'PuzKit3D',
   },
 };
@@ -42,7 +42,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${outfit.variable} font-sans antialiased`}>
         <ReduxProvider>
           <Header />

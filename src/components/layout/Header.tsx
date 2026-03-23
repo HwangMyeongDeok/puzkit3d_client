@@ -78,7 +78,7 @@ export default function Header() {
     document.cookie = `${APP_CONFIG.ACCESS_TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
     document.cookie = `${APP_CONFIG.REFRESH_TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
 
-    toast.success('Đã đăng xuất!');
+    toast.success('Logged out successfully!');
     router.push('/');
     router.refresh(); // Ép Next.js fetch lại trang để middleware nhận diện đã mất cookie
   };

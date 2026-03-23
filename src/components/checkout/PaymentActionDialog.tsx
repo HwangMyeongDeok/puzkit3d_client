@@ -35,17 +35,17 @@ export default function PaymentActionDialog({ open, orderId, onClose }: PaymentD
         paymentId: paymentRes.paymentId,
         provider: 'VnPay',
       }).unwrap();
-      toast.info('Đang chuyển hướng sang VNPAY...');
+      toast.info('Redirecting to VNPAY...');
       window.location.href = paymentUrl;
     } catch (error) {
-      toast.error('Lỗi tạo thanh toán. Bạn có thể thanh toán sau trong Lịch sử đơn hàng.');
+      toast.error('Error creating payment. You can pay later in your order history.');
       handlePayLater(); // Fallback
     }
   };
 
   const handlePayLater = () => {
     onClose();
-    toast.info('Đã lưu đơn hàng. Bạn có thể thanh toán sau trong Lịch sử đơn hàng.', {
+    toast.info('Order saved. You can pay later in your order history.', {
       duration: 5000,
     });
     router.push(ROUTES.ORDERS);
@@ -57,18 +57,18 @@ export default function PaymentActionDialog({ open, orderId, onClose }: PaymentD
     <Dialog open={open} onOpenChange={(val) => !val && handlePayLater()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Thanh toán trực tuyến</DialogTitle>
+          <DialogTitle>Online Payment</DialogTitle>
           <DialogDescription>
-            Đơn hàng của bạn đã được khởi tạo và đang chờ thanh toán. Bạn có muốn thanh toán qua
-            cổng VNPAY ngay bây giờ không?
+            Your order has been created and is pending payment. Would you like to pay through the
+            VNPAY gateway now?
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="mt-4 flex sm:justify-between">
           <Button variant="outline" onClick={handlePayLater} disabled={isProcessing}>
-            Thanh toán sau
+            Pay Later
           </Button>
           <Button onClick={handlePayNow} disabled={isProcessing}>
-            {isProcessing ? 'Đang kết nối...' : 'Thanh toán ngay'}
+            {isProcessing ? 'Connecting...' : 'Pay Now'}
           </Button>
         </DialogFooter>
       </DialogContent>

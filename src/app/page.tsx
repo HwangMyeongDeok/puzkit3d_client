@@ -3,12 +3,12 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Trang chủ',
+  title: 'Home',
   description:
-    'PuzKit3D — Cửa hàng mô hình lắp ráp 3D hàng đầu. Đa dạng chất liệu gỗ, kim loại, nhựa. Hỗ trợ đặt hàng quốc tế và thiết kế theo yêu cầu.',
+    'PuzKit3D — Premium 3D assembly model kit store. Wide range of wood, metal, and plastic materials. International ordering and custom design services.',
   openGraph: {
-    title: 'PuzKit3D - Mô hình Lắp ráp Trí tuệ 3D',
-    description: 'Khám phá bộ sưu tập mô hình 3D chất lượng cao. Đa dạng chất liệu và phong cách.',
+    title: 'PuzKit3D - 3D Puzzle Assembly Model Kits',
+    description: 'Discover premium 3D model kit collections. Wide range of materials and styles.',
     url: '/',
     type: 'website',
   },
@@ -34,14 +34,14 @@ export default function Home() {
             <div>
               <h2 className="mb-2 text-3xl font-bold md:text-4xl">Featured Products</h2>
               <p className="text-muted-foreground max-w-md">
-                Sản phẩm nổi bật được đánh giá cao nhất từ cộng đồng.
+                Top-rated products from the community.
               </p>
             </div>
             <Link
               href="/shop"
               className="group text-brand hover:text-brand-accent hidden items-center gap-1 text-sm font-semibold transition-colors md:flex"
             >
-              Xem tất cả
+              View All
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </div>
@@ -53,7 +53,7 @@ export default function Home() {
               href="/shop"
               className="bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold"
             >
-              Xem tất cả sản phẩm
+              View All Products
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

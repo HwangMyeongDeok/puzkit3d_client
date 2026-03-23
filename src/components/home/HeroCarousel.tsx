@@ -16,8 +16,7 @@ const SLIDES = [
   {
     badge: 'New Collection 2025',
     heading: 'Premium Mechanical & 3D Kits',
-    description:
-      'Khám phá bộ sưu tập mô hình lắp ráp 3D cao cấp từ các thương hiệu hàng đầu thế giới.',
+    description: "Discover premium 3D assembly model kits from the world's leading brands.",
     cta: { label: 'Explore Instock', href: '#new-arrivals' },
     ctaSecondary: { label: 'Browse All', href: '/shop' },
     image: 'https://placehold.co/800x600/1a1a2e/e0e0e0?text=Gundam+Collection',
@@ -26,7 +25,7 @@ const SLIDES = [
   {
     badge: 'Wooden Mechanical Models',
     heading: 'Ugears — Art Meets Engineering',
-    description: 'Tự tay lắp ráp những cỗ máy cơ khí bằng gỗ tinh xảo, không cần keo dán.',
+    description: 'Handcraft exquisite wooden mechanical machines — no glue needed.',
     cta: { label: 'Shop Ugears', href: '/brands/ugears' },
     ctaSecondary: null,
     image: 'https://placehold.co/800x600/2d2d44/e0e0e0?text=Ugears+Models',
@@ -35,7 +34,7 @@ const SLIDES = [
   {
     badge: 'Custom 3D Printing',
     heading: 'Design Your Own Model Kit',
-    description: 'Dịch vụ in 3D và thiết kế mô hình theo yêu cầu. Biến ý tưởng thành hiện thực.',
+    description: 'Custom 3D printing and model design services. Turn your ideas into reality.',
     cta: { label: 'Get Started', href: '/custom-service' },
     ctaSecondary: null,
     image: 'https://placehold.co/800x600/3a3a5c/e0e0e0?text=3D+Printing',

@@ -44,7 +44,7 @@ export default function ChangePasswordForm() {
         oldPassword: values.oldPassword,
         newPassword: values.newPassword,
       }).unwrap();
-      toast.success('Đổi mật khẩu thành công!', {
+      toast.success('Password changed successfully!', {
         icon: <CheckCircle2 className="h-4 w-4 text-green-600" />,
       });
       form.reset();
@@ -93,8 +93,8 @@ export default function ChangePasswordForm() {
             <KeyRound className="text-brand h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-lg">Đổi mật khẩu</CardTitle>
-            <CardDescription>Cập nhật mật khẩu để bảo mật tài khoản.</CardDescription>
+            <CardTitle className="text-lg">Change Password</CardTitle>
+            <CardDescription>Update your password to secure your account.</CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -107,12 +107,12 @@ export default function ChangePasswordForm() {
               name="oldPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Mật khẩu hiện tại</FormLabel>
+                  <FormLabel>Current Password</FormLabel>
                   <FormControl>
                     <PasswordInput
                       field={field}
                       visibilityKey="old"
-                      placeholder="Nhập mật khẩu hiện tại"
+                      placeholder="Enter your current password"
                     />
                   </FormControl>
                   <FormMessage />
@@ -125,12 +125,12 @@ export default function ChangePasswordForm() {
               name="newPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Mật khẩu mới</FormLabel>
+                  <FormLabel>New Password</FormLabel>
                   <FormControl>
                     <PasswordInput
                       field={field}
                       visibilityKey="new"
-                      placeholder="Tối thiểu 8 ký tự"
+                      placeholder="At least 8 characters"
                     />
                   </FormControl>
                   <FormMessage />
@@ -143,12 +143,12 @@ export default function ChangePasswordForm() {
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Xác nhận mật khẩu mới</FormLabel>
+                  <FormLabel>Confirm New Password</FormLabel>
                   <FormControl>
                     <PasswordInput
                       field={field}
                       visibilityKey="confirm"
-                      placeholder="Nhập lại mật khẩu mới"
+                      placeholder="Re-enter your new password"
                     />
                   </FormControl>
                   <FormMessage />
@@ -158,12 +158,12 @@ export default function ChangePasswordForm() {
 
             {/* Password strength hints */}
             <div className="text-muted-foreground space-y-1 text-xs">
-              <p className="font-medium">Mật khẩu mới phải có:</p>
+              <p className="font-medium">New password must have:</p>
               <ul className="list-inside list-disc space-y-0.5 pl-1">
-                <li>Ít nhất 8 ký tự</li>
-                <li>1 chữ hoa, 1 chữ thường, 1 chữ số</li>
-                <li>1 ký tự đặc biệt (!@#$...)</li>
-                <li>Khác mật khẩu hiện tại</li>
+                <li>At least 8 characters</li>
+                <li>1 uppercase, 1 lowercase, 1 number</li>
+                <li>1 special character (!@#$...)</li>
+                <li>Different from current password</li>
               </ul>
             </div>
 
@@ -171,10 +171,10 @@ export default function ChangePasswordForm() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Đang cập nhật...
+                  Updating...
                 </>
               ) : (
-                'Đổi mật khẩu'
+                'Change Password'
               )}
             </Button>
           </form>

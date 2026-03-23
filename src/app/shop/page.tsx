@@ -31,11 +31,9 @@ export default function ShopPage() {
     <div className="container-custom py-8 lg:py-16">
       {/* HEADER & THANH TÌM KIẾM CĂN GIỮA MỚI */}
       <div className="mx-auto mb-12 flex max-w-3xl flex-col items-center text-center">
-        <h1 className="mb-4 text-4xl font-extrabold tracking-tight lg:text-5xl">
-          Cửa Hàng Mô Hình
-        </h1>
+        <h1 className="mb-4 text-4xl font-extrabold tracking-tight lg:text-5xl">Model Shop</h1>
         <p className="mb-8 text-lg text-slate-500">
-          Khám phá bộ sưu tập mô hình lắp ráp 3D cao cấp. Tỉ mỉ đến từng chi tiết.
+          Discover our premium 3D assembly model collections. Meticulously detailed.
         </p>
 
         {/* Thanh Search To - Rõ - Trực Quan */}
@@ -44,7 +42,7 @@ export default function ShopPage() {
             <Search className="h-5 w-5 text-slate-400" />
           </div>
           <Input
-            placeholder="Tìm kiếm mô hình bạn yêu thích..."
+            placeholder="Search for your favorite models..."
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -72,20 +70,22 @@ export default function ShopPage() {
         <div className="mb-6 flex items-center justify-between border-b border-slate-100 pb-4">
           <span className="text-sm font-medium text-slate-500">
             {isLoading
-              ? 'Đang tải...'
-              : `Hiển thị ${products.length} / ${data?.totalCount ?? 0} sản phẩm`}
+              ? 'Loading...'
+              : `Showing ${products.length} / ${data?.totalCount ?? 0} products`}
           </span>
         </div>
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center rounded-2xl py-32 text-center">
             <Loader2 className="text-primary mb-4 h-10 w-10 animate-spin" />
-            <p className="text-slate-500">Đang tải bộ sưu tập...</p>
+            <p className="text-slate-500">Loading collections...</p>
           </div>
         ) : isError ? (
           <div className="flex flex-col items-center justify-center rounded-2xl bg-red-50 py-32 text-center">
-            <p className="mb-2 text-lg font-semibold text-red-800">Oops! Không thể tải dữ liệu.</p>
-            <p className="text-sm text-red-600">Đã xảy ra lỗi kết nối. Vui lòng thử lại sau.</p>
+            <p className="mb-2 text-lg font-semibold text-red-800">Oops! Unable to load data.</p>
+            <p className="text-sm text-red-600">
+              A connection error occurred. Please try again later.
+            </p>
           </div>
         ) : products.length > 0 ? (
           <>
@@ -105,7 +105,7 @@ export default function ShopPage() {
                   disabled={pageNumber <= 1 || isFetching}
                   className="h-12 rounded-xl px-6 font-medium hover:bg-slate-50"
                 >
-                  Trang trước
+                  Previous
                 </Button>
                 <div className="flex h-12 items-center justify-center rounded-xl bg-slate-50 px-6 text-sm font-medium text-slate-600">
                   <span className="text-primary mr-1 font-bold">{data.pageNumber}</span> /{' '}
@@ -117,7 +117,7 @@ export default function ShopPage() {
                   disabled={pageNumber >= data.totalPages || isFetching}
                   className="h-12 rounded-xl px-6 font-medium hover:bg-slate-50"
                 >
-                  Trang sau
+                  Next
                 </Button>
               </div>
             )}
@@ -125,9 +125,9 @@ export default function ShopPage() {
         ) : (
           <div className="flex flex-col items-center justify-center rounded-2xl bg-slate-50 py-32 text-center">
             <PackageX className="mb-4 h-16 w-16 text-slate-300" />
-            <p className="mb-2 text-lg font-semibold text-slate-800">Không tìm thấy sản phẩm nào</p>
+            <p className="mb-2 text-lg font-semibold text-slate-800">No products found</p>
             <p className="text-sm text-slate-500">
-              Chưa có mô hình nào khớp với từ khóa "{searchQuery}". Sếp thử tìm từ khác xem sao nhé!
+              There are no models matching "{searchQuery}". Please try another keyword!
             </p>
           </div>
         )}

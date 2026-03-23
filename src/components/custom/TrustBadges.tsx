@@ -4,22 +4,22 @@ const BADGES = [
   {
     icon: Droplets,
     title: 'No Glue Needed',
-    description: 'Không cần keo dán',
+    description: 'No glue required',
   },
   {
     icon: TreePine,
     title: 'Eco-friendly Wood',
-    description: 'Gỗ thân thiện môi trường',
+    description: 'Environmentally friendly wood',
   },
   {
     icon: Cog,
     title: 'Self Assembly',
-    description: 'Tự lắp ráp hoàn toàn',
+    description: 'Fully self-assembled',
   },
   {
     icon: Zap,
     title: 'Mechanical Motion',
-    description: 'Chuyển động cơ khí thực',
+    description: 'Real mechanical movement',
   },
 ];
 

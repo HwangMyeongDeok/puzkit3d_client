@@ -18,7 +18,7 @@ import { ROUTES } from '@/constants';
 
 // Hàm helper để parse ngày giờ của VNPAY (format: yyyyMMddHHmmss)
 const formatVnpayDate = (dateString: string | null) => {
-  if (!dateString || dateString.length !== 14) return 'Không xác định';
+  if (!dateString || dateString.length !== 14) return 'Unknown';
   const year = dateString.substring(0, 4);
   const month = dateString.substring(4, 6);
   const day = dateString.substring(6, 8);
@@ -63,12 +63,12 @@ function PaymentSuccessContent() {
           <h1
             className={`mb-2 text-2xl font-bold ${isSuccess ? 'text-slate-800' : 'text-red-600'}`}
           >
-            {isSuccess ? 'Thanh toán thành công!' : 'Thanh toán thất bại'}
+            {isSuccess ? 'Payment Successful!' : 'Payment Failed'}
           </h1>
           <p className="text-sm text-slate-500">
             {isSuccess
-              ? 'Cảm ơn bạn đã mua sắm tại Puzkit3D.'
-              : 'Giao dịch bị hủy hoặc có lỗi xảy ra. Vui lòng thử lại.'}
+              ? 'Thank you for shopping at PuzKit3D.'
+              : 'Transaction cancelled or an error occurred. Please try again.'}
           </p>
         </div>
 
@@ -83,9 +83,9 @@ function PaymentSuccessContent() {
         <div className="rounded-b-2xl bg-white p-8 pt-6 shadow-lg">
           {amount && (
             <div className="mb-6 flex flex-col items-center justify-center rounded-xl bg-slate-50 py-4">
-              <span className="text-sm font-medium text-slate-500">Số tiền thanh toán</span>
+              <span className="text-sm font-medium text-slate-500">Amount Paid</span>
               <span className="text-3xl font-bold text-slate-800">
-                {amount.toLocaleString('vi-VN')} <span className="text-xl underline">đ</span>
+                {amount.toLocaleString('en-US')} <span className="text-xl font-semibold">VND</span>
               </span>
             </div>
           )}
@@ -94,7 +94,7 @@ function PaymentSuccessContent() {
             {orderId && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center text-slate-500">
-                  <Hash className="mr-2 h-4 w-4" /> Mã đơn hàng
+                  <Hash className="mr-2 h-4 w-4" /> Order Code
                 </div>
                 <span className="font-semibold text-slate-800">{orderId}</span>
               </div>
@@ -103,7 +103,7 @@ function PaymentSuccessContent() {
             {bankCode && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center text-slate-500">
-                  <CreditCard className="mr-2 h-4 w-4" /> Ngân hàng
+                  <CreditCard className="mr-2 h-4 w-4" /> Bank
                 </div>
                 <span className="font-semibold text-slate-800">{bankCode}</span>
               </div>
@@ -112,7 +112,7 @@ function PaymentSuccessContent() {
             {transactionNo && transactionNo !== '0' && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center text-slate-500">
-                  <Receipt className="mr-2 h-4 w-4" /> Mã giao dịch VNPAY
+                  <Receipt className="mr-2 h-4 w-4" /> VNPAY Transaction No.
                 </div>
                 <span className="font-semibold text-slate-800">{transactionNo}</span>
               </div>
@@ -121,7 +121,7 @@ function PaymentSuccessContent() {
             {payDate && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center text-slate-500">
-                  <Calendar className="mr-2 h-4 w-4" /> Thời gian
+                  <Calendar className="mr-2 h-4 w-4" /> Time
                 </div>
                 <span className="font-semibold text-slate-800">{formatVnpayDate(payDate)}</span>
               </div>
@@ -134,12 +134,12 @@ function PaymentSuccessContent() {
               <>
                 <Button asChild className="h-12 w-full rounded-xl text-base font-medium">
                   <Link href="/orders">
-                    Xem chi tiết đơn hàng <ArrowRight className="ml-2 h-4 w-4" />
+                    View Order Details <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="h-12 w-full rounded-xl text-base">
                   <Link href={ROUTES.HOME}>
-                    <Home className="mr-2 h-4 w-4" /> Về trang chủ
+                    <Home className="mr-2 h-4 w-4" /> Back to Home
                   </Link>
                 </Button>
               </>
@@ -150,7 +150,7 @@ function PaymentSuccessContent() {
                 variant="default"
               >
                 <Link href={ROUTES.HOME}>
-                  <Home className="mr-2 h-4 w-4" /> Về trang chủ để thử lại
+                  <Home className="mr-2 h-4 w-4" /> Back to Home to Try Again
                 </Link>
               </Button>
             )}
@@ -167,9 +167,7 @@ export default function PaymentSuccessPage() {
       fallback={
         <div className="flex min-h-[80vh] flex-col items-center justify-center space-y-4">
           <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent"></div>
-          <p className="animate-pulse font-medium text-slate-500">
-            Đang xử lý kết quả thanh toán...
-          </p>
+          <p className="animate-pulse font-medium text-slate-500">Processing payment result...</p>
         </div>
       }
     >

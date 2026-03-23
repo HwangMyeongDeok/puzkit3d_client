@@ -59,21 +59,21 @@ function ResetPasswordContent() {
             <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-yellow-100">
               <XCircle className="h-7 w-7 text-yellow-600" />
             </div>
-            <CardTitle className="text-2xl font-bold">Liên kết không hợp lệ</CardTitle>
+            <CardTitle className="text-2xl font-bold">Invalid Link</CardTitle>
             <CardDescription>
-              Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu liên kết mới.
+              The password reset link is invalid or has expired. Please request a new link.
             </CardDescription>
           </CardHeader>
           <CardFooter className="flex flex-col gap-3">
             <Link href={ROUTES.FORGOT_PASSWORD} className="w-full">
-              <Button className="w-full">Yêu cầu liên kết mới</Button>
+              <Button className="w-full">Request New Link</Button>
             </Link>
             <Link
               href={ROUTES.LOGIN}
               className="text-brand hover:text-brand/80 inline-flex items-center gap-1.5 text-sm font-medium transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
-              Quay lại đăng nhập
+              Back to Sign In
             </Link>
           </CardFooter>
         </Card>
@@ -90,7 +90,7 @@ function ResetPasswordContent() {
         newPassword: values.newPassword,
       }).unwrap();
       setIsSuccess(true);
-      toast.success('Mật khẩu đã được đặt lại thành công!');
+      toast.success('Password has been reset successfully!');
     } catch (err) {
       handleApiError(err);
     }
@@ -104,14 +104,14 @@ function ResetPasswordContent() {
             <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
               <CheckCircle2 className="h-8 w-8 text-green-600" />
             </div>
-            <CardTitle className="text-2xl font-bold">Đặt lại mật khẩu thành công!</CardTitle>
+            <CardTitle className="text-2xl font-bold">Password Reset Successful!</CardTitle>
             <CardDescription>
-              Mật khẩu của bạn đã được thay đổi. Hãy đăng nhập bằng mật khẩu mới.
+              Your password has been changed. Please sign in with your new password.
             </CardDescription>
           </CardHeader>
           <CardFooter className="flex justify-center">
             <Link href={ROUTES.LOGIN}>
-              <Button>Đăng nhập ngay</Button>
+              <Button>Sign In Now</Button>
             </Link>
           </CardFooter>
         </Card>
@@ -126,8 +126,8 @@ function ResetPasswordContent() {
           <div className="bg-brand/10 mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full">
             <KeyRound className="text-brand h-7 w-7" />
           </div>
-          <CardTitle className="text-2xl font-bold">Đặt lại mật khẩu</CardTitle>
-          <CardDescription>Nhập mật khẩu mới cho tài khoản của bạn.</CardDescription>
+          <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
+          <CardDescription>Enter a new password for your account.</CardDescription>
         </CardHeader>
 
         <Form {...form}>
@@ -138,12 +138,12 @@ function ResetPasswordContent() {
                 name="newPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mật khẩu mới</FormLabel>
+                    <FormLabel>New Password</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
                           type={showPassword ? 'text' : 'password'}
-                          placeholder="Tối thiểu 8 ký tự"
+                          placeholder="Minimum 8 characters"
                           autoComplete="new-password"
                           disabled={isLoading}
                           {...field}
@@ -172,12 +172,12 @@ function ResetPasswordContent() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Xác nhận mật khẩu</FormLabel>
+                    <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
                           type={showConfirm ? 'text' : 'password'}
-                          placeholder="Nhập lại mật khẩu mới"
+                          placeholder="Re-enter new password"
                           autoComplete="new-password"
                           disabled={isLoading}
                           {...field}
@@ -203,11 +203,11 @@ function ResetPasswordContent() {
 
               {/* Password strength hints */}
               <div className="text-muted-foreground space-y-1 text-xs">
-                <p className="font-medium">Mật khẩu phải có:</p>
+                <p className="font-medium">Password must contain:</p>
                 <ul className="list-inside list-disc space-y-0.5 pl-1">
-                  <li>Ít nhất 8 ký tự</li>
-                  <li>1 chữ hoa, 1 chữ thường, 1 chữ số</li>
-                  <li>1 ký tự đặc biệt (!@#$...)</li>
+                  <li>At least 8 characters</li>
+                  <li>1 uppercase, 1 lowercase letter, 1 number</li>
+                  <li>1 special character (!@#$...)</li>
                 </ul>
               </div>
             </CardContent>
@@ -217,10 +217,10 @@ function ResetPasswordContent() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Đang đặt lại...
+                    Resetting...
                   </>
                 ) : (
-                  'Đặt lại mật khẩu'
+                  'Reset Password'
                 )}
               </Button>
               <Link
@@ -228,7 +228,7 @@ function ResetPasswordContent() {
                 className="text-brand hover:text-brand/80 inline-flex items-center gap-1.5 text-sm font-medium transition-colors"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Quay lại đăng nhập
+                Back to Sign In
               </Link>
             </CardFooter>
           </form>

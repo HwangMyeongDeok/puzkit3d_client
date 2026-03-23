@@ -9,10 +9,10 @@ import { partnerProducts, getPartnerNames } from '@/lib/partnerMockData';
 import PartnerProductCard from '@/components/custom/PartnerProductCard';
 
 const SORT_OPTIONS = [
-  { value: 'popular', label: 'Phổ biến' },
-  { value: 'price-asc', label: 'Giá: Thấp → Cao' },
-  { value: 'price-desc', label: 'Giá: Cao → Thấp' },
-  { value: 'rating', label: 'Đánh giá cao' },
+  { value: 'popular', label: 'Popular' },
+  { value: 'price-asc', label: 'Price: Low → High' },
+  { value: 'price-desc', label: 'Price: High → Low' },
+  { value: 'rating', label: 'Top Rated' },
 ];
 
 type SortValue = (typeof SORT_OPTIONS)[number]['value'];
@@ -84,7 +84,7 @@ export default function BrandsPage() {
       <div className="relative">
         <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
         <Input
-          placeholder="Tìm sản phẩm đối tác..."
+          placeholder="Search partner products..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-9"
@@ -100,7 +100,7 @@ export default function BrandsPage() {
       </div>
 
       <div>
-        <h3 className="text-foreground mb-3 text-sm font-bold">Đối tác</h3>
+        <h3 className="text-foreground mb-3 text-sm font-bold">Partner</h3>
         <div className="flex flex-col gap-2">
           {allPartnerNames.map((name) => (
             <label
@@ -120,11 +120,11 @@ export default function BrandsPage() {
       </div>
 
       <div>
-        <h3 className="text-foreground mb-3 text-sm font-bold">Khoảng giá</h3>
+        <h3 className="text-foreground mb-3 text-sm font-bold">Price Range</h3>
         <div className="flex items-center gap-2">
           <Input
             type="number"
-            placeholder="Từ"
+            placeholder="Min"
             value={priceMin}
             onChange={(e) => setPriceMin(e.target.value)}
             className="h-9 text-sm"
@@ -132,7 +132,7 @@ export default function BrandsPage() {
           <span className="text-muted-foreground text-xs">—</span>
           <Input
             type="number"
-            placeholder="Đến"
+            placeholder="Max"
             value={priceMax}
             onChange={(e) => setPriceMax(e.target.value)}
             className="h-9 text-sm"
@@ -145,7 +145,7 @@ export default function BrandsPage() {
           onClick={clearAllFilters}
           className="text-warning hover:text-warning/80 justify-start text-left text-xs font-semibold transition-colors"
         >
-          Xóa tất cả bộ lọc
+          Clear all filters
         </button>
       )}
     </div>
@@ -156,9 +156,9 @@ export default function BrandsPage() {
       <div className="mb-8 flex items-center gap-3">
         <Sparkles className="text-warning h-8 w-8" />
         <div>
-          <h1 className="text-3xl font-bold md:text-4xl">Hàng đối tác</h1>
+          <h1 className="text-3xl font-bold md:text-4xl">Partner Products</h1>
           <p className="text-muted-foreground">
-            Mô hình cao cấp từ các thương hiệu quốc tế — đặt theo yêu cầu.
+            Premium models from international brands — made to order.
           </p>
         </div>
       </div>
@@ -166,7 +166,7 @@ export default function BrandsPage() {
       <div className="flex gap-8">
         <aside className="hidden w-[250px] shrink-0 lg:block">
           <div className="border-warning/20 bg-card sticky top-20 rounded-xl border p-5">
-            <h2 className="text-foreground mb-4 text-base font-bold">Bộ lọc</h2>
+            <h2 className="text-foreground mb-4 text-base font-bold">Filters</h2>
             {FiltersContent}
           </div>
         </aside>
@@ -178,11 +178,11 @@ export default function BrandsPage() {
               className="text-foreground flex items-center gap-2 text-sm font-medium lg:hidden"
             >
               <SlidersHorizontal className="h-4 w-4" />
-              Bộ lọc
+              Filters
             </button>
 
             <span className="text-muted-foreground hidden text-sm lg:block">
-              {filteredProducts.length} sản phẩm
+              {filteredProducts.length} products
             </span>
 
             <div className="relative">
@@ -215,9 +215,9 @@ export default function BrandsPage() {
             </div>
           ) : (
             <div className="border-border bg-card flex flex-col items-center justify-center rounded-xl border py-20 text-center">
-              <p className="text-foreground mb-2 text-lg font-semibold">Không tìm thấy sản phẩm</p>
+              <p className="text-foreground mb-2 text-lg font-semibold">No products found</p>
               <p className="text-muted-foreground text-sm">
-                Hãy thử thay đổi bộ lọc để xem thêm kết quả.
+                Try changing your filters to see more results.
               </p>
             </div>
           )}

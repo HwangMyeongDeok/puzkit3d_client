@@ -26,7 +26,7 @@ import { setSelectedItems } from '@/stores/slices/checkoutSlice';
 
 import type { CartItemDto } from '@/types/api/cart.api.types';
 
-const PARTNER_STEPS = ['Gửi yêu cầu', 'Staff báo giá', 'Thanh toán cọc', 'Giao hàng'];
+const PARTNER_STEPS = ['Submit Request', 'Staff Quote', 'Deposit Payment', 'Delivery'];
 
 function CartItemRow({
   item,
@@ -47,7 +47,7 @@ function CartItemRow({
   const displayPrice = item.unitPrice ?? 0;
   const quantity = item.quantity ?? 1;
 
-  const productName = item.productDetails?.name || 'Sản phẩm không xác định';
+  const productName = item.productDetails?.name || 'Unknown product';
   const thumbnailUrl = item.productDetails?.thumbnailUrl || '/placeholder-image.png';
   const variantColor = item.productDetails?.color || '';
 
@@ -70,8 +70,8 @@ function CartItemRow({
         <div>
           <p className="text-card-foreground line-clamp-1 text-sm font-semibold">{productName}</p>
           <p className="text-muted-foreground mt-0.5 text-xs">
-            {isPartner ? 'Giá tham khảo: ' : ''}
-            {formatPrice(displayPrice)} / sản phẩm
+            {isPartner ? 'Reference Price: ' : ''}
+            {formatPrice(displayPrice)} / item
             {variantColor && <span className="ml-2">· {variantColor}</span>}
           </p>
         </div>
@@ -102,7 +102,7 @@ function CartItemRow({
           <button
             onClick={onRemove}
             className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive cursor-pointer rounded-lg p-2 transition-colors"
-            aria-label="Xóa sản phẩm"
+            aria-label="Remove item"
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -196,7 +196,7 @@ export default function CartPage() {
     return (
       <div className="container-custom flex min-h-[60vh] flex-col items-center justify-center py-20 text-center">
         <Loader2 className="text-brand mb-4 h-10 w-10 animate-spin" />
-        <p className="text-muted-foreground">Đang tải giỏ hàng...</p>
+        <p className="text-muted-foreground">Loading cart...</p>
       </div>
     );
   }
@@ -205,13 +205,13 @@ export default function CartPage() {
     return (
       <div className="container-custom flex min-h-[60vh] flex-col items-center justify-center py-20 text-center">
         <ShoppingBag className="text-muted-foreground/40 mb-4 h-16 w-16" />
-        <h1 className="mb-2 text-2xl font-bold">Giỏ hàng trống</h1>
-        <p className="text-muted-foreground mb-6">Bạn chưa có sản phẩm nào trong giỏ hàng.</p>
+        <h1 className="mb-2 text-2xl font-bold">Your cart is empty</h1>
+        <p className="text-muted-foreground mb-6">You don't have any products in your cart yet.</p>
         <Link
           href={ROUTES.PRODUCTS}
           className="bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold"
         >
-          Tiếp tục mua sắm
+          Continue Shopping
           <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
@@ -221,7 +221,7 @@ export default function CartPage() {
   return (
     <div className="container-custom pt-8 pb-28 lg:pt-12 lg:pb-12">
       <div className="mb-8 flex items-center gap-3">
-        <h1 className="text-3xl font-bold md:text-4xl">Giỏ hàng</h1>
+        <h1 className="text-3xl font-bold md:text-4xl">Shopping Cart</h1>
         {isFetching && <Loader2 className="text-brand h-5 w-5 animate-spin" />}
       </div>
 
@@ -241,9 +241,9 @@ export default function CartPage() {
               <div className="flex items-center gap-2">
                 <Package className="text-success h-5 w-5" />
                 <h2 className="text-card-foreground text-lg font-bold">
-                  Sản phẩm
+                  Products
                   <span className="text-muted-foreground ml-2 text-sm font-normal">
-                    ({instockItems.length} sản phẩm)
+                    ({instockItems.length} items)
                   </span>
                 </h2>
               </div>
@@ -273,7 +273,7 @@ export default function CartPage() {
       <div className="border-border bg-card/95 lg:bg-card fixed inset-x-0 bottom-0 z-40 border-t px-4 py-3 shadow-2xl backdrop-blur-sm lg:static lg:mt-8 lg:rounded-xl lg:border lg:px-6 lg:py-5 lg:shadow-none">
         <div className="container-custom flex items-center justify-between gap-4 lg:px-0">
           <div className="flex flex-col">
-            <span className="text-muted-foreground text-xs">Đã chọn {selectedCount} sản phẩm</span>
+            <span className="text-muted-foreground text-xs">{selectedCount} items selected</span>
             <span className="text-accent text-xl font-extrabold">{formatPrice(selectedTotal)}</span>
           </div>
 
@@ -289,12 +289,12 @@ export default function CartPage() {
             >
               {isNavigating ? ( // 5. ĐỔI UI sang trạng thái chờ
                 <>
-                  Đang xử lý...
+                  Processing...
                   <Loader2 className="h-4 w-4 animate-spin" />
                 </>
               ) : (
                 <>
-                  Thanh toán
+                  Checkout
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
@@ -306,7 +306,7 @@ export default function CartPage() {
               disabled
               className="bg-muted text-muted-foreground flex cursor-not-allowed items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold"
             >
-              Chọn sản phẩm
+              Select product
             </button>
           )}
         </div>

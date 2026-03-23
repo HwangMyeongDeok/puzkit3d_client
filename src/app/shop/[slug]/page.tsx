@@ -69,18 +69,18 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = async (showToast = true) => {
     if (!isAuthenticated) {
-      toast.info('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!');
+      toast.info('Please log in to add products to cart!');
       router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
       return false;
     }
 
     if (!product || !selectedVariant) {
-      toast.warning('Vui lòng chọn cấu hình sản phẩm trước khi mua!');
+      toast.warning('Please select a product configuration before purchasing!');
       return false;
     }
 
     if (!priceData) {
-      toast.error('Đang cập nhật giá, vui lòng thử lại sau giây lát!');
+      toast.error('Price is updating, please try again shortly!');
       return false;
     }
 
@@ -95,7 +95,7 @@ export default function ProductDetailPage() {
 
       await addToCartMutate(payload).unwrap();
       if (showToast) {
-        toast.success('Đã thêm vào giỏ hàng thành công!');
+        toast.success('Added to cart successfully!');
       }
       return true;
     } catch (error: any) {
@@ -144,7 +144,7 @@ export default function ProductDetailPage() {
   }, [product]);
 
   const formattedPrice = priceData?.unitPrice
-    ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
+    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'VND' }).format(
         priceData.unitPrice
       )
     : '';
@@ -154,7 +154,7 @@ export default function ProductDetailPage() {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4">
         <Loader2 className="h-12 w-12 animate-spin text-[#e51636]" />
-        <p className="animate-pulse font-medium text-slate-500">Đang tải thông tin sản phẩm...</p>
+        <p className="animate-pulse font-medium text-slate-500">Loading product information...</p>
       </div>
     );
   }
@@ -165,12 +165,12 @@ export default function ProductDetailPage() {
         <div className="rounded-full bg-slate-100 p-6">
           <Package className="h-16 w-16 text-slate-300" />
         </div>
-        <h1 className="text-2xl font-bold text-slate-800">Không tìm thấy sản phẩm</h1>
+        <h1 className="text-2xl font-bold text-slate-800">Product Not Found</h1>
         <button
           onClick={() => router.back()}
           className="mt-4 flex items-center gap-2 rounded-full bg-[#052a5b] px-6 py-2.5 font-semibold text-white transition-all hover:bg-[#052a5b]/90 hover:shadow-lg hover:shadow-[#052a5b]/30"
         >
-          <ChevronLeft className="h-4 w-4" /> Quay lại
+          <ChevronLeft className="h-4 w-4" /> Go Back
         </button>
       </div>
     );
@@ -180,11 +180,11 @@ export default function ProductDetailPage() {
     <div className="container mx-auto max-w-7xl px-4 py-8 md:py-12">
       <nav className="mb-8 flex items-center gap-2 text-sm text-slate-500">
         <Link href="/" className="transition-colors hover:text-[#e51636]">
-          Trang chủ
+          Home
         </Link>
         <span>/</span>
         <Link href={ROUTES.PRODUCTS} className="transition-colors hover:text-[#e51636]">
-          Sản phẩm
+          Products
         </Link>
         <span>/</span>
         <span className="truncate font-medium text-slate-900">{product.name}</span>
@@ -205,7 +205,7 @@ export default function ProductDetailPage() {
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-slate-50 text-slate-400">
-                Chưa có hình ảnh
+                No image available
               </div>
             )}
             <div className="absolute top-4 left-4 rounded-full bg-white/90 px-4 py-1.5 text-xs font-bold tracking-wider text-slate-800 uppercase shadow-sm backdrop-blur-md">
@@ -237,7 +237,7 @@ export default function ProductDetailPage() {
           {/* BEST SELLER Badge */}
           <div className="mb-4 flex items-center gap-2">
             <span className="inline-block rounded-full bg-[#052a5b] px-4 py-1.5 text-xs font-bold tracking-wider text-white uppercase shadow-md">
-              Bán chạy
+              Best Seller
             </span>
           </div>
 
@@ -273,8 +273,8 @@ export default function ProductDetailPage() {
                 </span>
                 {priceData.unitPrice && (
                   <>
-                    <span className="text-xl font-semibold text-slate-400 line-through">
-                      {new Intl.NumberFormat('vi-VN', {
+                    <span className="text-muted-foreground mr-3 text-lg line-through">
+                      {new Intl.NumberFormat('en-US', {
                         style: 'currency',
                         currency: 'VND',
                       }).format(priceData.unitPrice * 1.3)}{' '}
@@ -287,10 +287,12 @@ export default function ProductDetailPage() {
                 )}
               </div>
             ) : (
-              <span className="text-lg font-medium text-slate-500">Sản phẩm chưa có cấu hình</span>
+              <span className="text-lg font-medium text-slate-500">
+                Product has no configuration
+              </span>
             )}
             <p className="mt-2 text-xs font-medium text-slate-600">
-              ◎ Giá cuối cùng bao gồm tất cả các thuế phí áp dụng
+              ◎ Final price includes all applicable taxes and fees
             </p>
             {priceData?.priceName && (
               <span className="mt-2 inline-block text-sm font-medium text-emerald-600">
@@ -313,7 +315,7 @@ export default function ProductDetailPage() {
             {/* Quantity Selector */}
             <div className="flex items-center gap-6">
               <div className="flex flex-col gap-2">
-                <span className="text-sm font-semibold text-slate-700">Số lượng:</span>
+                <span className="text-sm font-semibold text-slate-700">Quantity:</span>
                 <div className="flex h-12 w-36 items-center justify-between rounded-xl border border-slate-300 bg-white p-1 shadow-sm">
                   <button
                     onClick={() => handleQuantityChange('decrease')}
@@ -344,7 +346,7 @@ export default function ProductDetailPage() {
                 ) : (
                   <>
                     <ShoppingCart className="h-5 w-5" />
-                    <span>Thêm vào giỏ hàng</span>
+                    <span>Add to Cart</span>
                   </>
                 )}
               </button>
@@ -354,17 +356,17 @@ export default function ProductDetailPage() {
                 onClick={handleBuyNow}
                 className="group relative flex h-14 flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl bg-[#e51636] px-8 font-bold text-white shadow-lg transition-all hover:-translate-y-1 hover:bg-[#e51636]/90 hover:shadow-xl disabled:pointer-events-none disabled:opacity-70"
               >
-                <span>Mua ngay</span>
+                <span>Buy Now</span>
               </button>
             </div>
 
             {/* More Payment Options */}
             <div className="flex justify-center">
               <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-slate-600">
-                <span className="tracking-wide uppercase">Thanh toán online</span>
+                <span className="tracking-wide uppercase">Online Payment</span>
                 <span className="rounded-full bg-[#052a5b]/10 px-2 py-1 text-[#052a5b]">VNPAY</span>
                 <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-500">
-                  MOMO (sắp có)
+                  MOMO (coming soon)
                 </span>
               </div>
             </div>
@@ -374,21 +376,21 @@ export default function ProductDetailPage() {
           <div className="flex items-center justify-center gap-2 border-t border-slate-200 pt-6">
             <Scale className="h-4 w-4 text-slate-500" />
             <button className="text-sm font-semibold text-slate-600 transition-colors hover:text-[#e51636]">
-              Thêm vào so sánh
+              Add to Compare
             </button>
           </div>
 
           {/* Product Specs Grid */}
           {(product.totalPieceCount || product.difficultLevel || product.estimatedBuildTime) && (
             <div className="mt-8">
-              <h3 className="mb-4 text-lg font-bold text-slate-900">Thông tin sản phẩm</h3>
+              <h3 className="mb-4 text-lg font-bold text-slate-900">Product Information</h3>
               <div className="grid grid-cols-3 gap-4">
                 {product.totalPieceCount && (
                   <div className="flex flex-col items-center rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:shadow-md">
                     <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-[#052a5b]/10">
                       <span className="text-lg font-bold text-[#052a5b]">#</span>
                     </div>
-                    <span className="text-sm font-semibold text-slate-700">Mảnh ghép</span>
+                    <span className="text-sm font-semibold text-slate-700">Pieces</span>
                     <span className="text-xl font-black text-slate-900">
                       {product.totalPieceCount}
                     </span>
@@ -400,7 +402,7 @@ export default function ProductDetailPage() {
                     <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-[#e51636]/10">
                       <span className="text-lg font-bold text-[#e51636]">⚡</span>
                     </div>
-                    <span className="text-sm font-semibold text-slate-700">Độ khó</span>
+                    <span className="text-sm font-semibold text-slate-700">Difficulty</span>
                     <span className="text-xl font-black text-slate-900">
                       {product.difficultLevel}
                     </span>
@@ -412,7 +414,7 @@ export default function ProductDetailPage() {
                     <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-[#052a5b]/10">
                       <span className="text-lg font-bold text-[#052a5b]">⏱</span>
                     </div>
-                    <span className="text-sm font-semibold text-slate-700">Thời gian ráp</span>
+                    <span className="text-sm font-semibold text-slate-700">Build Time</span>
                     <span className="text-xl font-black text-slate-900">
                       {product.estimatedBuildTime}
                       <span className="text-xs">p</span>
@@ -426,7 +428,7 @@ export default function ProductDetailPage() {
           {/* Product Description */}
           {product.description && (
             <div className="mt-8">
-              <h3 className="mb-4 text-lg font-bold text-slate-900">Mô tả sản phẩm</h3>
+              <h3 className="mb-4 text-lg font-bold text-slate-900">Product Description</h3>
               <p className="leading-relaxed whitespace-pre-wrap text-slate-600">
                 {product.description}
               </p>

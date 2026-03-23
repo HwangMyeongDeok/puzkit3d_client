@@ -23,10 +23,10 @@ interface ProductTabsProps {
 }
 
 function formatBuildTime(minutes: number): string {
-  if (minutes < 60) return `${minutes} phút`;
+  if (minutes < 60) return `${minutes} min`;
   const hours = Math.floor(minutes / 60);
   const remaining = minutes % 60;
-  return remaining > 0 ? `${hours} giờ ${remaining} phút` : `${hours} giờ`;
+  return remaining > 0 ? `${hours}h ${remaining}min` : `${hours}h`;
 }
 
 export default function ProductTabs({ description, specs, isPartner = false }: ProductTabsProps) {
@@ -34,19 +34,19 @@ export default function ProductTabs({ description, specs, isPartner = false }: P
     <Tabs defaultValue="description" className="w-full">
       <TabsList className="bg-secondary/50 grid w-full grid-cols-3">
         <TabsTrigger value="description" className="text-xs sm:text-sm">
-          Mô tả chi tiết
+          Detailed Description
         </TabsTrigger>
         <TabsTrigger value="specs" className="text-xs sm:text-sm">
-          Thông số
+          Specifications
         </TabsTrigger>
         <TabsTrigger value="shipping" className="text-xs sm:text-sm">
-          Vận chuyển
+          Shipping
         </TabsTrigger>
       </TabsList>
 
       <TabsContent value="description" className="border-border bg-card mt-4 rounded-xl border p-6">
         <div className="prose prose-sm prose-invert prose-headings:text-foreground prose-p:text-muted-foreground prose-strong:text-foreground prose-li:text-muted-foreground prose-th:text-foreground prose-td:text-muted-foreground max-w-none">
-          <ReactMarkdown>{description || 'Chưa có mô tả chi tiết.'}</ReactMarkdown>
+          <ReactMarkdown>{description || 'No detailed description available.'}</ReactMarkdown>
         </div>
       </TabsContent>
 
@@ -56,7 +56,7 @@ export default function ProductTabs({ description, specs, isPartner = false }: P
             <tbody>
               <tr className="border-border border-b">
                 <td className="bg-secondary/30 text-foreground w-1/3 px-4 py-3 font-semibold">
-                  {isPartner ? 'Đối tác' : 'Chủ đề'}
+                  {isPartner ? 'Partner' : 'Topic'}
                 </td>
                 <td className="text-muted-foreground px-4 py-3">
                   {specs.partnerName || specs.topicName}
@@ -65,7 +65,7 @@ export default function ProductTabs({ description, specs, isPartner = false }: P
               {specs.difficultLevel && (
                 <tr className="border-border border-b">
                   <td className="bg-secondary/30 text-foreground w-1/3 px-4 py-3 font-semibold">
-                    Độ khó
+                    Difficulty
                   </td>
                   <td className="text-muted-foreground px-4 py-3">{specs.difficultLevel}</td>
                 </tr>
@@ -73,7 +73,7 @@ export default function ProductTabs({ description, specs, isPartner = false }: P
               {specs.materialName && (
                 <tr className="border-border border-b">
                   <td className="bg-secondary/30 text-foreground w-1/3 px-4 py-3 font-semibold">
-                    Chất liệu
+                    Material
                   </td>
                   <td className="text-muted-foreground px-4 py-3">{specs.materialName}</td>
                 </tr>
@@ -81,17 +81,17 @@ export default function ProductTabs({ description, specs, isPartner = false }: P
               {specs.totalPieceCount && (
                 <tr className="border-border border-b">
                   <td className="bg-secondary/30 text-foreground w-1/3 px-4 py-3 font-semibold">
-                    Số chi tiết
+                    Total Pieces
                   </td>
                   <td className="text-muted-foreground px-4 py-3">
-                    {specs.totalPieceCount.toLocaleString('vi-VN')} mảnh
+                    {specs.totalPieceCount.toLocaleString('en-US')} pcs
                   </td>
                 </tr>
               )}
               {specs.estimatedBuildTime && (
                 <tr className="border-border border-b">
                   <td className="bg-secondary/30 text-foreground w-1/3 px-4 py-3 font-semibold">
-                    Thời gian lắp ráp
+                    Build Time
                   </td>
                   <td className="text-muted-foreground px-4 py-3">
                     ~{formatBuildTime(specs.estimatedBuildTime)}
@@ -101,7 +101,7 @@ export default function ProductTabs({ description, specs, isPartner = false }: P
               {specs.assembledDimensions && (
                 <tr className="border-border border-b">
                   <td className="bg-secondary/30 text-foreground w-1/3 px-4 py-3 font-semibold">
-                    Kích thước hoàn thiện
+                    Assembled Dimensions
                   </td>
                   <td className="text-muted-foreground px-4 py-3">
                     {specs.assembledDimensions.length} × {specs.assembledDimensions.width} ×{' '}
@@ -111,18 +111,18 @@ export default function ProductTabs({ description, specs, isPartner = false }: P
               )}
               <tr className="border-border border-b">
                 <td className="bg-secondary/30 text-foreground w-1/3 px-4 py-3 font-semibold">
-                  Loại sản phẩm
+                  Product Type
                 </td>
                 <td className="text-muted-foreground px-4 py-3">
-                  {isPartner ? 'Hàng đối tác — Đặt theo yêu cầu' : 'Hàng có sẵn'}
+                  {isPartner ? 'Partner product — Made to order' : 'In stock'}
                 </td>
               </tr>
               <tr>
                 <td className="bg-secondary/30 text-foreground w-1/3 px-4 py-3 font-semibold">
-                  Bảo hành
+                  Warranty
                 </td>
                 <td className="text-muted-foreground px-4 py-3">
-                  Đổi trả trong 7 ngày nếu lỗi nhà sản xuất
+                  7-day return if manufacturer defect
                 </td>
               </tr>
             </tbody>
@@ -137,9 +137,9 @@ export default function ProductTabs({ description, specs, isPartner = false }: P
               <span className="text-brand text-base">📦</span>
             </div>
             <div>
-              <p className="text-foreground font-semibold">Giao hàng tiêu chuẩn</p>
+              <p className="text-foreground font-semibold">Standard Shipping</p>
               <p className="text-muted-foreground">
-                3-5 ngày làm việc. Phí ship 30.000đ (miễn phí cho đơn từ 500.000đ).
+                3-5 business days. Shipping fee 30,000 VND (free for orders over 500,000 VND).
               </p>
             </div>
           </div>
@@ -149,8 +149,8 @@ export default function ProductTabs({ description, specs, isPartner = false }: P
               <span className="text-brand text-base">🚀</span>
             </div>
             <div>
-              <p className="text-foreground font-semibold">Giao hàng nhanh</p>
-              <p className="text-muted-foreground">1-2 ngày làm việc. Phí ship 50.000đ.</p>
+              <p className="text-foreground font-semibold">Express Shipping</p>
+              <p className="text-muted-foreground">1-2 business days. Shipping fee 50,000 VND.</p>
             </div>
           </div>
 
@@ -160,20 +160,20 @@ export default function ProductTabs({ description, specs, isPartner = false }: P
                 <span className="text-warning text-base">✈️</span>
               </div>
               <div>
-                <p className="text-foreground font-semibold">Hàng đối tác (quốc tế)</p>
+                <p className="text-foreground font-semibold">Partner Product (International)</p>
                 <p className="text-muted-foreground">
-                  7-21 ngày làm việc. Phí vận chuyển sẽ được Staff báo giá cụ thể sau khi xác nhận
-                  đơn hàng.
+                  7-21 business days. Shipping cost will be quoted by staff after confirming the
+                  order.
                 </p>
               </div>
             </div>
           )}
 
           <div className="border-border mt-2 rounded-lg border p-4">
-            <p className="text-foreground mb-1 text-xs font-semibold">Chính sách đổi trả</p>
+            <p className="text-foreground mb-1 text-xs font-semibold">Return Policy</p>
             <p className="text-muted-foreground text-xs">
-              Đổi trả miễn phí trong vòng 7 ngày kể từ ngày nhận hàng nếu sản phẩm bị lỗi do nhà sản
-              xuất. Sản phẩm phải còn nguyên seal, chưa mở hộp.
+              Free returns within 7 days of delivery if the product has a manufacturer defect.
+              Product must be sealed and unopened.
             </p>
           </div>
         </div>

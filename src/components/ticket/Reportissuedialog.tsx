@@ -54,13 +54,13 @@ import { useGetPresignedUrlMutation } from '@/lib/api/endpoints/uploadApi';
 const TICKET_TYPES: { value: TicketType; label: string; description: string }[] = [
   {
     value: 'ReplacePart',
-    label: 'Thay thế linh kiện',
-    description: 'Yêu cầu thay thế bộ phận bị thiếu hoặc hỏng',
+    label: 'Replace Part',
+    description: 'Request replacement for missing or damaged parts',
   },
   {
     value: 'Exchange',
-    label: 'Đổi hàng',
-    description: 'Đổi sang sản phẩm khác',
+    label: 'Exchange',
+    description: 'Exchange for a different product',
   },
 ];
 
@@ -112,7 +112,7 @@ function PartSelector({ productId, value, onChange, hasError }: PartSelectorProp
     return (
       <div className="border-input bg-muted/30 text-muted-foreground flex h-9 items-center gap-2 rounded-md border px-3 text-sm">
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        Đang tải danh sách linh kiện...
+        Loading parts list...
       </div>
     );
   }
@@ -121,7 +121,7 @@ function PartSelector({ productId, value, onChange, hasError }: PartSelectorProp
     return (
       <div className="border-destructive/40 bg-destructive/5 text-destructive flex h-9 items-center gap-2 rounded-md border px-3 text-sm">
         <AlertTriangle className="h-3.5 w-3.5" />
-        Không thể tải linh kiện. Thử lại sau.
+        Failed to load parts. Try again later.
       </div>
     );
   }
@@ -129,7 +129,7 @@ function PartSelector({ productId, value, onChange, hasError }: PartSelectorProp
   if (parts.length === 0) {
     return (
       <div className="border-input bg-muted/30 text-muted-foreground flex h-9 items-center gap-2 rounded-md border px-3 text-sm">
-        Sản phẩm này không có linh kiện để thay thế.
+        This product has no parts available for replacement.
       </div>
     );
   }
@@ -137,7 +137,7 @@ function PartSelector({ productId, value, onChange, hasError }: PartSelectorProp
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className={hasError ? 'border-destructive' : ''}>
-        <SelectValue placeholder="Chọn linh kiện cần thay..." />
+        <SelectValue placeholder="Select part to replace..." />
       </SelectTrigger>
       <SelectContent>
         {parts.map((part) => (
@@ -145,7 +145,7 @@ function PartSelector({ productId, value, onChange, hasError }: PartSelectorProp
             <div className="flex flex-col gap-0.5">
               <span className="font-medium">{part.name}</span>
               <span className="text-muted-foreground text-xs">
-                Mã: {part.code} &bull; Loại: {part.partType} &bull; {part.totalPieces} mảnh
+                Code: {part.code} &bull; Type: {part.partType} &bull; {part.totalPieces} pcs
               </span>
             </div>
           </SelectItem>
@@ -245,11 +245,11 @@ export default function ReportIssueDialog({
 
       setProof(newProof);
       clearError('proof');
-      toast.success('Tải tệp lên thành công!');
+      toast.success('File uploaded successfully!');
     } catch (error) {
       console.error('Upload Error:', error);
-      toast.error('Tải tệp thất bại', {
-        description: 'Vui lòng kiểm tra lại kết nối hoặc thử file nhỏ hơn.',
+      toast.error('File upload failed', {
+        description: 'Please check your connection or try a smaller file.',
       });
     } finally {
       setIsUploading(false);
@@ -263,20 +263,20 @@ export default function ReportIssueDialog({
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!type) newErrors.type = 'Vui lòng chọn loại yêu cầu.';
-    if (reason.trim().length < 10) newErrors.reason = 'Lý do cần ít nhất 10 ký tự.';
+    if (!type) newErrors.type = 'Please select a request type.';
+    if (reason.trim().length < 10) newErrors.reason = 'Reason must be at least 10 characters.';
     if (!isValidInput(proof))
-      newErrors.proof = 'Vui lòng cung cấp link hoặc upload ảnh/video bằng chứng.';
+      newErrors.proof = 'Please provide a link or upload photo/video evidence.';
 
     const selectedItems = orderDetails.filter((d) => items[d.id]?.selected);
-    if (selectedItems.length === 0) newErrors.items = 'Vui lòng chọn ít nhất một sản phẩm.';
+    if (selectedItems.length === 0) newErrors.items = 'Please select at least one product.';
 
     if (type === 'ReplacePart') {
       selectedItems.forEach((d) => {
         const item = items[d.id];
-        if (!item.partId) newErrors[`partId_${d.id}`] = 'Vui lòng chọn linh kiện cần thay.';
+        if (!item.partId) newErrors[`partId_${d.id}`] = 'Please select a part to replace.';
         if (!item.quantity || item.quantity < 1)
-          newErrors[`qty_${d.id}`] = 'Số lượng tối thiểu là 1.';
+          newErrors[`qty_${d.id}`] = 'Minimum quantity is 1.';
       });
     }
 
@@ -319,14 +319,14 @@ export default function ReportIssueDialog({
         details,
       }).unwrap();
 
-      toast.success('Yêu cầu hỗ trợ đã được gửi thành công!', {
-        description: 'Chúng tôi sẽ xem xét và phản hồi sớm nhất có thể.',
+      toast.success('Support request submitted successfully!', {
+        description: 'We will review and respond as soon as possible.',
       });
       resetForm();
       onOpenChange(false);
     } catch {
-      toast.error('Không thể gửi yêu cầu.', {
-        description: 'Đã có lỗi xảy ra. Vui lòng thử lại sau.',
+      toast.error('Unable to submit request.', {
+        description: 'An error occurred. Please try again later.',
       });
     }
   };
@@ -347,10 +347,10 @@ export default function ReportIssueDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
             <AlertTriangle className="h-5 w-5 text-orange-500" />
-            Báo cáo sự cố đơn hàng
+            Report Order Issue
           </DialogTitle>
           <DialogDescription>
-            Mô tả vấn đề bạn gặp phải. Chúng tôi sẽ xử lý trong thời gian sớm nhất.
+            Describe the issue you encountered. We will process it as soon as possible.
           </DialogDescription>
         </DialogHeader>
 
@@ -358,7 +358,7 @@ export default function ReportIssueDialog({
           {/* ── Ticket type ── */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="ticket-type" className="font-semibold">
-              Loại yêu cầu <span className="text-destructive">*</span>
+              Request Type <span className="text-destructive">*</span>
             </Label>
             <Select
               value={type}
@@ -376,7 +376,7 @@ export default function ReportIssueDialog({
               }}
             >
               <SelectTrigger id="ticket-type" className={errors.type ? 'border-destructive' : ''}>
-                <SelectValue placeholder="Chọn loại yêu cầu..." />
+                <SelectValue placeholder="Select request type..." />
               </SelectTrigger>
               <SelectContent>
                 {TICKET_TYPES.map((t) => (
@@ -395,11 +395,11 @@ export default function ReportIssueDialog({
           {/* ── Reason ── */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="reason" className="font-semibold">
-              Lý do <span className="text-destructive">*</span>
+              Reason <span className="text-destructive">*</span>
             </Label>
             <Textarea
               id="reason"
-              placeholder="Mô tả chi tiết vấn đề của bạn (tối thiểu 10 ký tự)..."
+              placeholder="Describe the issue in detail (minimum 10 characters)..."
               value={reason}
               onChange={(e) => {
                 setReason(e.target.value);
@@ -416,7 +416,7 @@ export default function ReportIssueDialog({
               <span
                 className={`text-xs ${reason.length < 10 ? 'text-muted-foreground' : 'text-emerald-600'}`}
               >
-                {reason.length} ký tự
+                {reason.length} characters
               </span>
             </div>
           </div>
@@ -424,7 +424,7 @@ export default function ReportIssueDialog({
           {/* ── Proof URL & Upload ── */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="proof" className="font-semibold">
-              Bằng chứng (Link YouTube hoặc Upload Ảnh/Video){' '}
+              Evidence (YouTube Link or Upload Photo/Video){' '}
               <span className="text-destructive">*</span>
             </Label>
 
@@ -434,7 +434,7 @@ export default function ReportIssueDialog({
                 <LinkIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                 <Input
                   id="proof"
-                  placeholder="Nhập link hoặc tải file lên..."
+                  placeholder="Enter link or upload file..."
                   value={proof}
                   onChange={(e) => {
                     setProof(e.target.value);
@@ -472,7 +472,7 @@ export default function ReportIssueDialog({
               <p className="text-destructive text-xs">{errors.proof}</p>
             ) : (
               <p className="text-muted-foreground text-xs">
-                Có thể nhập nhiều link ngăn cách bằng dấu phẩy.
+                You can enter multiple links separated by commas.
               </p>
             )}
           </div>
@@ -484,7 +484,7 @@ export default function ReportIssueDialog({
             <div className="flex items-center gap-2">
               <Package className="text-brand h-4 w-4" />
               <Label className="font-semibold">
-                Chọn sản phẩm liên quan <span className="text-destructive">*</span>
+                Select Related Products <span className="text-destructive">*</span>
               </Label>
             </div>
             {errors.items && <p className="text-destructive text-xs">{errors.items}</p>}
@@ -527,11 +527,11 @@ export default function ReportIssueDialog({
                         </p>
                         {detail.variantName && (
                           <p className="text-muted-foreground mt-0.5 text-xs">
-                            Phân loại: {detail.variantName}
+                            Variant: {detail.variantName}
                           </p>
                         )}
                         <p className="text-muted-foreground mt-1 text-xs">
-                          Số lượng: {detail.quantity}
+                          Quantity: {detail.quantity}
                         </p>
                       </label>
                     </div>
@@ -539,9 +539,9 @@ export default function ReportIssueDialog({
                     {isSelected && (
                       <div className="mt-4 flex flex-col gap-4 pl-7">
                         <div className="flex flex-col gap-1">
-                          <Label className="text-xs font-medium">Ghi chú cho sản phẩm này</Label>
+                          <Label className="text-xs font-medium">Note for this product</Label>
                           <Input
-                            placeholder="Thêm ghi chú (tùy chọn)..."
+                            placeholder="Add a note (optional)..."
                             value={itemState.note}
                             onChange={(e) => updateItem(detail.id, { note: e.target.value })}
                             className="h-8 text-sm"
@@ -553,7 +553,7 @@ export default function ReportIssueDialog({
                             <div className="flex flex-col gap-1.5">
                               <Label className="text-xs font-medium">
                                 <Wrench className="mr-1 inline h-3 w-3" />
-                                Linh kiện cần thay <span className="text-destructive">*</span>
+                                Part to Replace <span className="text-destructive">*</span>
                               </Label>
 
                               {productId ? (
@@ -569,7 +569,7 @@ export default function ReportIssueDialog({
                               ) : (
                                 <div className="flex h-9 items-center gap-2 rounded-md border border-yellow-400/40 bg-yellow-50 px-3 text-xs text-yellow-700">
                                   <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                                  Không tìm thấy thông tin sản phẩm để tải linh kiện.
+                                  Product information not found to load parts.
                                 </div>
                               )}
                               {errors[`partId_${detail.id}`] && (
@@ -581,7 +581,7 @@ export default function ReportIssueDialog({
 
                             <div className="flex flex-col gap-1">
                               <Label className="text-xs font-medium">
-                                Số lượng cần thay <span className="text-destructive">*</span>
+                                Replacement Quantity <span className="text-destructive">*</span>
                               </Label>
                               <Input
                                 type="number"
@@ -615,7 +615,7 @@ export default function ReportIssueDialog({
 
         <DialogFooter className="gap-2 pt-2">
           <Button variant="outline" onClick={handleClose} disabled={isSubmitting || isUploading}>
-            Hủy
+            Cancel
           </Button>
           <Button
             onClick={handleSubmit}
@@ -625,12 +625,12 @@ export default function ReportIssueDialog({
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Đang gửi...
+                Submitting...
               </>
             ) : (
               <>
                 <FileText className="mr-2 h-4 w-4" />
-                Gửi yêu cầu
+                Submit Request
               </>
             )}
           </Button>

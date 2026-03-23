@@ -57,12 +57,12 @@ export default function ForgotPasswordPage() {
             <Mail className="text-brand h-7 w-7" />
           </div>
           <CardTitle className="text-2xl font-bold">
-            {isSubmitted ? 'Kiểm tra email của bạn' : 'Quên mật khẩu'}
+            {isSubmitted ? 'Check your email' : 'Forgot password'}
           </CardTitle>
           <CardDescription>
             {isSubmitted
-              ? 'Nếu email này tồn tại trong hệ thống, bạn sẽ nhận được liên kết đặt lại mật khẩu trong vài phút.'
-              : 'Nhập email đã đăng ký để nhận liên kết đặt lại mật khẩu.'}
+              ? 'If this email exists in our system, you will receive a password reset link in a few minutes.'
+              : 'Enter your registered email to receive a password reset link.'}
           </CardDescription>
         </CardHeader>
 
@@ -73,8 +73,8 @@ export default function ForgotPasswordPage() {
                 <CheckCircle2 className="h-8 w-8 text-green-600" />
               </div>
               <p className="text-muted-foreground text-sm">
-                Không nhận được email? Kiểm tra thư mục <strong>Spam</strong> hoặc thử lại sau vài
-                phút.
+                Didn't receive the email? Check your <strong>Spam</strong> folder or try again in a
+                few minutes.
               </p>
             </CardContent>
             <CardFooter className="flex flex-col gap-3">
@@ -86,14 +86,14 @@ export default function ForgotPasswordPage() {
                   form.reset();
                 }}
               >
-                Gửi lại email
+                Resend email
               </Button>
               <Link
                 href={ROUTES.LOGIN}
                 className="text-brand hover:text-brand/80 inline-flex items-center gap-1.5 text-sm font-medium transition-colors"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Quay lại đăng nhập
+                Back to login
               </Link>
             </CardFooter>
           </>
@@ -126,10 +126,10 @@ export default function ForgotPasswordPage() {
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Đang gửi...
+                      Sending...
                     </>
                   ) : (
-                    'Gửi liên kết đặt lại'
+                    'Send reset link'
                   )}
                 </Button>
                 <Link
@@ -137,7 +137,7 @@ export default function ForgotPasswordPage() {
                   className="text-brand hover:text-brand/80 inline-flex items-center gap-1.5 text-sm font-medium transition-colors"
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Quay lại đăng nhập
+                  Back to login
                 </Link>
               </CardFooter>
             </form>

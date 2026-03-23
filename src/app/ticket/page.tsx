@@ -64,30 +64,30 @@ import {
 const PAGE_SIZE = 8;
 
 const TICKET_TYPE_LABEL: Record<string, string> = {
-  ReplacePart: 'Thay thế linh kiện',
-  Exchange: 'Đổi hàng',
-  Return: 'Trả hàng',
+  ReplacePart: 'Replace Part',
+  Exchange: 'Exchange',
+  Return: 'Return',
 };
 
 const STATUS_CONFIG: Record<TicketStatus, { label: string; className: string }> = {
-  Open: { label: 'Mở', className: 'border-blue-500/30   bg-blue-500/10   text-blue-600' },
+  Open: { label: 'Open', className: 'border-blue-500/30   bg-blue-500/10   text-blue-600' },
   InProgress: {
-    label: 'Đang xử lý',
+    label: 'In Progress',
     className: 'border-yellow-500/30 bg-yellow-500/10 text-yellow-600',
   },
   Resolved: {
-    label: 'Đã giải quyết',
+    label: 'Resolved',
     className: 'border-green-500/30  bg-green-500/10  text-green-600',
   },
-  Rejected: { label: 'Từ chối', className: 'border-red-500/30    bg-red-500/10    text-red-600' },
+  Rejected: { label: 'Rejected', className: 'border-red-500/30    bg-red-500/10    text-red-600' },
 };
 
 const STATUS_FILTER_OPTIONS = [
-  { value: 'all', label: 'Tất cả trạng thái' },
-  { value: 'Open', label: 'Mở' },
-  { value: 'InProgress', label: 'Đang xử lý' },
-  { value: 'Resolved', label: 'Đã giải quyết' },
-  { value: 'Rejected', label: 'Từ chối' },
+  { value: 'all', label: 'All Statuses' },
+  { value: 'Open', label: 'Open' },
+  { value: 'InProgress', label: 'In Progress' },
+  { value: 'Resolved', label: 'Resolved' },
+  { value: 'Rejected', label: 'Rejected' },
 ];
 
 function TicketStatusBadge({ status }: { status: TicketStatus }) {
@@ -125,9 +125,9 @@ function TicketDetailSheet({
         <SheetHeader className="mb-4">
           <SheetTitle className="flex items-center gap-2">
             <Ticket className="text-brand h-5 w-5" />
-            Chi tiết yêu cầu hỗ trợ
+            Support Ticket Details
           </SheetTitle>
-          <SheetDescription>Thông tin đầy đủ về phiếu hỗ trợ của bạn.</SheetDescription>
+          <SheetDescription>Full information regarding your support ticket.</SheetDescription>
         </SheetHeader>
 
         {isLoading && (
@@ -142,7 +142,7 @@ function TicketDetailSheet({
             <div className="bg-muted/30 border-border/50 flex items-center justify-between rounded-lg border p-4">
               <div className="flex flex-col gap-1">
                 <span className="text-muted-foreground text-xs tracking-wider uppercase">
-                  Loại yêu cầu
+                  Request Type
                 </span>
                 <span className="font-semibold">
                   {TICKET_TYPE_LABEL[ticket.type] ?? ticket.type}
@@ -160,9 +160,9 @@ function TicketDetailSheet({
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="text-muted-foreground h-4 w-4 shrink-0" />
-                <span className="text-muted-foreground">Ngày tạo:</span>
+                <span className="text-muted-foreground">Created Date:</span>
                 <span>
-                  {new Date(ticket.createdAt).toLocaleDateString('vi-VN', {
+                  {new Date(ticket.createdAt).toLocaleDateString('en-US', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric',
@@ -179,7 +179,7 @@ function TicketDetailSheet({
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center gap-2 font-semibold">
                 <FileText className="text-brand h-4 w-4" />
-                Lý do
+                Reason
               </div>
               <p className="text-muted-foreground bg-muted/20 rounded-md p-3 leading-relaxed">
                 {ticket.reason}
@@ -190,7 +190,7 @@ function TicketDetailSheet({
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center gap-2 font-semibold">
                 <LinkIcon className="text-brand h-4 w-4" />
-                Bằng chứng
+                Evidence
               </div>
               <a
                 href={ticket.proof}
@@ -209,7 +209,7 @@ function TicketDetailSheet({
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2 font-semibold">
                   <Package className="text-brand h-4 w-4" />
-                  Sản phẩm liên quan ({ticket.details.length})
+                  Related Products ({ticket.details.length})
                 </div>
                 <div className="flex flex-col gap-3">
                   {ticket.details.map((d) => (
@@ -230,12 +230,11 @@ function TicketDetailSheet({
                           )}
                           {d.partId && (
                             <span className="text-muted-foreground text-xs">
-                              Linh kiện:{' '}
-                              <span className="text-foreground font-medium">{d.partId}</span>
+                              Part: <span className="text-foreground font-medium">{d.partId}</span>
                             </span>
                           )}
                           <span className="text-muted-foreground text-xs">
-                            Số lượng:{' '}
+                            Quantity:{' '}
                             <span className="text-foreground font-medium">{d.quantity}</span>
                           </span>
                           {d.note && (
@@ -304,7 +303,7 @@ function TicketCard({
       <div className="flex items-center justify-between gap-2">
         <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
           <Calendar className="h-3.5 w-3.5" />
-          {new Date(ticket.createdAt).toLocaleDateString('vi-VN', {
+          {new Date(ticket.createdAt).toLocaleDateString('en-US', {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric',
@@ -320,7 +319,7 @@ function TicketCard({
             onClick={() => onView(ticket.id)}
           >
             <Eye className="h-3.5 w-3.5" />
-            Xem
+            View
           </Button>
 
           {/* Mark as Resolved — hard constraint: customers can only set Resolved */}
@@ -337,7 +336,7 @@ function TicketCard({
               ) : (
                 <CheckCircle2 className="h-3.5 w-3.5" />
               )}
-              Đã giải quyết
+              Resolved
             </Button>
           )}
 
@@ -400,9 +399,9 @@ export default function MyTicketsPage() {
   const handleResolve = async (id: string) => {
     try {
       await updateStatus({ id, status: 'Resolved' }).unwrap();
-      toast.success('Đã đánh dấu là giải quyết xong!');
+      toast.success('Marked as resolved successfully!');
     } catch {
-      toast.error('Không thể cập nhật trạng thái. Vui lòng thử lại.');
+      toast.error('Unable to update status. Please try again.');
     }
   };
 
@@ -410,9 +409,9 @@ export default function MyTicketsPage() {
     if (!deleteTarget) return;
     try {
       await deleteTicket(deleteTarget).unwrap();
-      toast.success('Đã xóa yêu cầu hỗ trợ.');
+      toast.success('Support ticket deleted successfully.');
     } catch {
-      toast.error('Không thể xóa. Vui lòng thử lại.');
+      toast.error('Unable to delete. Please try again.');
     } finally {
       setDeleteOpen(false);
       setDeleteTarget(null);
@@ -428,9 +427,9 @@ export default function MyTicketsPage() {
         {/* Page header */}
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold md:text-3xl">Yêu cầu hỗ trợ của tôi</h1>
+            <h1 className="text-2xl font-bold md:text-3xl">My Support Tickets</h1>
             <p className="text-muted-foreground mt-1 text-sm">
-              Theo dõi và quản lý tất cả các phiếu hỗ trợ của bạn.
+              Track and manage all your support tickets.
             </p>
           </div>
           <Button
@@ -440,13 +439,13 @@ export default function MyTicketsPage() {
             onClick={() => refetch()}
           >
             <RefreshCw className="h-4 w-4" />
-            Làm mới
+            Refresh
           </Button>
         </div>
 
         {/* Filter bar */}
         <div className="flex items-center gap-3">
-          <span className="text-muted-foreground text-sm font-medium">Lọc theo:</span>
+          <span className="text-muted-foreground text-sm font-medium">Filter by:</span>
           <Select
             value={statusFilter}
             onValueChange={(v) => {
@@ -465,7 +464,7 @@ export default function MyTicketsPage() {
               ))}
             </SelectContent>
           </Select>
-          {data && <span className="text-muted-foreground text-sm">{data.totalCount} yêu cầu</span>}
+          {data && <span className="text-muted-foreground text-sm">{data.totalCount} tickets</span>}
         </div>
 
         {/* Loading */}
@@ -479,9 +478,9 @@ export default function MyTicketsPage() {
         {isError && (
           <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
             <AlertTriangle className="text-destructive h-10 w-10" />
-            <p className="font-semibold">Không thể tải dữ liệu</p>
+            <p className="font-semibold">Unable to load data</p>
             <Button variant="outline" onClick={() => refetch()}>
-              Thử lại
+              Retry
             </Button>
           </div>
         )}
@@ -490,9 +489,9 @@ export default function MyTicketsPage() {
         {!isLoading && !isError && data?.items.length === 0 && (
           <div className="bg-muted/20 flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-16 text-center">
             <Ticket className="text-muted-foreground/40 h-12 w-12" />
-            <p className="font-semibold">Chưa có yêu cầu nào</p>
+            <p className="font-semibold">No requests yet</p>
             <p className="text-muted-foreground text-sm">
-              Khi bạn báo cáo sự cố từ trang chi tiết đơn hàng, chúng sẽ xuất hiện ở đây.
+              When you report an issue from the order details page, it will appear here.
             </p>
           </div>
         )}
@@ -529,7 +528,7 @@ export default function MyTicketsPage() {
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <span className="text-muted-foreground text-sm">
-                  Trang <span className="text-foreground font-semibold">{page}</span> / {totalPages}
+                  Page <span className="text-foreground font-semibold">{page}</span> / {totalPages}
                 </span>
                 <Button
                   variant="outline"
@@ -554,22 +553,22 @@ export default function MyTicketsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="text-destructive h-5 w-5" />
-              Xác nhận xóa yêu cầu
+              Confirm Deletion
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc muốn xóa yêu cầu hỗ trợ này không? Hành động này không thể hoàn tác. Lưu
-              ý: chỉ có thể xóa khi trạng thái là <strong>Mở</strong>.
+              Are you sure you want to delete this support request? This action cannot be undone.
+              Note: You can only delete requests with an <strong>Open</strong> status.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Hủy</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               disabled={isDeleting}
               className="bg-destructive hover:bg-destructive/90 text-white"
             >
               {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Xóa yêu cầu
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

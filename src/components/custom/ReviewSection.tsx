@@ -25,19 +25,15 @@ export default function ReviewSection({
   if (totalCount === 0) {
     return (
       <div className="border-border bg-card rounded-xl border p-8 text-center">
-        <p className="text-foreground mb-1 text-lg font-bold">Chưa có đánh giá</p>
-        <p className="text-muted-foreground text-sm">
-          Hãy là người đầu tiên đánh giá sản phẩm này!
-        </p>
+        <p className="text-foreground mb-1 text-lg font-bold">No reviews yet</p>
+        <p className="text-muted-foreground text-sm">Be the first to review this product!</p>
       </div>
     );
   }
 
   return (
     <div className="border-border bg-card rounded-xl border p-6">
-      <h2 className="text-foreground mb-6 text-lg font-bold">
-        Đánh giá từ khách hàng ({totalCount})
-      </h2>
+      <h2 className="text-foreground mb-6 text-lg font-bold">Customer Reviews ({totalCount})</h2>
 
       <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-[200px_1fr]">
         <div className="flex flex-col items-center justify-center gap-1 text-center">
@@ -54,7 +50,7 @@ export default function ReviewSection({
               />
             ))}
           </div>
-          <span className="text-muted-foreground text-xs">{totalCount} đánh giá</span>
+          <span className="text-muted-foreground text-xs">{totalCount} reviews</span>
         </div>
 
         <div className="flex flex-col justify-center gap-1.5">
@@ -97,7 +93,7 @@ export default function ReviewSection({
               <div className="mb-1 flex items-center gap-2">
                 <span className="text-foreground text-sm font-semibold">{review.userName}</span>
                 <span className="text-muted-foreground text-[11px]">
-                  {new Date(review.date).toLocaleDateString('vi-VN')}
+                  {new Date(review.date).toLocaleDateString('en-US')}
                 </span>
               </div>
               <div className="mb-2 flex items-center gap-0.5">
@@ -121,7 +117,7 @@ export default function ReviewSection({
           onClick={() => setShowAll(!showAll)}
           className="text-brand hover:text-brand/80 mt-4 flex w-full items-center justify-center gap-1 text-sm font-semibold transition-colors"
         >
-          {showAll ? 'Thu gọn' : `Xem tất cả ${reviews.length} đánh giá`}
+          {showAll ? 'Show less' : `View all ${reviews.length} reviews`}
           <ChevronDown className={`h-4 w-4 transition-transform ${showAll ? 'rotate-180' : ''}`} />
         </button>
       )}
