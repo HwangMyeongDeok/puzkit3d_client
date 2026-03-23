@@ -1,30 +1,47 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useGetCustomerOrderByIdQuery } from '@/lib/api/endpoints/orderApi';
+import {
+  useGetCustomerOrderByIdQuery,
+  useCompleteOrderMutation,
+} from '@/lib/api/endpoints/orderApi';
 import type { OrderDetailDto } from '@/types/api/order.api.types';
 import type { InstockOrderStatus } from '@/types';
 import { ORDER_STATUS_MAP, ORDER_STEPPER_STEPS } from '@/constants';
 import OrderStepper from '@/components/custom/OrderStepper';
+import ReportIssueDialog from '@/components/ticket/Reportissuedialog';
+import { toast } from 'sonner';
 import {
   Loader2,
   ArrowLeft,
   Package,
-  CreditCard,
   User,
   MapPin,
-  ReceiptText,
   Calendar,
   Mail,
   Phone,
   Banknote,
+  AlertTriangle,
+  CheckCircle2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 /* ------------------------------------------------------------------ */
-/*  Status badge — driven by shared config                            */
+/*  Status badge                                                       */
 /* ------------------------------------------------------------------ */
+
 const colorMap: Record<string, string> = {
   yellow: 'border-yellow-500/20  bg-yellow-500/10  text-yellow-600',
   blue: 'border-blue-500/20    bg-blue-500/10    text-blue-600',
@@ -54,10 +71,14 @@ function StatusBadge({ status }: { status?: InstockOrderStatus }) {
 /* ------------------------------------------------------------------ */
 /*  Page component                                                     */
 /* ------------------------------------------------------------------ */
+
 export default function OrderDetailsPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const orderId = params.id;
+
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [confirmCompleteOpen, setConfirmCompleteOpen] = useState(false);
 
   const {
     data: order,
@@ -65,8 +86,12 @@ export default function OrderDetailsPage() {
     isError: isOrderError,
   } = useGetCustomerOrderByIdQuery(orderId!, {
     refetchOnMountOrArgChange: true,
-    skip: !orderId, // guard against undefined during SSR shell
+    skip: !orderId,
   });
+
+  const [completeOrder, { isLoading: isCompleting }] = useCompleteOrderMutation();
+
+  /* ---- loading / error states ---- */
 
   if (isOrderLoading) {
     return (
@@ -89,21 +114,43 @@ export default function OrderDetailsPage() {
     );
   }
 
-  /* Compute active step for the stepper */
+  /* ---- stepper ---- */
   const isCOD = order.paymentMethod === 'COD';
-
   const stepperSteps = isCOD
     ? ORDER_STEPPER_STEPS.filter((s) => s !== 'Đã thanh toán')
     : [...ORDER_STEPPER_STEPS];
-
   const statusInfo = order.status
     ? ORDER_STATUS_MAP[order.status as InstockOrderStatus]
     : undefined;
-
   const activeStep = statusInfo
     ? Math.max(0, (stepperSteps as string[]).indexOf(statusInfo.label))
     : 0;
 
+  /* ---- Visibility logic ---- */
+  const currentStatus = order.status as InstockOrderStatus | undefined;
+
+  // Show "Complete Order" only when status is Delivered
+  const canComplete = currentStatus === 'Delivered';
+
+  // Hide "Report Issue" once order is Completed
+  const canReport = !!order.orderDetails?.length && currentStatus !== 'Completed';
+
+  /* ---- Handler ---- */
+  const handleConfirmComplete = async () => {
+    try {
+      await completeOrder(order.id).unwrap();
+      setConfirmCompleteOpen(false);
+      toast.success('Xác nhận nhận hàng thành công!', {
+        description: 'Cảm ơn bạn đã mua hàng. Đơn hàng đã được hoàn tất.',
+      });
+    } catch {
+      toast.error('Xác nhận thất bại', {
+        description: 'Đã có lỗi xảy ra. Vui lòng thử lại.',
+      });
+    }
+  };
+
+  /* ---------------------------------------------------------------- */
   return (
     <div className="container-custom py-8 lg:py-12">
       <div className="flex flex-col gap-6">
@@ -121,11 +168,11 @@ export default function OrderDetailsPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* CỘT TRÁI: Order Info & Products */}
+          {/* ========== LEFT COLUMN ========== */}
           <div className="flex flex-col gap-6 lg:col-span-2">
             {/* Status Header Card */}
             <div className="bg-card border-border flex flex-col gap-4 rounded-xl border p-6 shadow-sm">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                   <p className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
                     Mã đơn hàng
@@ -146,15 +193,48 @@ export default function OrderDetailsPage() {
                     </p>
                   )}
                 </div>
+
                 <div className="flex flex-col items-start gap-2 md:items-end md:text-right">
                   <p className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
                     Trạng thái
                   </p>
                   <StatusBadge status={order.status} />
+
+                  <div className="mt-1 flex flex-col items-end gap-2">
+                    {/* ── Complete Order button (only when Delivered) ── */}
+                    {canComplete && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700"
+                        onClick={() => setConfirmCompleteOpen(true)}
+                        disabled={isCompleting}
+                      >
+                        {isCompleting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="h-4 w-4" />
+                        )}
+                        Đã nhận được hàng
+                      </Button>
+                    )}
+
+                    {/* ── Report Issue button (hidden when Completed) ── */}
+                    {canReport && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 border-orange-500/40 text-orange-600 hover:bg-orange-50"
+                        onClick={() => setReportDialogOpen(true)}
+                      >
+                        <AlertTriangle className="h-4 w-4" />
+                        Báo cáo sự cố
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Order Stepper — only show for non-terminal statuses */}
               {activeStep >= 0 && (
                 <div className="border-border border-t pt-4">
                   <OrderStepper
@@ -179,7 +259,6 @@ export default function OrderDetailsPage() {
                     <div key={item.id}>
                       {idx > 0 && <Separator className="my-5" />}
                       <div className="flex items-start gap-4">
-                        {/* Show smaller image on mobile, larger on sm+ */}
                         <div className="bg-muted h-16 w-16 shrink-0 overflow-hidden rounded-md border shadow-sm sm:h-24 sm:w-24">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
@@ -224,7 +303,7 @@ export default function OrderDetailsPage() {
             </div>
           </div>
 
-          {/* CỘT PHẢI: Customer, Shipping & Payment Summary */}
+          {/* ========== RIGHT COLUMN ========== */}
           <div className="flex flex-col gap-6">
             {/* Customer Info Card */}
             <div className="bg-card border-border flex flex-col gap-5 rounded-xl border p-6 shadow-sm">
@@ -282,11 +361,11 @@ export default function OrderDetailsPage() {
                   <span className="text-muted-foreground">Trạng thái:</span>
                   {order.isPaid ? (
                     <span className="text-success flex items-center gap-1.5 font-medium">
-                      <div className="bg-success h-2 w-2 rounded-full"></div> Đã thanh toán
+                      <div className="bg-success h-2 w-2 rounded-full" /> Đã thanh toán
                     </span>
                   ) : (
                     <span className="text-warning flex items-center gap-1.5 font-medium">
-                      <div className="bg-warning h-2 w-2 rounded-full"></div> Chờ thanh toán
+                      <div className="bg-warning h-2 w-2 rounded-full" /> Chờ thanh toán
                     </span>
                   )}
                 </div>
@@ -294,7 +373,6 @@ export default function OrderDetailsPage() {
 
               <Separator className="border-dashed" />
 
-              {/* Hóa đơn chi tiết */}
               <div className="flex flex-col gap-3 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Tạm tính:</span>
@@ -302,14 +380,12 @@ export default function OrderDetailsPage() {
                     {order.subTotalAmount?.toLocaleString('vi-VN') || 0} ₫
                   </span>
                 </div>
-
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Phí vận chuyển:</span>
                   <span className="font-medium">
                     {order.shippingFee?.toLocaleString('vi-VN') || 0} ₫
                   </span>
                 </div>
-
                 {(order.usedCoinAmountAsMoney ?? 0) > 0 && (
                   <div className="text-success flex items-center justify-between">
                     <span>Giảm giá từ xu:</span>
@@ -320,7 +396,6 @@ export default function OrderDetailsPage() {
                 )}
               </div>
 
-              {/* Tổng cộng */}
               <div className="bg-brand/5 border-brand/20 mt-2 rounded-lg border p-4">
                 <div className="flex items-center justify-between font-bold">
                   <span className="text-brand text-sm tracking-wider uppercase">Tổng cộng</span>
@@ -333,6 +408,43 @@ export default function OrderDetailsPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Complete Order Confirmation Dialog ── */}
+      <AlertDialog open={confirmCompleteOpen} onOpenChange={setConfirmCompleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              Xác nhận đã nhận hàng
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn đã nhận đầy đủ hàng hóa và hàng trong tình trạng tốt không? Sau khi
+              xác nhận, bạn sẽ không thể yêu cầu hoàn trả, đổi hàng hoặc báo cáo thiếu hàng.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isCompleting}>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmComplete}
+              disabled={isCompleting}
+              className="bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-600"
+            >
+              {isCompleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Xác nhận
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── Report Issue Dialog ── */}
+      {canReport && (
+        <ReportIssueDialog
+          open={reportDialogOpen}
+          onOpenChange={setReportDialogOpen}
+          orderId={order.id}
+          orderDetails={order.orderDetails!}
+        />
+      )}
     </div>
   );
 }

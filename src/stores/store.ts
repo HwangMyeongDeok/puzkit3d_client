@@ -9,7 +9,6 @@ import authReducer from './slices/authSlice';
 import checkoutReducer from './slices/checkoutSlice';
 import { persistMiddleware } from './middleware/persistMiddleware';
 
-// --- BẮT ĐẦU: Xử lý an toàn cho SSR của Next.js ---
 const createNoopStorage = () => {
   return {
     getItem(_key: any) {
@@ -25,7 +24,6 @@ const createNoopStorage = () => {
 };
 
 const storage = typeof window !== 'undefined' ? createWebStorage('local') : createNoopStorage();
-// --- KẾT THÚC: Xử lý an toàn cho SSR ---
 
 const persistConfig = {
   key: 'root',
