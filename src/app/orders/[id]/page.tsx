@@ -132,8 +132,8 @@ export default function OrderDetailsPage() {
   // Show "Complete Order" only when status is Delivered
   const canComplete = currentStatus === 'Delivered';
 
-  // Hide "Report Issue" once order is Completed
-  const canReport = !!order.orderDetails?.length && currentStatus !== 'Completed';
+  // Show "Report Issue" ONLY when status is Delivered
+  const canReport = !!order.orderDetails?.length && currentStatus === 'Delivered';
 
   /* ---- Handler ---- */
   const handleConfirmComplete = async () => {
