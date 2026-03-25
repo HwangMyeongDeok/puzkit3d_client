@@ -6,10 +6,12 @@ import {
   useGetCustomerOrderByIdQuery,
   useCompleteOrderMutation,
 } from '@/lib/api/endpoints/orderApi';
+import { useDeliveryTracking } from '@/lib/hooks/useDeliveryTracking';
 import type { OrderDetailDto } from '@/types/api/order.api.types';
 import type { InstockOrderStatus } from '@/types';
 import { ORDER_STATUS_MAP, ORDER_STEPPER_STEPS } from '@/constants';
 import OrderStepper from '@/components/custom/OrderStepper';
+import FeedbackForm from '@/components/custom/FeedbackForm';
 import ReportIssueDialog from '@/components/ticket/Reportissuedialog';
 import { toast } from 'sonner';
 import {
@@ -89,6 +91,14 @@ export default function OrderDetailsPage() {
 
   const [completeOrder, { isLoading: isCompleting }] = useCompleteOrderMutation();
 
+  // Auto-poll delivery tracking when order is handed over
+  const { data: deliveryData } = useDeliveryTracking({
+    orderId: orderId!,
+    orderStatus: order?.status,
+    enabled: !!order?.id,
+    pollInterval: 5000,
+  });
+
   /* ---- loading / error states ---- */
 
   if (isOrderLoading) {
@@ -119,21 +129,40 @@ export default function OrderDetailsPage() {
   const stepperSteps = isCOD
     ? ORDER_STEPPER_STEPS.filter((s) => s !== 'Paid')
     : [...ORDER_STEPPER_STEPS];
-  const statusInfo = order.status
-    ? ORDER_STATUS_MAP[order.status as InstockOrderStatus]
+
+  // Use delivery tracking status when order is handed over
+  let effectiveStatus = order.status;
+  if (
+    order.status === 'HandedOverToDelivery' &&
+    deliveryData?.data &&
+    deliveryData.data.length > 0
+  ) {
+    const latestTracking = deliveryData.data[0];
+    const trackingStatusLower = latestTracking.status?.toLowerCase() || '';
+
+    // Map delivery status to order status for stepper
+    if (trackingStatusLower.includes('delivered')) {
+      // Check "delivered" first
+      effectiveStatus = 'Delivered';
+    } else if (trackingStatusLower.includes('delivering')) {
+      // Then check "delivering"
+      effectiveStatus = 'Delivering';
+    }
+  }
+
+  const statusInfo = effectiveStatus
+    ? ORDER_STATUS_MAP[effectiveStatus as InstockOrderStatus]
     : undefined;
   const activeStep = statusInfo
     ? Math.max(0, (stepperSteps as string[]).indexOf(statusInfo.label))
     : 0;
 
   /* ---- Visibility logic ---- */
-  const currentStatus = order.status as InstockOrderStatus | undefined;
-
   // Show "Complete Order" only when status is Delivered
-  const canComplete = currentStatus === 'Delivered';
+  const canComplete = effectiveStatus === 'Delivered';
 
   // Show "Report Issue" ONLY when status is Delivered
-  const canReport = !!order.orderDetails?.length && currentStatus === 'Delivered';
+  const canReport = !!order.orderDetails?.length && effectiveStatus === 'Delivered';
 
   /* ---- Handler ---- */
   const handleConfirmComplete = async () => {
@@ -244,6 +273,45 @@ export default function OrderDetailsPage() {
                   />
                 </div>
               )}
+
+              {/* Delivery Tracking Info Card */}
+              {order.status === 'HandedOverToDelivery' &&
+                deliveryData?.data &&
+                deliveryData.data.length > 0 && (
+                  <div className="border-border border-t pt-4">
+                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                      <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-blue-900">
+                        <span className="text-lg">📦</span> Live Delivery Tracking
+                      </p>
+                      <div className="flex flex-col gap-3">
+                        {deliveryData.data.slice(0, 3).map((tracking) => (
+                          <div key={tracking.id} className="text-sm text-blue-800">
+                            <div className="flex items-start gap-2">
+                              <div className="mt-0.5 font-bold text-blue-600">•</div>
+                              <div className="flex-1">
+                                <p className="font-semibold">
+                                  {tracking.status}
+                                  {tracking.deliveryOrderCode && ` (${tracking.deliveryOrderCode})`}
+                                </p>
+                                {tracking.note && (
+                                  <p className="mt-1 text-xs text-blue-700">{tracking.note}</p>
+                                )}
+                                {tracking.expectedDeliveryDate && (
+                                  <p className="mt-1 text-xs text-blue-700">
+                                    Expected:{' '}
+                                    {new Date(tracking.expectedDeliveryDate).toLocaleDateString(
+                                      'en-US'
+                                    )}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
             </div>
 
             {/* Products List Card */}
@@ -301,6 +369,14 @@ export default function OrderDetailsPage() {
                 </div>
               )}
             </div>
+
+            {/* Feedback Form Card */}
+            {effectiveStatus &&
+              ['Delivered', 'Completed'].includes(effectiveStatus) &&
+              order.orderDetails &&
+              order.orderDetails.length > 0 && (
+                <FeedbackForm orderId={order.id} orderDetails={order.orderDetails} />
+              )}
           </div>
 
           {/* ========== RIGHT COLUMN ========== */}

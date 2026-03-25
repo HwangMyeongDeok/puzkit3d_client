@@ -16,7 +16,7 @@ export type InstockOrderStatus =
   | 'Paid'
   | 'Processing'
   | 'Waiting'
-  | 'Shipping'
+  | 'Delivering'
   | 'Delivered'
   | 'Cancelled'
   | 'Completed'

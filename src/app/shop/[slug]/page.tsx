@@ -28,6 +28,7 @@ import { useAddToCartMutation } from '@/lib/api/endpoints/cartApi';
 import { useGetPriceDetailByVariantIdQuery } from '@/lib/api/endpoints/priceApi';
 import { handleApiError } from '@/lib/utils/error-handle';
 import ProductVariants from '@/components/custom/ProductVariants';
+import FeedbackList from '@/components/custom/FeedbackList';
 import { useAppSelector } from '@/stores/hooks';
 import { selectIsAuthenticated } from '@/stores/slices/authSlice';
 
@@ -436,6 +437,13 @@ export default function ProductDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Customer Feedbacks & Reviews Section */}
+      {product.id && (
+        <div className="mt-12">
+          <FeedbackList productId={product.id} />
+        </div>
+      )}
     </div>
   );
 }
