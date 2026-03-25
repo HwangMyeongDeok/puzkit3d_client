@@ -99,7 +99,13 @@ export default function OrderDetailsPage() {
     enabled: !!order?.id,
     pollInterval: 5000,
   });
-
+  console.log('deliveryData:', deliveryData);
+  const originalDetails = deliveryData
+    ? {
+        ...deliveryData,
+        data: deliveryData.data.filter((tracking) => tracking.type === 'Original'),
+      }
+    : undefined;
   /* ---- loading / error states ---- */
 
   if (isOrderLoading) {
@@ -135,10 +141,10 @@ export default function OrderDetailsPage() {
   let effectiveStatus = order.status;
   if (
     order.status === 'HandedOverToDelivery' &&
-    deliveryData?.data &&
-    deliveryData.data.length > 0
+    originalDetails?.data &&
+    originalDetails.data.length > 0
   ) {
-    const latestTracking = deliveryData.data[0];
+    const latestTracking = originalDetails.data[0];
     const trackingStatusLower = latestTracking.status?.toLowerCase() || '';
 
     // Map delivery status to order status for stepper
@@ -279,15 +285,15 @@ export default function OrderDetailsPage() {
 
               {/* Delivery Tracking Info Card */}
               {order.status === 'HandedOverToDelivery' &&
-                deliveryData?.data &&
-                deliveryData.data.length > 0 && (
+                originalDetails?.data &&
+                originalDetails.data.length > 0 && (
                   <div className="border-border border-t pt-4">
                     <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
                       <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-blue-900">
                         <span className="text-lg">📦</span> Live Delivery Tracking
                       </p>
                       <div className="flex flex-col gap-3">
-                        {deliveryData.data.slice(0, 3).map((tracking) => (
+                        {originalDetails.data.slice(0, 3).map((tracking) => (
                           <div key={tracking.id} className="text-sm text-blue-800">
                             <div className="flex items-start gap-2">
                               <div className="mt-0.5 font-bold text-blue-600">•</div>
