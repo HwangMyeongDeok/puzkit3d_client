@@ -7,3 +7,4 @@ export * from './api';
 
 export * from './api/auth.api.types';
 export * from './api/product.api.types';
+export * from './api/wallet.api.types';

@@ -13,6 +13,7 @@ import { ORDER_STATUS_MAP, ORDER_STEPPER_STEPS } from '@/constants';
 import OrderStepper from '@/components/custom/OrderStepper';
 import FeedbackForm from '@/components/custom/FeedbackForm';
 import ReportIssueDialog from '@/components/ticket/Reportissuedialog';
+import { OrderFeedbackSection } from '@/components/feedback/OrderFeedbackSection';
 import { toast } from 'sonner';
 import {
   Loader2,
@@ -359,6 +360,16 @@ export default function OrderDetailsPage() {
                           </span>
                         </div>
                       </div>
+
+                      {/* Feedback Section for this Product */}
+                      <OrderFeedbackSection
+                        orderDetailId={item.id}
+                        orderId={order.id}
+                        productName={item.productName || item.sku}
+                        thumbnailUrl={item.thumbnailUrl}
+                        variantName={item.variantName}
+                        isInstockOrPartner={true}
+                      />
                     </div>
                   ))}
                 </div>
@@ -372,7 +383,7 @@ export default function OrderDetailsPage() {
 
             {/* Feedback Form Card */}
             {effectiveStatus &&
-              ['Delivered', 'Completed'].includes(effectiveStatus) &&
+              ['Completed'].includes(effectiveStatus) &&
               order.orderDetails &&
               order.orderDetails.length > 0 && (
                 <FeedbackForm orderId={order.id} orderDetails={order.orderDetails} />

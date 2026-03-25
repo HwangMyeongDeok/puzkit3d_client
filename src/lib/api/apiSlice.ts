@@ -16,6 +16,7 @@ export const tagTypes = [
   'Payment',
   'SupportTicket',
   'DeliveryTracking',
+  'Wallet',
 ] as const;
 
 export const apiSlice = createApi({

@@ -5,6 +5,7 @@ import { useGetProductFeedbacksQuery } from '@/lib/api/endpoints/feedbackApi';
 import { Loader2, Star, MessageCircle, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import FeedbackItem from './FeedbackItem';
 
 interface FeedbackListProps {
   productId: string;
@@ -25,7 +26,14 @@ export default function FeedbackList({ productId }: FeedbackListProps) {
     pageNumber,
     pageSize,
   });
-
+  console.log(
+    'FeedbackList - feedbackData:',
+    feedbackData,
+    'isLoading:',
+    isLoading,
+    'isError:',
+    isError
+  );
   if (isError) {
     return (
       <div className="bg-card border-border flex flex-col gap-4 rounded-xl border p-6 shadow-sm">
@@ -38,7 +46,7 @@ export default function FeedbackList({ productId }: FeedbackListProps) {
     );
   }
 
-  const feedbacks = feedbackData?.items || [];
+  const feedbacks = feedbackData?.data || [];
   const totalCount = feedbackData?.totalCount || 0;
   const hasNextPage = feedbackData?.hasNextPage || false;
 
@@ -151,32 +159,12 @@ export default function FeedbackList({ productId }: FeedbackListProps) {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {feedbacks.map((feedback) => (
-            <div key={feedback.id} className="flex flex-col gap-2">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`h-3.5 w-3.5 ${
-                        i < feedback.rating
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'text-muted-foreground'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <span className="text-muted-foreground text-xs">
-                  {new Date(feedback.createdAt).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </span>
-              </div>
-              <p className="text-foreground text-sm leading-relaxed">{feedback.comment}</p>
-              {feedbacks.indexOf(feedback) < feedbacks.length - 1 && <Separator className="mt-2" />}
-            </div>
+          {feedbacks.map((feedback, index) => (
+            <FeedbackItem
+              key={feedback.id}
+              feedback={feedback}
+              isLastItem={index === feedbacks.length - 1}
+            />
           ))}
         </div>
       )}
