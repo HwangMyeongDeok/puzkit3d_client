@@ -73,5 +73,4 @@ export default function PartnerProductCard({ product }: PartnerProductCardProps)
       </div>
     </Link>
   );
-  s;
 }
