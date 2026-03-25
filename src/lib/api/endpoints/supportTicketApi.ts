@@ -7,7 +7,7 @@ import { apiSlice } from '../apiSlice';
 
 /** 'Return' is intentionally removed — only two types are exposed to customers */
 export type TicketType = 'ReplacePart' | 'Exchange';
-export type TicketStatus = 'Open' | 'InProgress' | 'Resolved' | 'Rejected';
+export type TicketStatus = 'Open' | 'Processing' | 'Resolved' | 'Rejected';
 
 /** Returned by GET /api/instock-products/{productId}/parts */
 export interface ProductPartDto {

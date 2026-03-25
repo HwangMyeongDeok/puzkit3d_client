@@ -179,7 +179,9 @@ export default function OrderDetailsPage() {
       });
     }
   };
-
+  console.log('stepperSteps:', stepperSteps);
+  console.log('statusInfo.label:', statusInfo?.label);
+  console.log('activeStep index:', (stepperSteps as string[]).indexOf(statusInfo?.label ?? ''));
   /* ---------------------------------------------------------------- */
   return (
     <div className="container-custom py-8 lg:py-12">
@@ -362,14 +364,16 @@ export default function OrderDetailsPage() {
                       </div>
 
                       {/* Feedback Section for this Product */}
-                      <OrderFeedbackSection
-                        orderDetailId={item.id}
-                        orderId={order.id}
-                        productName={item.productName || item.sku}
-                        thumbnailUrl={item.thumbnailUrl}
-                        variantName={item.variantName}
-                        isInstockOrPartner={true}
-                      />
+                      {effectiveStatus === 'Completed' && (
+                        <OrderFeedbackSection
+                          orderDetailId={item.id}
+                          orderId={order.id}
+                          productName={item.productName || item.sku}
+                          thumbnailUrl={item.thumbnailUrl}
+                          variantName={item.variantName}
+                          isInstockOrPartner={true}
+                        />
+                      )}
                     </div>
                   ))}
                 </div>

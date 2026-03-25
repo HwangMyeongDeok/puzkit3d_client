@@ -71,8 +71,8 @@ const TICKET_TYPE_LABEL: Record<string, string> = {
 
 const STATUS_CONFIG: Record<TicketStatus, { label: string; className: string }> = {
   Open: { label: 'Open', className: 'border-blue-500/30   bg-blue-500/10   text-blue-600' },
-  InProgress: {
-    label: 'In Progress',
+  Processing: {
+    label: 'Processing',
     className: 'border-yellow-500/30 bg-yellow-500/10 text-yellow-600',
   },
   Resolved: {
@@ -85,7 +85,7 @@ const STATUS_CONFIG: Record<TicketStatus, { label: string; className: string }> 
 const STATUS_FILTER_OPTIONS = [
   { value: 'all', label: 'All Statuses' },
   { value: 'Open', label: 'Open' },
-  { value: 'InProgress', label: 'In Progress' },
+  { value: 'Processing', label: 'Processing' },
   { value: 'Resolved', label: 'Resolved' },
   { value: 'Rejected', label: 'Rejected' },
 ];
