@@ -227,6 +227,7 @@ export default function ReportIssueDialog({
       const { presignedUrl, path } = await getPresignedUrl({
         contentType: file.type,
         folder: 'support-tickets',
+        path: `support-tickets/${orderId}/${Date.now()}_${file.name}`,
         fileName: file.name,
       }).unwrap();
 

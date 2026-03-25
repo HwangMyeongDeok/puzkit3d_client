@@ -9,7 +9,7 @@ export const uploadApi = apiSlice.injectEndpoints({
       query: (body) => ({
         url: '/uploads/presigned-url',
         method: 'POST',
-        body,
+        data: body,
       }),
     }),
   }),

@@ -1,4 +1,4 @@
-import { Calendar, CheckCircle2, AlertTriangle, Headphones, Loader2 } from 'lucide-react';
+import { Calendar, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ORDER_STATUS_MAP, ORDER_STEPPER_STEPS } from '@/constants';
 import OrderStepper from '@/components/custom/OrderStepper';

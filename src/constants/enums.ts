@@ -40,7 +40,7 @@ export const ORDER_STATUS_MAP: Record<
   Processing: { label: 'Processing', color: 'blue', stepIndex: 2 },
   Waiting: { label: 'Waiting', color: 'yellow', stepIndex: 2 },
   HandedOverToDelivery: { label: 'Handed Over', color: 'indigo', stepIndex: 3 },
-  Shipping: { label: 'Shipping', color: 'violet', stepIndex: 4 },
+  Delivering: { label: 'Delivering', color: 'violet', stepIndex: 4 },
   Delivered: { label: 'Delivered', color: 'emerald', stepIndex: 5 },
   Completed: { label: 'Completed', color: 'green', stepIndex: 6 },
   Cancelled: { label: 'Cancelled', color: 'red', stepIndex: -1 },
@@ -54,7 +54,7 @@ export const ORDER_STEPPER_STEPS = [
   'Paid',
   'Processing',
   'Handed Over',
-  'Shipping',
+  'Delivering',
   'Delivered',
   'Completed',
 ] as const;

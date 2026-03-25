@@ -2,6 +2,8 @@ import { apiSlice } from '../apiSlice';
 import type {
   GetShippingFeeRequestDto,
   GetShippingFeeResponseDto,
+  GetDeliveryTrackingRequestDto,
+  GetDeliveryTrackingResponseDto,
 } from '@/types/api/delivery.api.types';
 
 export const deliveryApi = apiSlice.injectEndpoints({
@@ -20,7 +22,23 @@ export const deliveryApi = apiSlice.injectEndpoints({
       },
       providesTags: ['Delivery'],
     }),
+
+    getDeliveryTracking: builder.query<
+      GetDeliveryTrackingResponseDto,
+      GetDeliveryTrackingRequestDto
+    >({
+      query: ({ orderId, pageNumber = 1, pageSize = 10, status }) => ({
+        url: `/delivery-trackings/order/${orderId}`,
+        method: 'GET',
+        params: {
+          pageNumber,
+          pageSize,
+          ...(status && { status }),
+        },
+      }),
+      providesTags: ['DeliveryTracking'],
+    }),
   }),
 });
 
-export const { useGetShippingFeeQuery } = deliveryApi;
+export const { useGetShippingFeeQuery, useGetDeliveryTrackingQuery } = deliveryApi;

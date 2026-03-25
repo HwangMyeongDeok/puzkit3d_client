@@ -31,7 +31,7 @@ export default function OrderStepper({ steps, activeStep = 0, isPaid = false }: 
                 {isCompleted ? '✓' : idx + 1}
               </div>
               <span
-                className={`max-w-[80px] text-center text-[10px] leading-tight font-medium ${
+                className={`max-w-20 text-center text-[10px] leading-tight font-medium ${
                   isCompleted ? 'text-success' : isActive ? 'text-brand' : 'text-muted-foreground'
                 }`}
               >
