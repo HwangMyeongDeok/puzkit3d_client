@@ -10,9 +10,9 @@ export const deliveryApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getShippingFee: builder.query<number, GetShippingFeeRequestDto>({
       query: (params) => ({
-        url: '/delivery/shipping-fee',
+        url: '/delivery-trackings/shipping-fee',
         method: 'GET',
-        params,
+        params: { ...params },
       }),
       transformResponse: (response: GetShippingFeeResponseDto) => {
         if (typeof response === 'number') return response;

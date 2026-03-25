@@ -12,7 +12,7 @@ export const feedbackApi = apiSlice.injectEndpoints({
       query: (payload) => ({
         url: '/feedbacks',
         method: 'POST',
-        body: payload,
+        data: payload,
       }),
       invalidatesTags: ['Product'],
     }),
@@ -20,6 +20,14 @@ export const feedbackApi = apiSlice.injectEndpoints({
     getOrderFeedbacks: builder.query<FeedbackDto[], string>({
       query: (orderId) => ({
         url: `/orders/${orderId}/feedback`,
+        method: 'GET',
+      }),
+      providesTags: ['Product'],
+    }),
+
+    getOrderDetailFeedback: builder.query<FeedbackDto[], string>({
+      query: (orderDetailId) => ({
+        url: `/order-details/${orderDetailId}/feedback`,
         method: 'GET',
       }),
       providesTags: ['Product'],
@@ -43,5 +51,9 @@ export const feedbackApi = apiSlice.injectEndpoints({
   }),
 });
 
-export const { useCreateFeedbackMutation, useGetOrderFeedbacksQuery, useGetProductFeedbacksQuery } =
-  feedbackApi;
+export const {
+  useCreateFeedbackMutation,
+  useGetOrderFeedbacksQuery,
+  useGetOrderDetailFeedbackQuery,
+  useGetProductFeedbacksQuery,
+} = feedbackApi;
