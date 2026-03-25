@@ -281,6 +281,17 @@ export default function ReportIssueDialog({
       });
     }
 
+    // ── Validate quantity for Exchange ──
+    if (type === 'Exchange') {
+      selectedItems.forEach((d) => {
+        const item = items[d.id];
+        if (!item.quantity || item.quantity < 1)
+          newErrors[`qty_${d.id}`] = 'Minimum quantity is 1.';
+        if (item.quantity > d.quantity)
+          newErrors[`qty_${d.id}`] = `Maximum quantity is ${d.quantity}.`;
+      });
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -339,6 +350,7 @@ export default function ReportIssueDialog({
   };
 
   const isReplacePart = type === 'ReplacePart';
+  const isExchange = type === 'Exchange';
 
   /* ── render ── */
 
@@ -549,6 +561,35 @@ export default function ReportIssueDialog({
                           />
                         </div>
 
+                        {/* ── Exchange: quantity only ── */}
+                        {isExchange && (
+                          <div className="flex flex-col gap-1">
+                            <Label className="text-xs font-medium">
+                              Exchange Quantity <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={detail.quantity}
+                              value={itemState.quantity}
+                              onChange={(e) => {
+                                updateItem(detail.id, { quantity: Number(e.target.value) });
+                                clearError(`qty_${detail.id}`);
+                              }}
+                              className={`h-8 w-24 text-sm ${
+                                errors[`qty_${detail.id}`] ? 'border-destructive' : ''
+                              }`}
+                            />
+                            <p className="text-muted-foreground text-xs">Max: {detail.quantity}</p>
+                            {errors[`qty_${detail.id}`] && (
+                              <p className="text-destructive text-xs">
+                                {errors[`qty_${detail.id}`]}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ── ReplacePart: part selector + quantity ── */}
                         {isReplacePart && (
                           <div className="flex flex-col gap-3">
                             <div className="flex flex-col gap-1.5">
