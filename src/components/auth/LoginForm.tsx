@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useLoginMutation } from '@/lib/api/endpoints/authApi';
 import { useAppDispatch } from '@/stores/hooks';
 import { setCredentials } from '@/stores/slices/authSlice';
-import { handleApiError } from '@/lib/utils/error-handle';
+import { handleErrorToast } from '@/lib/utils/error-handler';
 import { toast } from 'sonner';
 import { APP_CONFIG } from '@/constants';
 
@@ -75,7 +75,7 @@ export default function LoginForm() {
         setNotVerifiedError(true);
         toast.error('Account has not been verified.');
       } else {
-        handleApiError(err);
+        handleErrorToast(err);
       }
     }
   };

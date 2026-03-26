@@ -25,7 +25,7 @@ import { useGetCartQuery } from '@/lib/api/endpoints/cartApi';
 import { useCreateInstockOrderMutation } from '@/lib/api/endpoints/orderApi';
 import { useGetShippingFeeQuery } from '@/lib/api/endpoints/deliveryApi';
 import type { CreateInstockOrderRequestDto } from '@/types/api/order.api.types';
-import { handleApiError } from '@/lib/utils/error-handle';
+import { handleErrorToast } from '@/lib/utils/error-handler';
 import { APP_CONFIG, ROUTES } from '@/constants';
 
 import { useLazyGetProfileQuery, useUpdateProfileMutation } from '@/lib/api/endpoints/authApi';
@@ -434,7 +434,7 @@ export default function CheckoutPage() {
       }
     } catch (error) {
       console.error('Failed to checkout:', error);
-      handleApiError(error);
+      handleErrorToast(error);
       setIsSubmitting(false);
       setIsRedirecting(false);
     }

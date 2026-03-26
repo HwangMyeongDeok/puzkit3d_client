@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useRegisterMutation } from '@/lib/api/endpoints/authApi';
 import { toast } from 'sonner';
-import { handleApiError } from '@/lib/utils/error-handle';
+import { handleErrorToast } from '@/lib/utils/error-handler';
 
 export default function RegisterForm() {
   const [register, { isLoading }] = useRegisterMutation();
@@ -48,7 +48,7 @@ export default function RegisterForm() {
         password: '',
       });
     } catch (err: any) {
-      handleApiError(err);
+      handleErrorToast(err);
     }
   };
 
