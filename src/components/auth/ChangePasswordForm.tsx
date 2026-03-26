@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useChangePasswordMutation } from '@/lib/api/endpoints/authApi';
 import { changePasswordSchema, type ChangePasswordFormValues } from '@/schema/auth.schema';
-import { handleApiError } from '@/lib/utils/error-handle';
+import { handleErrorToast } from '@/lib/utils/error-handler';
 import { toast } from 'sonner';
 import { KeyRound, Loader2, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 
@@ -49,7 +49,7 @@ export default function ChangePasswordForm() {
       });
       form.reset();
     } catch (err) {
-      handleApiError(err);
+      handleErrorToast(err);
     }
   };
 

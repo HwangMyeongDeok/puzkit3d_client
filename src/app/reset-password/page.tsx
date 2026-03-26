@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useResetPasswordMutation } from '@/lib/api/endpoints/authApi';
 import { resetPasswordSchema, type ResetPasswordFormValues } from '@/schema/auth.schema';
-import { handleApiError } from '@/lib/utils/error-handle';
+import { handleErrorToast } from '@/lib/utils/error-handler';
 import { ROUTES } from '@/constants';
 import { toast } from 'sonner';
 import { KeyRound, Loader2, ArrowLeft, CheckCircle2, XCircle, Eye, EyeOff } from 'lucide-react';
@@ -92,7 +92,7 @@ function ResetPasswordContent() {
       setIsSuccess(true);
       toast.success('Password has been reset successfully!');
     } catch (err) {
-      handleApiError(err);
+      handleErrorToast(err);
     }
   };
 

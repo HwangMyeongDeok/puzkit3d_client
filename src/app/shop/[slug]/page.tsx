@@ -26,7 +26,7 @@ import {
 import { ROUTES } from '@/constants';
 import { useAddToCartMutation } from '@/lib/api/endpoints/cartApi';
 import { useGetPriceDetailByVariantIdQuery } from '@/lib/api/endpoints/priceApi';
-import { handleApiError } from '@/lib/utils/error-handle';
+import { handleErrorToast } from '@/lib/utils/error-handler';
 import ProductVariants from '@/components/custom/ProductVariants';
 import FeedbackList from '@/components/custom/FeedbackList';
 import { useAppSelector } from '@/stores/hooks';
@@ -100,7 +100,7 @@ export default function ProductDetailPage() {
       }
       return true;
     } catch (error: any) {
-      handleApiError(error);
+      handleErrorToast(error);
       if (error.status === 401) {
         router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
       }

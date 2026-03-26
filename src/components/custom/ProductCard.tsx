@@ -14,7 +14,7 @@ import { useAddToCartMutation } from '@/lib/api/endpoints/cartApi';
 
 import { useGetPriceDetailByVariantIdQuery } from '@/lib/api/endpoints/priceApi';
 import { useGetProductVariantsQuery } from '@/lib/api/endpoints/productApi';
-import { handleApiError } from '@/lib/utils/error-handle';
+import { handleErrorToast } from '@/lib/utils/error-handler';
 import { skipToken } from '@reduxjs/toolkit/query';
 
 type ProductCardProps = {
@@ -69,7 +69,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       await addToCartMutate(payload).unwrap();
       toast.success('Added to cart!');
     } catch (error: any) {
-      handleApiError(error);
+      handleErrorToast(error);
       if (error.status === 401) {
         router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
       }
