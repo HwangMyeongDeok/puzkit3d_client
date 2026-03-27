@@ -7,29 +7,11 @@ import {
   useCompleteOrderMutation,
 } from '@/lib/api/endpoints/orderApi';
 import { useDeliveryTracking } from '@/lib/hooks/useDeliveryTracking';
-import type { OrderDetailDto } from '@/types/api/order.api.types';
-import type { InstockOrderStatus } from '@/types';
-import { ORDER_STATUS_MAP, ORDER_STEPPER_STEPS } from '@/constants';
-import OrderStepper from '@/components/custom/OrderStepper';
-import FeedbackForm from '@/components/custom/FeedbackForm';
-import ReportIssueDialog from '@/components/ticket/Reportissuedialog';
-import { OrderFeedbackSection } from '@/components/feedback/OrderFeedbackSection';
+import type { DeliveryTracking } from '@/types/api/delivery.api.types';
+import { ORDER_STATUS_MAP } from '@/constants';
 import { toast } from 'sonner';
-import {
-  Loader2,
-  ArrowLeft,
-  Package,
-  User,
-  MapPin,
-  Calendar,
-  Mail,
-  Phone,
-  Banknote,
-  AlertTriangle,
-  CheckCircle2,
-} from 'lucide-react';
+import { Loader2, ArrowLeft, Calendar, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,37 +23,14 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-/* ------------------------------------------------------------------ */
-/*  Status badge                                                       */
-/* ------------------------------------------------------------------ */
-
-const colorMap: Record<string, string> = {
-  yellow: 'border-yellow-500/20  bg-yellow-500/10  text-yellow-600',
-  blue: 'border-blue-500/20    bg-blue-500/10    text-blue-600',
-  indigo: 'border-indigo-500/20  bg-indigo-500/10  text-indigo-600',
-  violet: 'border-violet-500/20  bg-violet-500/10  text-violet-600',
-  emerald: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600',
-  green: 'border-green-500/20   bg-green-500/10   text-green-600',
-  red: 'bg-destructive/10     text-destructive   border-destructive/20',
-  orange: 'border-orange-500/20  bg-orange-500/10  text-orange-600',
-  rose: 'border-rose-500/20    bg-rose-500/10    text-rose-600',
-};
-
-const badgeBase = 'rounded-md border px-3 py-1.5 text-sm font-semibold tracking-wider uppercase';
-
-function StatusBadge({ status }: { status?: InstockOrderStatus }) {
-  const info = status ? ORDER_STATUS_MAP[status] : undefined;
-  if (!info) {
-    return (
-      <span className={`${badgeBase} bg-muted text-muted-foreground border-border`}>Unknown</span>
-    );
-  }
-  return <span className={`${badgeBase} ${colorMap[info.color] ?? ''}`}>{info.label}</span>;
-}
-
-/* ------------------------------------------------------------------ */
-/*  Page component                                                     */
-/* ------------------------------------------------------------------ */
+// Components đã tách
+import OrderBadge from '@/components/order/OrderBadge';
+import OrderStepper from '@/components/custom/OrderStepper';
+import ReportIssueDialog from '@/components/ticket/Reportissuedialog';
+import OrderCustomerInfo from '@/components/orderDetail/OrderCustomerInfo';
+import OrderPaymentSummary from '@/components/orderDetail/OrderPaymentSummary';
+import OrderProductsList from '@/components/orderDetail/OrderProductsList';
+import { InstockOrderStatus } from '@/types/api/order.api.types';
 
 export default function OrderDetailsPage() {
   const params = useParams<{ id: string }>();
@@ -81,6 +40,7 @@ export default function OrderDetailsPage() {
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [confirmCompleteOpen, setConfirmCompleteOpen] = useState(false);
 
+  // 1. Fetch Order Data
   const {
     data: order,
     isLoading: isOrderLoading,
@@ -92,22 +52,25 @@ export default function OrderDetailsPage() {
 
   const [completeOrder, { isLoading: isCompleting }] = useCompleteOrderMutation();
 
-  // Auto-poll delivery tracking when order is handed over
+  // 2. Fetch Delivery Tracking Data (Auto poll when HandedOverToDelivery or Delivering)
   const { data: deliveryData } = useDeliveryTracking({
     orderId: orderId!,
     orderStatus: order?.status,
     enabled: !!order?.id,
     pollInterval: 5000,
   });
-  console.log('deliveryData:', deliveryData);
+
+  // Ép type rõ ràng để diệt "any"
   const originalDetails = deliveryData
     ? {
         ...deliveryData,
-        data: deliveryData.data.filter((tracking) => tracking.type === 'Original'),
+        data: deliveryData.data.filter(
+          (tracking: DeliveryTracking) => tracking.type === 'Original'
+        ),
       }
     : undefined;
-  /* ---- loading / error states ---- */
 
+  /* ---- Loading / Error states ---- */
   if (isOrderLoading) {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4">
@@ -131,28 +94,40 @@ export default function OrderDetailsPage() {
     );
   }
 
-  /* ---- stepper ---- */
+  /* ---- Stepper Logic ---- */
   const isCOD = order.paymentMethod === 'COD';
   const stepperSteps = isCOD
-    ? ORDER_STEPPER_STEPS.filter((s) => s !== 'Paid')
-    : [...ORDER_STEPPER_STEPS];
+    ? [
+        ORDER_STATUS_MAP['Pending'].label,
+        ORDER_STATUS_MAP['Processing'].label,
+        ORDER_STATUS_MAP['HandedOverToDelivery'].label,
+        ORDER_STATUS_MAP['Delivering'].label,
+        ORDER_STATUS_MAP['Delivered'].label,
+        ORDER_STATUS_MAP['Completed'].label,
+      ]
+    : [
+        ORDER_STATUS_MAP['Pending'].label,
+        ORDER_STATUS_MAP['Paid'].label,
+        ORDER_STATUS_MAP['Processing'].label,
+        ORDER_STATUS_MAP['HandedOverToDelivery'].label,
+        ORDER_STATUS_MAP['Delivering'].label,
+        ORDER_STATUS_MAP['Delivered'].label,
+        ORDER_STATUS_MAP['Completed'].label,
+      ];
 
-  // Use delivery tracking status when order is handed over
+  // Logic ghi đè Status theo Tracking GHN (Chuẩn y xì logic cũ của ông)
   let effectiveStatus = order.status;
   if (
-    order.status === 'HandedOverToDelivery' &&
+    (order.status === 'HandedOverToDelivery' || order.status === 'Delivering') &&
     originalDetails?.data &&
     originalDetails.data.length > 0
   ) {
     const latestTracking = originalDetails.data[0];
     const trackingStatusLower = latestTracking.status?.toLowerCase() || '';
 
-    // Map delivery status to order status for stepper
     if (trackingStatusLower.includes('delivered')) {
-      // Check "delivered" first
       effectiveStatus = 'Delivered';
     } else if (trackingStatusLower.includes('delivering')) {
-      // Then check "delivering"
       effectiveStatus = 'Delivering';
     }
   }
@@ -160,18 +135,13 @@ export default function OrderDetailsPage() {
   const statusInfo = effectiveStatus
     ? ORDER_STATUS_MAP[effectiveStatus as InstockOrderStatus]
     : undefined;
-  const activeStep = statusInfo
-    ? Math.max(0, (stepperSteps as string[]).indexOf(statusInfo.label))
-    : 0;
+  const activeStep = statusInfo ? Math.max(0, stepperSteps.indexOf(statusInfo.label)) : 0;
 
   /* ---- Visibility logic ---- */
-  // Show "Complete Order" only when status is Delivered
-  const canComplete = effectiveStatus === 'Delivered';
+  const isDelivered = effectiveStatus === 'Delivered';
+  const canReport = !!order.orderDetails?.length && isDelivered;
 
-  // Show "Report Issue" ONLY when status is Delivered
-  const canReport = !!order.orderDetails?.length && effectiveStatus === 'Delivered';
-
-  /* ---- Handler ---- */
+  /* ---- Handlers ---- */
   const handleConfirmComplete = async () => {
     try {
       await completeOrder(order.id).unwrap();
@@ -185,14 +155,11 @@ export default function OrderDetailsPage() {
       });
     }
   };
-  console.log('stepperSteps:', stepperSteps);
-  console.log('statusInfo.label:', statusInfo?.label);
-  console.log('activeStep index:', (stepperSteps as string[]).indexOf(statusInfo?.label ?? ''));
-  /* ---------------------------------------------------------------- */
+
   return (
     <div className="container-custom py-8 lg:py-12">
       <div className="flex flex-col gap-6">
-        {/* Header */}
+        {/* Header Navigation */}
         <div className="flex items-center gap-4">
           <Button
             onClick={() => router.back()}
@@ -206,9 +173,9 @@ export default function OrderDetailsPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* ========== LEFT COLUMN ========== */}
+          {/* ========== CỘT TRÁI ========== */}
           <div className="flex flex-col gap-6 lg:col-span-2">
-            {/* Status Header Card */}
+            {/* 1. Status Header Card */}
             <div className="bg-card border-border flex flex-col gap-4 rounded-xl border p-6 shadow-sm">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
@@ -236,305 +203,154 @@ export default function OrderDetailsPage() {
                   <p className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
                     Status
                   </p>
-                  <StatusBadge status={order.status} />
-
-                  <div className="mt-1 flex flex-col items-end gap-2">
-                    {/* ── Complete Order button (only when Delivered) ── */}
-                    {canComplete && (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700"
-                        onClick={() => setConfirmCompleteOpen(true)}
-                        disabled={isCompleting}
-                      >
-                        {isCompleting ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <CheckCircle2 className="h-4 w-4" />
-                        )}
-                        Order Received
-                      </Button>
-                    )}
-
-                    {/* ── Report Issue button (hidden when Completed) ── */}
-                    {canReport && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1.5 border-orange-500/40 text-orange-600 hover:bg-orange-50"
-                        onClick={() => setReportDialogOpen(true)}
-                      >
-                        <AlertTriangle className="h-4 w-4" />
-                        Report Issue
-                      </Button>
-                    )}
-                  </div>
+                  <OrderBadge status={effectiveStatus} />
                 </div>
               </div>
 
               {activeStep >= 0 && (
-                <div className="border-border border-t pt-4">
+                <div className="border-border mt-2 border-t pt-6">
                   <OrderStepper
                     steps={stepperSteps}
                     activeStep={activeStep}
-                    isPaid={order.isPaid}
+                    isPaid={order.isPaid ?? false}
                   />
                 </div>
               )}
+            </div>
 
-              {/* Delivery Tracking Info Card */}
-              {order.status === 'HandedOverToDelivery' &&
-                originalDetails?.data &&
-                originalDetails.data.length > 0 && (
-                  <div className="border-border border-t pt-4">
-                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                      <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-blue-900">
-                        <span className="text-lg">📦</span> Live Delivery Tracking
-                      </p>
-                      <div className="flex flex-col gap-3">
-                        {originalDetails.data.slice(0, 3).map((tracking) => (
-                          <div key={tracking.id} className="text-sm text-blue-800">
-                            <div className="flex items-start gap-2">
-                              <div className="mt-0.5 font-bold text-blue-600">•</div>
-                              <div className="flex-1">
-                                <p className="font-semibold">
-                                  {tracking.status}
-                                  {tracking.deliveryOrderCode && ` (${tracking.deliveryOrderCode})`}
-                                </p>
-                                {tracking.note && (
-                                  <p className="mt-1 text-xs text-blue-700">{tracking.note}</p>
-                                )}
-                                {tracking.expectedDeliveryDate && (
-                                  <p className="mt-1 text-xs text-blue-700">
-                                    Expected:{' '}
-                                    {new Date(tracking.expectedDeliveryDate).toLocaleDateString(
-                                      'en-US'
-                                    )}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+            {/* 2. BANNER ACTION (Nổi bật khi Delivered) */}
+            {isDelivered && (
+              <div className="flex flex-col justify-between gap-5 rounded-xl border border-emerald-200 bg-linear-to-r from-emerald-50 to-teal-50 p-6 shadow-sm transition-all sm:flex-row sm:items-center">
+                <div className="flex items-start gap-4 sm:items-center">
+                  <div className="shrink-0 rounded-full bg-emerald-100 p-3">
+                    <CheckCircle2 className="h-6 w-6 text-emerald-600" />
                   </div>
-                )}
-            </div>
+                  <div>
+                    <h4 className="text-lg leading-tight font-bold text-emerald-800">
+                      Package Delivered!
+                    </h4>
+                    <p className="mt-1 max-w-sm text-sm text-emerald-700/80">
+                      Please inspect your items. If everything looks good, please confirm receipt to
+                      complete this order.
+                    </p>
+                  </div>
+                </div>
 
-            {/* Products List Card */}
-            <div className="bg-card border-border flex flex-col gap-4 rounded-xl border p-6 shadow-sm">
-              <h3 className="mb-4 flex items-center gap-2 text-lg font-bold">
-                <Package className="text-brand h-5 w-5" />
-                Ordered Products ({order.orderDetails?.length || 0})
-              </h3>
+                <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto sm:flex-row">
+                  {canReport && (
+                    <Button
+                      variant="outline"
+                      className="w-full border-orange-200 bg-white text-orange-600 shadow-sm hover:border-orange-300 hover:bg-orange-50 sm:w-auto"
+                      onClick={() => setReportDialogOpen(true)}
+                    >
+                      <AlertTriangle className="mr-2 h-4 w-4" /> Report Issue
+                    </Button>
+                  )}
+                  <Button
+                    className="w-full bg-emerald-600 text-white shadow-md transition-transform hover:-translate-y-0.5 hover:bg-emerald-700 sm:w-auto"
+                    onClick={() => setConfirmCompleteOpen(true)}
+                    disabled={isCompleting}
+                  >
+                    {isCompleting ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                    )}
+                    Confirm Received
+                  </Button>
+                </div>
+              </div>
+            )}
 
-              {order.orderDetails && order.orderDetails.length > 0 ? (
-                <div className="flex flex-col">
-                  {order.orderDetails.map((item: OrderDetailDto, idx) => (
-                    <div key={item.id}>
-                      {idx > 0 && <Separator className="my-5" />}
-                      <div className="flex items-start gap-4">
-                        <div className="bg-muted h-16 w-16 shrink-0 overflow-hidden rounded-md border shadow-sm sm:h-24 sm:w-24">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={item.thumbnailUrl || ''}
-                            alt={item.productName || ''}
-                            className="h-full w-full object-cover"
-                          />
-                        </div>
-                        <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:justify-between">
-                          <div className="flex flex-col gap-1.5">
-                            <span className="text-foreground hover:text-brand cursor-pointer text-base leading-tight font-semibold transition-colors">
-                              {item.productName || item.sku || item.id}
-                            </span>
-                            {item.variantName && (
-                              <span className="text-muted-foreground text-sm">
-                                Variant:{' '}
-                                <span className="text-foreground font-medium">
-                                  {item.variantName}
-                                </span>
-                              </span>
+            {/* 3. Delivery Tracking Info - Cập nhật từ GHN */}
+            {['HandedOverToDelivery', 'Delivering', 'Delivered'].includes(effectiveStatus || '') &&
+              originalDetails?.data &&
+              originalDetails.data.length > 0 && (
+                <div className="rounded-xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
+                  <p className="mb-4 flex items-center gap-2 text-base font-bold text-blue-900">
+                    <span className="text-xl">📦</span> Live Delivery Tracking
+                  </p>
+                  <div className="flex flex-col gap-4">
+                    {originalDetails.data
+                      .slice(0, 3)
+                      .map((tracking: DeliveryTracking, index: number) => (
+                        <div
+                          key={tracking.id}
+                          className="flex items-start gap-3 text-sm text-blue-900"
+                        >
+                          <div className="mt-1 flex flex-col items-center">
+                            <div
+                              className={`h-2.5 w-2.5 rounded-full ${index === 0 ? 'bg-blue-600 ring-4 ring-blue-600/20' : 'bg-blue-300'}`}
+                            />
+                            {index !== Math.min(originalDetails.data.length, 3) - 1 && (
+                              <div className="mt-1 h-full min-h-8 w-0.5 bg-blue-200" />
                             )}
-                            <div className="text-muted-foreground mt-1 flex items-center gap-2 text-sm">
-                              <span>{item.unitPrice?.toLocaleString('en-US') || 0} VND</span>
-                              <span>✕</span>
-                              <span className="text-foreground font-semibold">{item.quantity}</span>
-                            </div>
                           </div>
-                          <span className="text-brand text-lg font-bold whitespace-nowrap">
-                            {item.totalAmount ? item.totalAmount.toLocaleString('en-US') : 0} VND
-                          </span>
+                          <div className="flex-1 pb-2">
+                            <p
+                              className={`font-semibold ${index === 0 ? 'text-blue-800' : 'text-blue-700/70'}`}
+                            >
+                              {tracking.status}{' '}
+                              {tracking.deliveryOrderCode && ` (${tracking.deliveryOrderCode})`}
+                            </p>
+                            {tracking.note && (
+                              <p className="mt-1 text-xs text-blue-700/80">{tracking.note}</p>
+                            )}
+                            {tracking.createdAt && (
+                              <p className="mt-1 text-xs font-medium text-blue-600/60">
+                                {new Date(tracking.createdAt).toLocaleString('en-US')}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-
-                      {/* Feedback Section for this Product */}
-                      {effectiveStatus === 'Completed' && (
-                        <OrderFeedbackSection
-                          orderDetailId={item.id}
-                          orderId={order.id}
-                          productName={item.productName || item.sku}
-                          thumbnailUrl={item.thumbnailUrl}
-                          variantName={item.variantName}
-                          isInstockOrPartner={true}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-muted/20 rounded-lg border border-dashed py-8 text-center">
-                  <Package className="text-muted-foreground/50 mx-auto mb-2 h-8 w-8" />
-                  <p className="text-muted-foreground text-sm italic">No product data.</p>
+                      ))}
+                  </div>
                 </div>
               )}
-            </div>
 
-            {/* Feedback Form Card */}
-            {effectiveStatus &&
-              ['Completed'].includes(effectiveStatus) &&
-              order.orderDetails &&
-              order.orderDetails.length > 0 && (
-                <FeedbackForm orderId={order.id} orderDetails={order.orderDetails} />
-              )}
+            {/* 4. Products List */}
+            <OrderProductsList order={order} />
           </div>
 
-          {/* ========== RIGHT COLUMN ========== */}
+          {/* ========== CỘT PHẢI ========== */}
           <div className="flex flex-col gap-6">
-            {/* Customer Info Card */}
-            <div className="bg-card border-border flex flex-col gap-5 rounded-xl border p-6 shadow-sm">
-              <h3 className="flex items-center gap-2 text-lg font-bold">
-                <User className="text-brand h-5 w-5" />
-                Shipping Information
-              </h3>
-
-              <div className="bg-muted/30 border-border/50 flex flex-col gap-3 rounded-lg border p-4 text-sm">
-                <div className="flex items-center gap-3">
-                  <User className="text-muted-foreground h-4 w-4 shrink-0" />
-                  <p className="font-semibold">{order.customerName}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Phone className="text-muted-foreground h-4 w-4 shrink-0" />
-                  <p className="text-muted-foreground">{order.customerPhone}</p>
-                </div>
-                {order.customerEmail && (
-                  <div className="flex items-center gap-3">
-                    <Mail className="text-muted-foreground h-4 w-4 shrink-0" />
-                    <p className="text-muted-foreground truncate">{order.customerEmail}</p>
-                  </div>
-                )}
-              </div>
-
-              <Separator />
-
-              <div>
-                <h3 className="mb-3 flex items-center gap-2 text-base font-bold">
-                  <MapPin className="text-brand h-4 w-4" />
-                  Delivery Address
-                </h3>
-                <p className="text-muted-foreground bg-muted/30 border-border/50 rounded-lg border p-4 text-sm leading-relaxed">
-                  {order.customerWardName}, {order.customerDistrictName},{' '}
-                  {order.customerProvinceName}
-                </p>
-              </div>
-            </div>
-
-            {/* Payment Summary Card */}
-            <div className="bg-card border-border flex flex-col gap-5 rounded-xl border p-6 shadow-sm">
-              <h3 className="flex items-center gap-2 text-lg font-bold">
-                <Banknote className="text-brand h-5 w-5" />
-                Payment Details
-              </h3>
-
-              <div className="flex flex-col gap-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Method:</span>
-                  <span className="bg-secondary text-secondary-foreground rounded-md px-2.5 py-1 text-xs font-medium tracking-wider uppercase">
-                    {order.paymentMethod || 'COD'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Status:</span>
-                  {order.isPaid ? (
-                    <span className="text-success flex items-center gap-1.5 font-medium">
-                      <div className="bg-success h-2 w-2 rounded-full" /> Paid
-                    </span>
-                  ) : (
-                    <span className="text-warning flex items-center gap-1.5 font-medium">
-                      <div className="bg-warning h-2 w-2 rounded-full" /> Pending Payment
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <Separator className="border-dashed" />
-
-              <div className="flex flex-col gap-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Subtotal:</span>
-                  <span className="font-medium">
-                    {order.subTotalAmount?.toLocaleString('en-US') || 0} VND
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Shipping Fee:</span>
-                  <span className="font-medium">
-                    {order.shippingFee?.toLocaleString('en-US') || 0} VND
-                  </span>
-                </div>
-                {(order.usedCoinAmountAsMoney ?? 0) > 0 && (
-                  <div className="text-success flex items-center justify-between">
-                    <span>Coin Discount:</span>
-                    <span className="font-medium">
-                      -{(order.usedCoinAmountAsMoney ?? 0).toLocaleString('en-US')} VND
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-brand/5 border-brand/20 mt-2 rounded-lg border p-4">
-                <div className="flex items-center justify-between font-bold">
-                  <span className="text-brand text-sm tracking-wider uppercase">Total</span>
-                  <span className="text-brand text-2xl">
-                    {order.grandTotalAmount ? order.grandTotalAmount.toLocaleString('en-US') : 0}{' '}
-                    VND
-                  </span>
-                </div>
-              </div>
-            </div>
+            <OrderCustomerInfo order={order} />
+            <OrderPaymentSummary order={order} />
           </div>
         </div>
       </div>
 
-      {/* ── Complete Order Confirmation Dialog ── */}
+      {/* Dialogs */}
       <AlertDialog open={confirmCompleteOpen} onOpenChange={setConfirmCompleteOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="sm:max-w-106.25">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-              Confirm Order Received
+            <AlertDialogTitle className="flex items-center gap-2 text-xl">
+              <CheckCircle2 className="h-6 w-6 text-emerald-600" /> Confirm Received
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you have received all items in good condition? After confirmation, you
+            <AlertDialogDescription className="mt-3 text-base leading-relaxed">
+              Are you sure you have received all items in good condition?
+              <br />
+              <br />
+              <span className="font-semibold text-slate-700">Note:</span> After confirmation, you
               will not be able to request a return, exchange, or report missing items.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isCompleting}>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="mt-6">
+            <AlertDialogCancel disabled={isCompleting} className="hover:bg-slate-100">
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmComplete}
               disabled={isCompleting}
-              className="bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-600"
+              className="bg-emerald-600 shadow-md hover:bg-emerald-700 focus:ring-emerald-600"
             >
-              {isCompleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Confirm
+              {isCompleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Yes, I Confirm
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ── Report Issue Dialog ── */}
       {canReport && (
         <ReportIssueDialog
           open={reportDialogOpen}
