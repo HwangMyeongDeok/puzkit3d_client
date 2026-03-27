@@ -1,5 +1,4 @@
 import { User, Phone, Mail, MapPin } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
 
 interface OrderCustomerInfoProps {
   customerName?: string;
