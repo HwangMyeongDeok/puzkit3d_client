@@ -1,6 +1,24 @@
-// src/types/api/order.api.types.ts
-import type { InstockOrderStatus } from '../order.types';
+// ==========================================
+// 1. SHARED UNIONS & ENUMS (Đã gộp vào đây)
+// ==========================================
+export type PaymentMethod = 'COD' | 'Online'; // Đổi 'ONLINE' thành 'Online' cho khớp data BE trả về
 
+export type InstockOrderStatus =
+  | 'Pending'
+  | 'Paid'
+  | 'Processing'
+  | 'Waiting'
+  | 'Delivering'
+  | 'Delivered'
+  | 'Cancelled'
+  | 'Completed'
+  | 'Returned'
+  | 'HandedOverToDelivery'
+  | 'Rejected';
+
+// ==========================================
+// 2. DTOs - CHI TIẾT SẢN PHẨM TRONG ĐƠN
+// ==========================================
 export interface OrderProductDetailsDto {
   productId?: string;
   code?: string;
@@ -37,6 +55,9 @@ export interface OrderDetailDto {
   variantDetails?: OrderVariantDetailsDto;
 }
 
+// ==========================================
+// 3. DTOs - REQUEST / RESPONSE API CHÍNH
+// ==========================================
 export interface CreateInstockOrderRequestDto {
   customerName: string;
   customerPhone: string;
@@ -73,8 +94,8 @@ export interface GetCustomerOrderByIdResponseDto {
   usedCoinAmount?: number;
   usedCoinAmountAsMoney?: number;
   grandTotalAmount?: number;
-  status?: InstockOrderStatus;
-  paymentMethod?: string;
+  status?: InstockOrderStatus; // Xài type xịn
+  paymentMethod?: PaymentMethod; // Xài type xịn thay vì string
   isPaid?: boolean;
   paidAt?: string;
   createdAt?: string;
@@ -82,7 +103,12 @@ export interface GetCustomerOrderByIdResponseDto {
   orderDetails?: OrderDetailDto[];
 }
 
+// ==========================================
+// 4. DTOs - LỊCH SỬ ĐƠN HÀNG & PHÂN TRANG
+// ==========================================
 export interface OrderPreviewDto {
+  productId?: string;
+  slug?: string;
   productName?: string;
   variantName?: string;
   quantity?: number;
@@ -95,8 +121,8 @@ export interface GetCustomerOrderResponseDto {
   code?: string;
   grandTotalAmount?: number;
   totalQuantity?: number;
-  status?: InstockOrderStatus;
-  paymentMethod?: string;
+  status?: InstockOrderStatus; // Xài type xịn
+  paymentMethod?: PaymentMethod; // Xài type xịn thay vì string
   isPaid?: boolean;
   paidAt?: string;
   createdAt?: string;
@@ -109,4 +135,6 @@ export interface GetCustomerOrdersResponseDtoPagedResult {
   pageNumber: number;
   pageSize: number;
   totalPages: number;
+  hasPreviousPage?: boolean;
+  hasNextPage?: boolean;
 }
