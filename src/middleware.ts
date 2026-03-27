@@ -23,10 +23,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Redirect authenticated users away from auth pages
-  if (isAuthRoute && token) {
-    return NextResponse.redirect(new URL('/profile', request.url));
-  }
+  // NOTE: Do NOT redirect authenticated users away from /login
+  // Let the LoginForm component handle post-login redirect to the desired page.
+  // This prevents interfering with the redirect query parameter flow.
 
   return NextResponse.next();
 }

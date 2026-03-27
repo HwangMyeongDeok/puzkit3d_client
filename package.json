@@ -39,6 +39,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hook-form": "^7.71.0",
+    "react-intersection-observer": "^10.0.3",
     "react-markdown": "^10.1.0",
     "react-redux": "^9.2.0",
     "redux-persist": "^6.0.0",
