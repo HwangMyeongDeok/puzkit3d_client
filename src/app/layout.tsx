@@ -6,6 +6,7 @@ import './globals.css';
 import { ReduxProvider } from '@/providers/ReduxProvider';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { AuthSyncProvider } from '@/lib/auth/AuthSyncProvider';
 
 const inter = Inter({
   variable: '--font-inter',
@@ -45,10 +46,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${outfit.variable} font-sans antialiased`}>
         <ReduxProvider>
-          <Header />
-          <main className="min-h-screen pt-16">{children}</main>
-          <Footer />
-          <Toaster position="top-right" richColors closeButton />
+          <AuthSyncProvider>
+            <Header />
+            <main className="min-h-screen pt-16">{children}</main>
+            <Footer />
+            <Toaster position="top-right" richColors closeButton />
+          </AuthSyncProvider>
         </ReduxProvider>
       </body>
     </html>

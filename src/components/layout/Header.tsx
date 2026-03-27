@@ -141,9 +141,11 @@ export default function Header() {
             }`}
           >
             <User className="h-5 w-5" />
-            {isAuthenticated && !isAuthLoading && (
+            {isAuthenticated && !isAuthLoading && user && (
               <span className="hidden text-xs font-semibold italic lg:block">
-                {user?.email?.split('@')[0]}
+                {user.firstName && user.lastName
+                  ? `${user.firstName} ${user.lastName}`
+                  : user.email?.split('@')[0]}
               </span>
             )}
           </Link>

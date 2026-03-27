@@ -44,11 +44,14 @@ export default function LoginForm() {
     try {
       const result = await login(form).unwrap();
 
+      // Use full user object from API if available, fallback to basic info
+      const userData = result.user || {
+        id: result.userId,
+        email: result.email,
+      };
+
       const authData = {
-        user: {
-          id: result.userId,
-          email: result.email,
-        },
+        user: userData,
         accessToken: result.token,
         refreshToken: result.refreshToken,
       };
@@ -56,7 +59,7 @@ export default function LoginForm() {
       dispatch(setCredentials(authData as any));
 
       // Save only user info (non-sensitive) to localStorage
-      localStorage.setItem(APP_CONFIG.AUTH_STORAGE_KEY, JSON.stringify(authData.user));
+      localStorage.setItem(APP_CONFIG.AUTH_STORAGE_KEY, JSON.stringify(userData));
 
       // Save tokens (sensitive) directly to Cookie for security
       document.cookie = `${APP_CONFIG.ACCESS_TOKEN_KEY}=${result.token}; path=/; max-age=604800; SameSite=Lax`;
@@ -64,7 +67,11 @@ export default function LoginForm() {
         document.cookie = `${APP_CONFIG.REFRESH_TOKEN_KEY}=${result.refreshToken}; path=/; max-age=2592000; SameSite=Lax`;
       }
 
-      router.push('/');
+      // Get redirect URL from query params, default to home
+      const params = new URLSearchParams(window.location.search);
+      const redirectUrl = params.get('redirect') || '/';
+
+      router.push(decodeURIComponent(redirectUrl));
     } catch (err: any) {
       const errorMessage = err?.data?.message || err?.message || '';
       if (

@@ -57,7 +57,7 @@ export default function HeroCarousel() {
                   sizes="100vw"
                   className="object-cover opacity-30"
                 />
-                <div className={`absolute inset-0 bg-gradient-to-r ${slide.gradient}`} />
+                <div className={`absolute inset-0 bg-linear-to-r ${slide.gradient}`} />
               </div>
 
               <div className="absolute inset-0 opacity-10">

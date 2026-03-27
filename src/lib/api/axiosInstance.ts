@@ -129,6 +129,15 @@ axiosInstance.interceptors.response.use(
           setCookie(APP_CONFIG.REFRESH_TOKEN_KEY, newRefreshToken, 2592000); // 30 ngày
         }
 
+        // INVALIDATE USER TAG TO REFETCH PROFILE DATA
+        // This ensures user data stays fresh after token refresh
+        try {
+          const { apiSlice } = await import('@/lib/api/apiSlice');
+          store.dispatch(apiSlice.util.invalidateTags(['User']));
+        } catch (importError) {
+          console.warn('Could not invalidate User tag after token refresh');
+        }
+
         processQueue(null, accessToken);
 
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
