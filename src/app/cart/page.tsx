@@ -11,10 +11,10 @@ import { ROUTES } from '@/constants';
 import { setSelectedItems } from '@/stores/slices/checkoutSlice';
 import type { CartItemDto } from '@/types/api/cart.api.types';
 
-import CartLoading from '@/app/cart/component/CartLoading';
-import CartEmpty from '@/app/cart/component/CartEmpty';
-import CartItemRow from '@/app/cart/component/CartItemRow';
-import CartSummaryBar from '@/app/cart/component/CartSummaryBar';
+import CartLoading from '@/components/cart/CartLoading';
+import CartEmpty from '@/components/cart/CartEmpty';
+import CartItemRow from '@/components/cart/CartItemRow';
+import CartSummaryBar from '@/components/cart/CartSummaryBar';
 
 type CheckoutMode = 'instock' | 'partner' | 'mixed' | 'none';
 
