@@ -1,20 +1,28 @@
+'use client';
+import React from 'react';
 import Image from 'next/image';
 import { formatPrice } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, Lock, ShoppingBag } from 'lucide-react';
-
-// Import type đàng hoàng từ file của ông
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Loader2, Lock, ShoppingBag, Coins } from 'lucide-react';
 import type { CartItemDto } from '@/types/api/cart.api.types';
 
 interface CheckoutOrderSummaryProps {
-  selectedItems: CartItemDto[]; // <-- Đã đổi từ any[] sang CartItemDto[]
+  selectedItems: CartItemDto[];
   subtotal: number;
   shippingFee: number;
   total: number;
   isSubmitting: boolean;
   isShippingFeeLoading: boolean;
   isButtonDisabled: boolean;
+  // Props cho Coin
+  availableCoin: number;
+  usedCoinInput: number;
+  setUsedCoinInput: (val: number) => void;
+  isUsingMaxCoin: boolean;
+  setIsUsingMaxCoin: (val: boolean) => void;
 }
 
 export default function CheckoutOrderSummary({
@@ -25,7 +33,41 @@ export default function CheckoutOrderSummary({
   isSubmitting,
   isShippingFeeLoading,
   isButtonDisabled,
+  availableCoin,
+  usedCoinInput,
+  setUsedCoinInput,
+  isUsingMaxCoin,
+  setIsUsingMaxCoin,
 }: CheckoutOrderSummaryProps) {
+  const COIN_STEP = 1000;
+  // Số xu tối đa có thể dùng (không vượt quá tổng hóa đơn)
+  const maxPossible = Math.min(availableCoin, subtotal + shippingFee);
+
+  // Xử lý khi bật/tắt Switch dùng tối đa
+  const handleToggleMax = (checked: boolean) => {
+    setIsUsingMaxCoin(checked);
+    if (checked) {
+      // Làm tròn xuống theo bước 1000 để số tiền "đẹp" theo yêu cầu
+      const roundedMax = Math.floor(maxPossible / COIN_STEP) * COIN_STEP;
+      setUsedCoinInput(roundedMax);
+    } else {
+      setUsedCoinInput(0);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = parseInt(e.target.value) || 0;
+    if (val < 0) val = 0;
+    if (val > maxPossible) val = maxPossible;
+    setUsedCoinInput(val);
+  };
+
+  // Khi người dùng click ra ngoài, tự động làm tròn về bội số của 1000
+  const handleBlur = () => {
+    const rounded = Math.floor(usedCoinInput / COIN_STEP) * COIN_STEP;
+    setUsedCoinInput(rounded);
+  };
+
   return (
     <div className="border-border bg-card sticky top-20 rounded-xl border p-6 shadow-sm">
       <h2 className="text-card-foreground mb-5 flex items-center gap-2 text-lg font-bold">
@@ -33,33 +75,31 @@ export default function CheckoutOrderSummary({
         Order Summary ({selectedItems.length} items)
       </h2>
 
-      {/* Danh sách sản phẩm chi tiết */}
-      <div className="scrollbar-thin flex max-h-80 flex-col gap-4 overflow-y-auto pr-2">
-        {selectedItems.map((item: CartItemDto) => (
-          <div key={item.itemId} className="flex gap-3">
-            <div className="bg-muted relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border">
+      {/* --- DANH SÁCH SẢN PHẨM --- */}
+      <div className="scrollbar-thin flex max-h-72 flex-col gap-4 overflow-y-auto pr-2">
+        {selectedItems.map((item) => (
+          <div key={item.itemId} className="flex gap-4">
+            <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border bg-slate-50">
               <Image
-                src={item?.thumbnailUrl || ''}
-                alt={item?.name || 'Product Image'}
+                src={item.thumbnailUrl || '/images/placeholder.webp'}
+                alt={item.thumbnailUrl || 'Product'}
                 fill
-                sizes="64px"
                 className="object-cover"
               />
+              <span className="bg-brand absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white shadow-sm">
+                {item.quantity}
+              </span>
             </div>
-            <div className="flex min-w-0 flex-1 flex-col justify-between">
-              <p className="text-card-foreground truncate text-sm font-semibold" title={item?.name}>
-                {item?.name}
+            <div className="flex min-w-0 flex-1 flex-col justify-center">
+              <h3 className="line-clamp-1 text-sm font-semibold text-slate-800">{item.name}</h3>
+              {item.variantName && (
+                <p className="text-muted-foreground text-[11px] italic">
+                  Variant: {item.variantName}
+                </p>
+              )}
+              <p className="mt-1 text-xs font-medium text-slate-500">
+                {formatPrice(item.unitPrice || 0)}
               </p>
-
-              <div className="mt-1 flex items-center justify-between">
-                <span className="text-muted-foreground text-xs font-medium">
-                  {formatPrice(item.unitPrice ?? 0)} <span className="text-xs">x</span>{' '}
-                  {item.quantity}
-                </span>
-                <span className="text-card-foreground text-sm font-bold">
-                  {formatPrice((item.unitPrice ?? 0) * (item.quantity ?? 1))}
-                </span>
-              </div>
             </div>
           </div>
         ))}
@@ -67,54 +107,112 @@ export default function CheckoutOrderSummary({
 
       <Separator className="my-5" />
 
-      {/* Bảng tính tiền chi tiết */}
-      <div className="flex flex-col gap-3 text-sm">
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Subtotal (Provisional)</span>
-          <span className="text-card-foreground font-semibold">{formatPrice(subtotal)}</span>
-        </div>
+      {/* --- PHẦN PUZCOIN THÔNG MINH --- */}
+      {availableCoin >= COIN_STEP && (
+        <div className="mb-5 space-y-4 rounded-xl border border-amber-200 bg-amber-50/50 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="rounded-full bg-amber-200 p-1.5 shadow-sm">
+                <Coins className="h-4 w-4 text-amber-600" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-amber-900">PuzCoin Wallet</span>
+                <span className="text-[10px] font-medium text-amber-700/80">
+                  Available: {formatPrice(availableCoin)}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold tracking-wider text-amber-800 uppercase">
+                Max
+              </span>
+              <Switch
+                checked={isUsingMaxCoin}
+                onCheckedChange={handleToggleMax}
+                className="data-[state=checked]:bg-amber-600"
+              />
+            </div>
+          </div>
 
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Shipping Fee</span>
-          <span className="text-card-foreground flex items-center font-semibold">
+          {!isUsingMaxCoin && (
+            <div className="animate-in fade-in slide-in-from-top-1 space-y-2 duration-200">
+              <div className="relative">
+                <Input
+                  type="number"
+                  value={usedCoinInput === 0 ? '' : usedCoinInput}
+                  onChange={handleInputChange}
+                  onBlur={handleBlur}
+                  placeholder="Nhập số xu..."
+                  className="border-amber-200 bg-white pr-10 focus-visible:ring-amber-500"
+                />
+                <span className="absolute top-1/2 right-3 -translate-y-1/2 text-[10px] font-bold text-amber-400">
+                  đ
+                </span>
+              </div>
+              <p className="px-1 text-[10px] leading-relaxed text-amber-600/70 italic">
+                * Tối đa dùng được {formatPrice(maxPossible)}. Tự động làm tròn về đơn vị 1.000đ khi
+                thanh toán.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* --- CHI TIẾT TÍNH TOÁN --- */}
+      <div className="flex flex-col gap-3 text-sm">
+        <div className="text-muted-foreground flex items-center justify-between">
+          <span>Subtotal</span>
+          <span className="font-medium">{formatPrice(subtotal)}</span>
+        </div>
+        <div className="text-muted-foreground flex items-center justify-between">
+          <span>Shipping Fee</span>
+          <span className="font-medium">
             {isShippingFeeLoading ? (
-              <Loader2 className="text-brand h-4 w-4 animate-spin" />
-            ) : shippingFee === 0 ? (
-              <span className="text-green-600">Free</span>
+              <Loader2 className="text-brand h-3 w-3 animate-spin" />
             ) : (
               `+ ${formatPrice(shippingFee)}`
             )}
           </span>
         </div>
 
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Discount / Coins</span>
-          <span className="font-semibold text-green-600">- {formatPrice(0)}</span>
-        </div>
+        {usedCoinInput > 0 && (
+          <div className="flex items-center justify-between font-bold text-emerald-600">
+            <span className="flex items-center gap-1">
+              <Coins className="h-3 w-3" /> Coin Applied
+            </span>
+            <span>- {formatPrice(usedCoinInput)}</span>
+          </div>
+        )}
       </div>
 
       <Separator className="my-5" />
 
-      <div className="bg-secondary/30 flex items-center justify-between rounded-lg border p-4">
-        <div>
-          <span className="text-card-foreground block text-base font-bold">Grand Total</span>
-          <span className="text-muted-foreground text-[10px]">(VAT included if applicable)</span>
+      {/* --- TỔNG CUỐI CÙNG --- */}
+      <div className="flex items-center justify-between rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4">
+        <span className="text-base font-bold text-slate-700">Grand Total</span>
+        <div className="flex flex-col items-end">
+          <span className="text-brand text-2xl font-black tracking-tight">
+            {formatPrice(total)}
+          </span>
+          <span className="text-muted-foreground text-[10px] italic">VAT Included</span>
         </div>
-        <span className="text-brand text-2xl font-extrabold">{formatPrice(total)}</span>
       </div>
 
       <Button
         type="submit"
-        size="lg"
         disabled={isButtonDisabled}
-        className="mt-6 w-full gap-2 rounded-xl py-6 text-base font-bold shadow-lg transition-all hover:scale-[1.02]"
+        className="bg-brand hover:bg-brand/90 mt-6 w-full py-7 text-base font-bold shadow-lg transition-all active:scale-[0.98] disabled:opacity-70"
       >
-        <Lock className="h-4 w-4" />
-        {isSubmitting ? 'Processing...' : 'Place Order Securely'}
+        {isSubmitting ? (
+          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+        ) : (
+          <Lock className="mr-2 h-4 w-4" />
+        )}
+        {isSubmitting ? 'Processing Order...' : 'Confirm and Place Order'}
       </Button>
 
-      <p className="text-muted-foreground mt-4 text-center text-[11px] leading-relaxed">
-        By placing an order, you agree to PuzKit3D's <br /> Terms of Service and Privacy Policy.
+      <p className="text-muted-foreground mt-4 text-center text-[10px]">
+        By clicking, you agree to our Terms of Service
       </p>
     </div>
   );
