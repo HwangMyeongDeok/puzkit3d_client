@@ -45,9 +45,14 @@ interface AddressUpdateModalProps {
 export default function AddressUpdateModal({ open, onOpenChange, user }: AddressUpdateModalProps) {
   const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation();
 
+  // Data states
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
   const [wards, setWards] = useState<Ward[]>([]);
+
+  // Control states
+  const [selectedProvinceCode, setSelectedProvinceCode] = useState<string>('');
+  const [selectedDistrictCode, setSelectedDistrictCode] = useState<string>('');
 
   const defaultFullName = user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : '';
 
@@ -66,10 +71,7 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
     },
   });
 
-  const provinceCode = form.watch('provinceCode');
-  const districtCode = form.watch('districtCode');
-
-  // Reset values when user prop changes
+  // 0. RESET FORM KHI MỞ MODAL
   useEffect(() => {
     if (user && open) {
       form.reset({
@@ -86,43 +88,98 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
     }
   }, [user, open, form]);
 
-  // Load Provinces
+  // 1. CHUỖI DOMINO LẦN 1: FETCH PROVINCES -> LẤY MÃ PROVINCE
   useEffect(() => {
     if (open) {
       fetch('https://provinces.open-api.vn/api/v1/p/')
         .then((res) => res.json())
-        .then((data) => setProvinces(data))
+        .then((data) => {
+          setProvinces(data);
+          const currentPName = form.getValues('provinceName') || user?.provinceName;
+          if (currentPName) {
+            const p = data.find((x: Province) => x.name === currentPName);
+            if (p) {
+              setSelectedProvinceCode(String(p.code));
+              form.setValue('provinceCode', String(p.code), { shouldValidate: true });
+            }
+          }
+        })
         .catch((err) => console.error('Error fetching provinces:', err));
-    }
-  }, [open]);
-
-  // Load Districts
-  useEffect(() => {
-    if (provinceCode && open) {
+    } else {
+      setSelectedProvinceCode('');
+      setSelectedDistrictCode('');
+      setProvinces([]);
       setDistricts([]);
-      fetch(`https://provinces.open-api.vn/api/v1/p/${provinceCode}?depth=2`)
+      setWards([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, user]);
+
+  // 2. CHUỖI DOMINO LẦN 2: FETCH DISTRICTS -> LẤY MÃ DISTRICT
+  useEffect(() => {
+    if (selectedProvinceCode && open) {
+      fetch(`https://provinces.open-api.vn/api/v1/p/${selectedProvinceCode}?depth=2`)
         .then((res) => res.json())
-        .then((data) => setDistricts(data.districts || []))
+        .then((data) => {
+          const loadedDistricts = data.districts || [];
+          setDistricts(loadedDistricts);
+
+          const currentDName = form.getValues('districtName');
+          if (currentDName) {
+            const d = loadedDistricts.find((x: District) => x.name === currentDName);
+            if (d) {
+              setSelectedDistrictCode(String(d.code));
+              form.setValue('districtCode', String(d.code), { shouldValidate: true });
+            }
+          }
+        })
         .catch((err) => console.error('Error fetching districts:', err));
     } else {
       setDistricts([]);
     }
-  }, [provinceCode, open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProvinceCode, open]);
 
-  // Load Wards
+  // 3. CHUỖI DOMINO LẦN 3: FETCH WARDS
   useEffect(() => {
-    if (districtCode && open) {
-      setWards([]);
-      fetch(`https://provinces.open-api.vn/api/v1/d/${districtCode}?depth=2`)
+    if (selectedDistrictCode && open) {
+      fetch(`https://provinces.open-api.vn/api/v1/d/${selectedDistrictCode}?depth=2`)
         .then((res) => res.json())
         .then((data) => setWards(data.wards || []))
         .catch((err) => console.error('Error fetching wards:', err));
     } else {
       setWards([]);
     }
-  }, [districtCode, open]);
+  }, [selectedDistrictCode, open]);
+
+  // 4. CHUỖI DOMINO LẦN 4: AUTO-POPULATE WARD CODE AFTER WARDS ARE LOADED
+  useEffect(() => {
+    if (wards && wards.length > 0) {
+      const currentWName = form.getValues('wardName');
+      if (currentWName) {
+        const w = wards.find((x: Ward) => x.name === currentWName);
+        if (w) {
+          form.setValue('wardCode', String(w.code), { shouldValidate: true });
+        }
+      }
+    }
+  }, [wards, form]);
 
   const onSubmit = async (data: AddressUpdateFormValues) => {
+    // Check if anything has actually changed
+    const hasChanges =
+      data.fullName !== defaultFullName ||
+      data.phone !== (user?.phoneNumber || '') ||
+      data.provinceName !== (user?.provinceName || '') ||
+      data.districtName !== (user?.districtName || '') ||
+      data.wardName !== (user?.wardName || '') ||
+      data.address !== (user?.streetAddress || '');
+
+    if (!hasChanges) {
+      toast.info('No changes made to your address');
+      return;
+    }
+
     const nameParts = data.fullName.trim().split(' ');
     const lastName = nameParts.length > 1 ? nameParts.pop() || '' : ' ';
     const firstName = nameParts.join(' ');
@@ -145,7 +202,9 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
       onOpenChange(false);
     } catch (err: any) {
       console.error('Error updating address:', err);
-      toast.error(err?.data?.message || err?.message || 'An error occurred while updating.');
+      const errorMessage =
+        err?.data?.message || err?.message || 'Failed to update address. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -163,7 +222,15 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit, (errs) => console.log('Form errors:', errs))}
+            className="space-y-4 py-4"
+          >
+            {/* TRICK: ÉP FORM PHẢI THEO DÕI 3 THẰNG CODE NÀY ĐỂ ZOD KHÔNG BÁO LỖI ẢO NỮA */}
+            <input type="hidden" {...form.register('provinceCode')} />
+            <input type="hidden" {...form.register('districtCode')} />
+            <input type="hidden" {...form.register('wardCode')} />
+
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
@@ -193,24 +260,34 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
                 )}
               />
 
+              {/* TỈNH / THÀNH */}
               <FormField
                 control={form.control}
-                name="provinceCode"
+                name="provinceName"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Province / City *</FormLabel>
                     <Select
                       onValueChange={(val) => {
                         field.onChange(val);
-                        const p = provinces?.find((x: any) => x.code.toString() === val);
-                        if (p) form.setValue('provinceName', p.name);
+                        const p = provinces?.find((x: Province) => x.name === val);
 
-                        form.setValue('districtCode', '');
+                        if (p) {
+                          setSelectedProvinceCode(String(p.code));
+                          form.setValue('provinceCode', String(p.code), { shouldValidate: true });
+                        } else {
+                          setSelectedProvinceCode('');
+                          form.setValue('provinceCode', '', { shouldValidate: true });
+                        }
+
+                        // Reset District & Ward
+                        setSelectedDistrictCode('');
                         form.setValue('districtName', '');
-                        form.setValue('wardCode', '');
+                        form.setValue('districtCode', '', { shouldValidate: true });
                         form.setValue('wardName', '');
+                        form.setValue('wardCode', '', { shouldValidate: true });
                       }}
-                      value={field.value ? String(field.value) : undefined}
+                      value={field.value || undefined}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -218,8 +295,8 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="max-h-60 w-[var(--radix-select-trigger-width)] overflow-y-auto">
-                        {provinces?.map((p: any) => (
-                          <SelectItem key={p.code} value={p.code.toString()}>
+                        {provinces?.map((p: Province) => (
+                          <SelectItem key={p.code} value={p.name}>
                             {p.name}
                           </SelectItem>
                         ))}
@@ -230,37 +307,47 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
                 )}
               />
 
+              {/* QUẬN / HUYỆN */}
               <FormField
                 control={form.control}
-                name="districtCode"
+                name="districtName"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>District *</FormLabel>
                     <Select
+                      key={`district-${selectedProvinceCode}`}
                       onValueChange={(val) => {
                         field.onChange(val);
-                        const d = districts?.find((x: any) => x.code.toString() === val);
-                        if (d) form.setValue('districtName', d.name);
+                        const d = districts?.find((x: District) => x.name === val);
 
-                        form.setValue('wardCode', '');
+                        if (d) {
+                          setSelectedDistrictCode(String(d.code));
+                          form.setValue('districtCode', String(d.code), { shouldValidate: true });
+                        } else {
+                          setSelectedDistrictCode('');
+                          form.setValue('districtCode', '', { shouldValidate: true });
+                        }
+
+                        // Reset Ward
                         form.setValue('wardName', '');
+                        form.setValue('wardCode', '', { shouldValidate: true });
                       }}
-                      value={field.value ? String(field.value) : undefined}
-                      disabled={!provinceCode}
+                      value={field.value || undefined}
+                      disabled={!selectedProvinceCode}
                     >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue
                             placeholder={
-                              !provinceCode ? 'Select Province first' : 'Select District'
+                              !selectedProvinceCode ? 'Select Province first' : 'Select District'
                             }
                           />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="max-h-60 w-[var(--radix-select-trigger-width)] overflow-y-auto">
                         {districts && districts.length > 0 ? (
-                          districts.map((d: any) => (
-                            <SelectItem key={d.code} value={String(d.code)}>
+                          districts.map((d: District) => (
+                            <SelectItem key={d.code} value={d.name}>
                               {d.name}
                             </SelectItem>
                           ))
@@ -276,36 +363,47 @@ export default function AddressUpdateModal({ open, onOpenChange, user }: Address
                 )}
               />
 
+              {/* PHƯỜNG / XÃ */}
               <FormField
                 control={form.control}
-                name="wardCode"
+                name="wardName"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Ward *</FormLabel>
                     <Select
+                      key={`ward-${selectedDistrictCode}`}
                       onValueChange={(val) => {
                         field.onChange(val);
-                        const w = wards?.find((x: any) => String(x.code) === val);
-                        if (w) form.setValue('wardName', w.name);
+                        const w = wards?.find((x: Ward) => x.name === val);
+
+                        if (w) {
+                          form.setValue('wardCode', String(w.code), { shouldValidate: true });
+                        } else {
+                          form.setValue('wardCode', '', { shouldValidate: true });
+                        }
                       }}
-                      value={field.value ? String(field.value) : undefined}
-                      disabled={!form.watch('districtCode')}
+                      value={field.value || undefined}
+                      disabled={!selectedDistrictCode}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select Ward" />
+                          <SelectValue
+                            placeholder={
+                              !selectedDistrictCode ? 'Select District first' : 'Select Ward'
+                            }
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="max-h-60 w-[var(--radix-select-trigger-width)] overflow-y-auto">
                         {wards && wards.length > 0 ? (
-                          wards.map((w: any) => (
-                            <SelectItem key={w.code} value={String(w.code)}>
+                          wards.map((w: Ward) => (
+                            <SelectItem key={w.code} value={w.name}>
                               {w.name}
                             </SelectItem>
                           ))
                         ) : (
                           <SelectItem value="empty" disabled>
-                            No data available...
+                            Loading Wards...
                           </SelectItem>
                         )}
                       </SelectContent>

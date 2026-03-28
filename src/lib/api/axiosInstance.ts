@@ -28,6 +28,29 @@ const setCookie = (name: string, value: string, maxAge: number) => {
   }
 };
 
+// HÀM CHUYÊN TRỊ BÓNG MA (GHOST BUSTER 👻🔫)
+const forceLogout = () => {
+  if (typeof window === 'undefined') return;
+
+  // 1. Xóa cứng Cookie
+  document.cookie = `${APP_CONFIG.ACCESS_TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+  document.cookie = `${APP_CONFIG.REFRESH_TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+
+  // 2. Xóa cứng LocalStorage
+  localStorage.removeItem(APP_CONFIG.AUTH_STORAGE_KEY);
+
+  // 3. Clear Redux
+  if (store) {
+    store.dispatch(logout());
+  }
+
+  // 4. Đá văng về trang Login (F5 lại toàn bộ app, dọn dẹp sạch UI)
+  // Lưu ý: Chỉ redirect nếu không phải đang ở trang login sẵn
+  if (!window.location.pathname.includes('/login')) {
+    window.location.href = '/login';
+  }
+};
+
 // ---------------------------------------------------------------------------
 // Axios instance
 // ---------------------------------------------------------------------------
@@ -65,13 +88,10 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 // ---------------------------------------------------------------------------
 axiosInstance.interceptors.request.use(
   (config) => {
-    // ĐỌC TOKEN TỪ COOKIE THAY VÌ REDUX
     const token = getCookie(APP_CONFIG.ACCESS_TOKEN_KEY);
-
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
     return config;
   },
   (error) => Promise.reject(error)
@@ -88,6 +108,7 @@ axiosInstance.interceptors.response.use(
     const authEndpoints = ['auth/login', 'auth/register', 'auth/refresh-token'];
     const isAuthRequest = authEndpoints.some((url) => originalRequest.url?.includes(url));
 
+    // NẾU BỊ LỖI 401 VÀ KHÔNG PHẢI ĐANG Ở API LOGIN/REGISTER
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthRequest) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -104,33 +125,29 @@ axiosInstance.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // LẤY REFRESH TOKEN TỪ COOKIE
         const refreshToken = getCookie(APP_CONFIG.REFRESH_TOKEN_KEY);
 
+        // NẾU KHÔNG CÓ REFRESH TOKEN -> ĐÁ VĂNG
         if (!refreshToken) {
-          store.dispatch(logout()); // Gọi logout để xóa Redux user + xóa sạch rác Cookie
+          forceLogout();
           return Promise.reject(error);
         }
 
+        // TIẾN HÀNH GỌI API REFRESH TOKEN
         const response = await axios.post(
           `${process.env.NEXT_PUBLIC_API_URL}auth/refresh-token`,
           { refreshToken },
-          {
-            headers: { 'ngrok-skip-browser-warning': 'true' },
-          }
+          { headers: { 'ngrok-skip-browser-warning': 'true' } }
         );
 
         const accessToken = response.data.token || response.data.accessToken;
         const newRefreshToken = response.data.refreshToken;
 
-        // CẬP NHẬT TRỰC TIẾP VÀO COOKIE (Bỏ qua Redux)
-        setCookie(APP_CONFIG.ACCESS_TOKEN_KEY, accessToken, 604800); // 7 ngày
+        setCookie(APP_CONFIG.ACCESS_TOKEN_KEY, accessToken, 604800);
         if (newRefreshToken) {
-          setCookie(APP_CONFIG.REFRESH_TOKEN_KEY, newRefreshToken, 2592000); // 30 ngày
+          setCookie(APP_CONFIG.REFRESH_TOKEN_KEY, newRefreshToken, 2592000);
         }
 
-        // INVALIDATE USER TAG TO REFETCH PROFILE DATA
-        // This ensures user data stays fresh after token refresh
         try {
           const { apiSlice } = await import('@/lib/api/apiSlice');
           store.dispatch(apiSlice.util.invalidateTags(['User']));
@@ -143,8 +160,9 @@ axiosInstance.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return axiosInstance(originalRequest);
       } catch (refreshError) {
+        // NẾU REFRESH TOKEN CŨNG HẾT HẠN HOẶC LỖI TRÊN DB -> ĐÁ VĂNG LUÔN
         processQueue(refreshError as Error, null);
-        store.dispatch(logout());
+        forceLogout();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

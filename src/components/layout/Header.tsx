@@ -3,11 +3,12 @@
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingCart, Menu, X, Search, User, LogOut } from 'lucide-react';
+import { ShoppingCart, Menu, X, Search, User, LogOut, Coins } from 'lucide-react';
 
 import { ROUTES, APP_CONFIG } from '@/constants';
 import MiniCart from '@/components/custom/MiniCart';
 import { useGetCartQuery } from '@/lib/api/endpoints/cartApi';
+import { useGetWalletQuery } from '@/lib/api/endpoints/walletApi';
 import { toast } from 'sonner';
 import type { CartItemDto } from '@/types/api/cart.api.types';
 
@@ -46,9 +47,14 @@ export default function Header() {
     setMounted(true);
   }, []);
 
-  // 2. CHỐT CHẶN API: Chỉ gọi Cart khi Auth đã nạp xong (isAuthLoading === false)
+  // 2. CHỐT CHẶN API: Chỉ gọi Cart & Wallet khi Auth đã nạp xong (isAuthLoading === false)
   // và thực sự đã login (isAuthenticated === true)
   const { data: cartData } = useGetCartQuery(undefined, {
+    skip: !mounted || isAuthLoading || !isAuthenticated,
+  });
+
+  // GỌI API LẤY SỐ DƯ COIN
+  const { data: walletData } = useGetWalletQuery(undefined, {
     skip: !mounted || isAuthLoading || !isAuthenticated,
   });
 
@@ -60,33 +66,24 @@ export default function Header() {
   const isMiniCartDisabled = MINI_CART_DISABLED_ROUTES.some((route) => pathname.startsWith(route));
 
   const handleCartClick = () => {
-    // Nếu đang ở trang /cart hoặc /checkout thì bấm icon sẽ chuyển về trang /cart
     if (isMiniCartDisabled) {
       router.push(ROUTES.CART);
     }
-    // Còn nếu ở trang khác thì cứ để MiniCart tự xổ ra bình thường
   };
 
   const handleLogout = () => {
-    // 1. Xóa trong Redux
     dispatch(logout());
-
-    // 2. Xóa trong LocalStorage
     localStorage.removeItem(APP_CONFIG.AUTH_STORAGE_KEY);
-
-    // 3. Xóa Cookie bằng cách set expire về ngày hôm qua
     document.cookie = `${APP_CONFIG.ACCESS_TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
     document.cookie = `${APP_CONFIG.REFRESH_TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
 
     toast.success('Logged out successfully!');
     router.push('/');
-    router.refresh(); // Ép Next.js fetch lại trang để middleware nhận diện đã mất cookie
+    router.refresh();
   };
 
-  // 3. Tránh Hydration Mismatch: Không render gì cho đến khi Client-side mounted
   if (!mounted) return <div className="h-16 w-full bg-white shadow-sm" />;
 
-  // Định nghĩa JSX cho cái nút giỏ hàng để lát tái sử dụng cho gọn
   const cartButton = (
     <button
       className="text-foreground/80 hover:bg-secondary hover:text-brand-accent relative rounded-lg p-2 transition-colors"
@@ -127,9 +124,23 @@ export default function Header() {
         {/* ACTIONS */}
         <div className="flex items-center gap-1 md:gap-2">
           {/* Search */}
-          <button className="text-foreground/80 hover:bg-secondary rounded-lg p-2 transition-colors">
+          <button className="text-foreground/80 hover:bg-secondary hidden rounded-lg p-2 transition-colors sm:block">
             <Search className="h-5 w-5" />
           </button>
+
+          {/* HIỂN THỊ COIN (CHỈ HIỆN KHI ĐÃ LOGIN) */}
+          {isAuthenticated && !isAuthLoading && (
+            <Link
+              href="/wallet"
+              title="My PuzCoins"
+              className="mr-1 flex items-center gap-1.5 rounded-full border border-amber-200/60 bg-amber-50 px-3 py-1.5 text-amber-600 shadow-sm transition-all hover:bg-amber-100"
+            >
+              <Coins className="h-4 w-4 drop-shadow-sm" />
+              <span className="text-sm font-bold">
+                {walletData?.balance ? walletData.balance.toLocaleString() : 0}
+              </span>
+            </Link>
+          )}
 
           {/* User/Profile */}
           <Link
@@ -150,14 +161,14 @@ export default function Header() {
             )}
           </Link>
 
-          {/* Cart Logic: Chỉ hiện MiniCart khi thực sự đã Auth xong */}
+          {/* Cart */}
           {!isMiniCartDisabled && !isAuthLoading ? <MiniCart>{cartButton}</MiniCart> : cartButton}
 
           {/* Logout button */}
           {isAuthenticated && (
             <button
               onClick={handleLogout}
-              className="ml-1 p-2 text-slate-500 transition-colors hover:text-red-600"
+              className="ml-1 hidden p-2 text-slate-500 transition-colors hover:text-red-600 sm:block"
             >
               <LogOut className="h-5 w-5" />
             </button>
@@ -186,6 +197,18 @@ export default function Header() {
               {link.label}
             </Link>
           ))}
+          {/* Menu Mobile cho nút Logout */}
+          {isAuthenticated && (
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                handleLogout();
+              }}
+              className="flex w-full items-center gap-2 text-base font-medium text-red-600"
+            >
+              <LogOut className="h-4 w-4" /> Logout
+            </button>
+          )}
         </div>
       )}
     </header>
