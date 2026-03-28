@@ -37,7 +37,7 @@ export const orderApi = apiSlice.injectEndpoints({
         method: 'POST',
         data,
       }),
-      invalidatesTags: [{ type: 'Order', id: 'LIST' }, 'Cart', 'Payment'],
+      invalidatesTags: [{ type: 'Order', id: 'LIST' }, 'Cart', 'Payment', 'Wallet'],
     }),
 
     completeOrder: builder.mutation<void, string>({
