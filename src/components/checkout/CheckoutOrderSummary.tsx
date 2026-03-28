@@ -17,7 +17,6 @@ interface CheckoutOrderSummaryProps {
   isSubmitting: boolean;
   isShippingFeeLoading: boolean;
   isButtonDisabled: boolean;
-  // Props cho Coin
   availableCoin: number;
   usedCoinInput: number;
   setUsedCoinInput: (val: number) => void;
@@ -40,6 +39,7 @@ export default function CheckoutOrderSummary({
   setIsUsingMaxCoin,
 }: CheckoutOrderSummaryProps) {
   const COIN_STEP = 1000;
+
   // Số xu tối đa có thể dùng (không vượt quá tổng hóa đơn)
   const maxPossible = Math.min(availableCoin, subtotal + shippingFee);
 
@@ -47,7 +47,7 @@ export default function CheckoutOrderSummary({
   const handleToggleMax = (checked: boolean) => {
     setIsUsingMaxCoin(checked);
     if (checked) {
-      // Làm tròn xuống theo bước 1000 để số tiền "đẹp" theo yêu cầu
+      // Làm tròn xuống theo bước 1000
       const roundedMax = Math.floor(maxPossible / COIN_STEP) * COIN_STEP;
       setUsedCoinInput(roundedMax);
     } else {
@@ -79,17 +79,16 @@ export default function CheckoutOrderSummary({
       <div className="scrollbar-thin flex max-h-72 flex-col gap-4 overflow-y-auto pr-2">
         {selectedItems.map((item) => (
           <div key={item.itemId} className="flex gap-4">
+            {/* Đã xóa bỏ thẻ span số lượng đè lên ảnh */}
             <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border bg-slate-50">
               <Image
                 src={item.thumbnailUrl || '/images/placeholder.webp'}
-                alt={item.thumbnailUrl || 'Product'}
+                alt={item.name || 'Product'}
                 fill
                 className="object-cover"
               />
-              <span className="bg-brand absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white shadow-sm">
-                {item.quantity}
-              </span>
             </div>
+
             <div className="flex min-w-0 flex-1 flex-col justify-center">
               <h3 className="line-clamp-1 text-sm font-semibold text-slate-800">{item.name}</h3>
               {item.variantName && (
@@ -97,9 +96,13 @@ export default function CheckoutOrderSummary({
                   Variant: {item.variantName}
                 </p>
               )}
-              <p className="mt-1 text-xs font-medium text-slate-500">
-                {formatPrice(item.unitPrice || 0)}
-              </p>
+              {/* Chuyển số lượng xuống đây, nằm ngang hàng với giá tiền */}
+              <div className="mt-1 flex items-center justify-between">
+                <span className="text-xs font-medium text-slate-500">Qty: {item.quantity}</span>
+                <span className="text-sm font-semibold text-slate-700">
+                  {formatPrice(item.unitPrice || 0)}
+                </span>
+              </div>
             </div>
           </div>
         ))}
@@ -158,15 +161,16 @@ export default function CheckoutOrderSummary({
         </div>
       )}
 
-      {/* --- CHI TIẾT TÍNH TOÁN --- */}
+      {/* --- CHI TIẾT TÍNH TOÁN RÕ RÀNG --- */}
       <div className="flex flex-col gap-3 text-sm">
         <div className="text-muted-foreground flex items-center justify-between">
           <span>Subtotal</span>
-          <span className="font-medium">{formatPrice(subtotal)}</span>
+          <span className="font-medium text-slate-700">{formatPrice(subtotal)}</span>
         </div>
+
         <div className="text-muted-foreground flex items-center justify-between">
           <span>Shipping Fee</span>
-          <span className="font-medium">
+          <span className="font-medium text-slate-700">
             {isShippingFeeLoading ? (
               <Loader2 className="text-brand h-3 w-3 animate-spin" />
             ) : (

@@ -44,9 +44,7 @@ export default function OrderCard({ order, onPayNow }: OrderCardProps) {
               {/* ĐÃ CHỈNH SỬA: Bỏ badge isPaid, thêm phương thức thanh toán vào đây */}
               <span className="flex items-center gap-1.5 border-l border-slate-300 pl-3">
                 <PaymentIcon className="h-4 w-4 text-slate-500" />
-                <span className="font-medium text-slate-700">
-                  {isOnlinePayment ? 'Online Payment' : 'COD'}
-                </span>
+                <span className="font-medium text-slate-700">{order.paymentMethod}</span>
               </span>
             </div>
           </div>
