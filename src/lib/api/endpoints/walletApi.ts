@@ -1,30 +1,24 @@
-// src/lib/api/endpoints/walletApi.ts
 import { apiSlice } from '../apiSlice';
-import type { WalletDto, WalletTransactionsResponseDto } from '@/types/api/wallet.api.types';
+import type { WalletDto, WalletTransactionDto } from '@/types/api/wallet.api.types';
 
 export const walletApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
+    // 1. API lấy ví của user hiện tại
     getWallet: builder.query<WalletDto, void>({
       query: () => ({
-        url: '/api/wallet',
+        url: '/wallet',
         method: 'GET',
       }),
       providesTags: ['Wallet'],
     }),
 
-    getWalletTransactions: builder.query<
-      WalletTransactionsResponseDto,
-      { walletId: string; pageNumber?: number; pageSize?: number } | { walletId: string }
-    >({
-      query: (params) => ({
-        url: `/api/wallet/${params.walletId}/wallet-transactions`,
+    // 2. API lấy lịch sử giao dịch (cần truyền walletId)
+    getWalletTransactions: builder.query<WalletTransactionDto[], string>({
+      query: (walletId) => ({
+        url: `/wallet/${walletId}/wallet-transactions`,
         method: 'GET',
-        params: {
-          pageNumber: (params as any).pageNumber || 1,
-          pageSize: (params as any).pageSize || 10,
-        },
       }),
-      providesTags: (_result, _error, { walletId }) => [{ type: 'Wallet', id: walletId }],
+      providesTags: ['Wallet'],
     }),
   }),
 });

@@ -51,6 +51,18 @@ export const orderApi = apiSlice.injectEndpoints({
         { type: 'Order', id: 'LIST' },
       ],
     }),
+    cancelOrder: builder.mutation<void, string>({
+      query: (orderId) => ({
+        url: `/instock-orders/${orderId}/status`,
+        method: 'PATCH',
+        data: { newStatus: 'Cancelled' },
+      }),
+      invalidatesTags: (_result, _error, id) => [
+        { type: 'Order', id },
+        { type: 'Order', id: 'LIST' },
+        'Wallet',
+      ],
+    }),
   }),
 });
 
@@ -59,4 +71,5 @@ export const {
   useGetCustomerOrderByIdQuery,
   useCreateInstockOrderMutation,
   useCompleteOrderMutation,
+  useCancelOrderMutation,
 } = orderApi;

@@ -5,12 +5,22 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   useGetCustomerOrderByIdQuery,
   useCompleteOrderMutation,
+  useCancelOrderMutation,
 } from '@/lib/api/endpoints/orderApi';
 import { useDeliveryTracking } from '@/lib/hooks/useDeliveryTracking';
 import type { DeliveryTracking } from '@/types/api/delivery.api.types';
 import { ORDER_STATUS_MAP } from '@/constants';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, Calendar, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import {
+  Loader2,
+  ArrowLeft,
+  Calendar,
+  AlertTriangle,
+  CheckCircle2,
+  Wallet,
+  XCircle,
+  PackageSearch,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -39,6 +49,7 @@ export default function OrderDetailsPage() {
 
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [confirmCompleteOpen, setConfirmCompleteOpen] = useState(false);
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
 
   // 1. Fetch Order Data
   const {
@@ -51,8 +62,9 @@ export default function OrderDetailsPage() {
   });
 
   const [completeOrder, { isLoading: isCompleting }] = useCompleteOrderMutation();
+  const [cancelOrder, { isLoading: isCanceling }] = useCancelOrderMutation();
 
-  // 2. Fetch Delivery Tracking Data (Auto poll when HandedOverToDelivery or Delivering)
+  // 2. Fetch Delivery Tracking Data
   const { data: deliveryData } = useDeliveryTracking({
     orderId: orderId!,
     orderStatus: order?.status,
@@ -60,7 +72,6 @@ export default function OrderDetailsPage() {
     pollInterval: 5000,
   });
 
-  // Ép type rõ ràng để diệt "any"
   const originalDetails = deliveryData
     ? {
         ...deliveryData,
@@ -94,28 +105,7 @@ export default function OrderDetailsPage() {
     );
   }
 
-  /* ---- Stepper Logic ---- */
-  const isCOD = order.paymentMethod === 'COD';
-  const stepperSteps = isCOD
-    ? [
-        ORDER_STATUS_MAP['Pending'].label,
-        ORDER_STATUS_MAP['Processing'].label,
-        ORDER_STATUS_MAP['HandedOverToDelivery'].label,
-        ORDER_STATUS_MAP['Delivering'].label,
-        ORDER_STATUS_MAP['Delivered'].label,
-        ORDER_STATUS_MAP['Completed'].label,
-      ]
-    : [
-        ORDER_STATUS_MAP['Pending'].label,
-        ORDER_STATUS_MAP['Paid'].label,
-        ORDER_STATUS_MAP['Processing'].label,
-        ORDER_STATUS_MAP['HandedOverToDelivery'].label,
-        ORDER_STATUS_MAP['Delivering'].label,
-        ORDER_STATUS_MAP['Delivered'].label,
-        ORDER_STATUS_MAP['Completed'].label,
-      ];
-
-  // Logic ghi đè Status theo Tracking GHN (Chuẩn y xì logic cũ của ông)
+  /* ---- Status Override Logic ---- */
   let effectiveStatus = order.status;
   if (
     (order.status === 'HandedOverToDelivery' || order.status === 'Delivering') &&
@@ -132,14 +122,53 @@ export default function OrderDetailsPage() {
     }
   }
 
+  /* ---- Stepper Logic ---- */
+  const isCOD = order.paymentMethod === 'COD';
+  const isCancelled = effectiveStatus === 'Cancelled';
+
+  // 1. Mảng Default chuẩn
+  const defaultSteps = isCOD
+    ? [
+        ORDER_STATUS_MAP['Waiting']?.label || 'Waiting', // 👉 Đổi Pending thành Waiting cho COD
+        ORDER_STATUS_MAP['Processing'].label,
+        ORDER_STATUS_MAP['HandedOverToDelivery'].label,
+        ORDER_STATUS_MAP['Delivering'].label,
+        ORDER_STATUS_MAP['Delivered'].label,
+        ORDER_STATUS_MAP['Completed'].label,
+      ]
+    : [
+        ORDER_STATUS_MAP['Pending'].label, // Online vẫn giữ Pending -> Paid
+        ORDER_STATUS_MAP['Paid'].label,
+        ORDER_STATUS_MAP['Processing'].label,
+        ORDER_STATUS_MAP['HandedOverToDelivery'].label,
+        ORDER_STATUS_MAP['Delivering'].label,
+        ORDER_STATUS_MAP['Delivered'].label,
+        ORDER_STATUS_MAP['Completed'].label,
+      ];
+
+  // 2. Clone mảng
+  const stepperSteps = [...defaultSteps];
+
+  // 3. Nếu Hủy -> Chèn vào mảng
+  if (isCancelled) {
+    const insertIndex = isCOD ? 1 : 2;
+    stepperSteps.splice(insertIndex, 0, ORDER_STATUS_MAP['Cancelled']?.label || 'Cancelled');
+  }
+
   const statusInfo = effectiveStatus
     ? ORDER_STATUS_MAP[effectiveStatus as InstockOrderStatus]
     : undefined;
+
   const activeStep = statusInfo ? Math.max(0, stepperSteps.indexOf(statusInfo.label)) : 0;
 
   /* ---- Visibility logic ---- */
   const isDelivered = effectiveStatus === 'Delivered';
   const canReport = !!order.orderDetails?.length && isDelivered;
+
+  // 👉 CHỈ CHO PHÉP HỦY KHI CHƯA TỚI BƯỚC PROCESSING
+  const canCancel =
+    (!isCOD && order.status === 'Paid') || // Online: Đã thanh toán, chưa tới Processing
+    (isCOD && order.status === 'Waiting'); // COD: Thay vì Pending, giờ là Waiting
 
   /* ---- Handlers ---- */
   const handleConfirmComplete = async () => {
@@ -152,6 +181,22 @@ export default function OrderDetailsPage() {
     } catch {
       toast.error('Confirmation failed', {
         description: 'An error occurred. Please try again.',
+      });
+    }
+  };
+
+  const handleCancelOrder = async () => {
+    try {
+      await cancelOrder(order.id).unwrap();
+      setConfirmCancelOpen(false);
+      toast.success('Order Cancelled!', {
+        description: isCOD
+          ? 'Your order has been cancelled successfully.'
+          : 'Your order has been cancelled and 100% PuzCoin has been refunded to your wallet.',
+      });
+    } catch (error: any) {
+      toast.error('Failed to cancel order', {
+        description: error?.data?.message || 'Something went wrong. Please try again.',
       });
     }
   };
@@ -213,12 +258,54 @@ export default function OrderDetailsPage() {
                     steps={stepperSteps}
                     activeStep={activeStep}
                     isPaid={order.isPaid ?? false}
+                    isCancelled={isCancelled}
                   />
                 </div>
               )}
             </div>
 
-            {/* 2. BANNER ACTION (Nổi bật khi Delivered) */}
+            {/* 2.A BANNER HỦY ĐƠN (Chia UI linh hoạt cho COD & Online) */}
+            {canCancel && (
+              <div className="flex flex-col justify-between gap-5 rounded-xl border border-amber-200 bg-linear-to-r from-amber-50 to-orange-50 p-6 shadow-sm transition-all sm:flex-row sm:items-center">
+                <div className="flex items-start gap-4 sm:items-center">
+                  <div className="shrink-0 rounded-full bg-amber-100 p-3">
+                    {isCOD ? (
+                      <PackageSearch className="h-6 w-6 text-amber-600" />
+                    ) : (
+                      <Wallet className="h-6 w-6 text-amber-600" />
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="text-lg leading-tight font-bold text-amber-900">
+                      {isCOD ? 'Order Received' : 'Payment Received'}
+                    </h4>
+                    <p className="mt-1 max-w-sm text-sm text-amber-800/80">
+                      {isCOD
+                        ? 'Your order is waiting. You can still cancel this order before we start processing it.'
+                        : 'We are preparing your order. You can still cancel this order now and get a 100% refund in PuzCoin.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto">
+                  <Button
+                    variant="destructive"
+                    className="w-full bg-red-600 shadow-md transition-transform hover:-translate-y-0.5 hover:bg-red-700 sm:w-auto"
+                    onClick={() => setConfirmCancelOpen(true)}
+                    disabled={isCanceling}
+                  >
+                    {isCanceling ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <XCircle className="mr-2 h-4 w-4" />
+                    )}
+                    {isCOD ? 'Cancel Order' : 'Cancel & Refund'}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* 2.B BANNER XÁC NHẬN NHẬN HÀNG */}
             {isDelivered && (
               <div className="flex flex-col justify-between gap-5 rounded-xl border border-emerald-200 bg-linear-to-r from-emerald-50 to-teal-50 p-6 shadow-sm transition-all sm:flex-row sm:items-center">
                 <div className="flex items-start gap-4 sm:items-center">
@@ -262,7 +349,7 @@ export default function OrderDetailsPage() {
               </div>
             )}
 
-            {/* 3. Delivery Tracking Info - Cập nhật từ GHN */}
+            {/* 3. Delivery Tracking Info */}
             {['HandedOverToDelivery', 'Delivering', 'Delivered'].includes(effectiveStatus || '') &&
               originalDetails?.data &&
               originalDetails.data.length > 0 && (
@@ -320,9 +407,11 @@ export default function OrderDetailsPage() {
         </div>
       </div>
 
-      {/* Dialogs */}
+      {/* ================= DIALOGS ================= */}
+
+      {/* Dialog: Confirm Complete */}
       <AlertDialog open={confirmCompleteOpen} onOpenChange={setConfirmCompleteOpen}>
-        <AlertDialogContent className="sm:max-w-106.25">
+        <AlertDialogContent className="sm:max-w-[425px]">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-xl">
               <CheckCircle2 className="h-6 w-6 text-emerald-600" /> Confirm Received
@@ -351,6 +440,52 @@ export default function OrderDetailsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Dialog: Confirm Cancel */}
+      <AlertDialog open={confirmCancelOpen} onOpenChange={setConfirmCancelOpen}>
+        <AlertDialogContent className="sm:max-w-[425px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-xl text-red-600">
+              <AlertTriangle className="h-6 w-6" /> Cancel Order?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="mt-3 text-base leading-relaxed text-slate-600">
+              Are you sure you want to cancel order{' '}
+              <strong>#{order?.code || order?.id?.split('-')[0]}</strong>?
+              <br />
+              <br />
+              {!isCOD ? (
+                <>
+                  Since you have already paid, <strong>100% of the amount</strong> will be
+                  immediately refunded to your wallet as <strong>PuzCoins</strong>. You can use
+                  these coins for future purchases.
+                </>
+              ) : (
+                <>
+                  This action cannot be undone. You will need to place a new order if you change
+                  your mind later.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6">
+            <AlertDialogCancel disabled={isCanceling} className="hover:bg-slate-100">
+              Keep Order
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleCancelOrder();
+              }}
+              disabled={isCanceling}
+              className="bg-red-600 text-white shadow-md hover:bg-red-700 focus:ring-red-600"
+            >
+              {isCanceling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {isCOD ? 'Yes, Cancel Order' : 'Yes, Cancel & Refund'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog: Report Issue */}
       {canReport && (
         <ReportIssueDialog
           open={reportDialogOpen}

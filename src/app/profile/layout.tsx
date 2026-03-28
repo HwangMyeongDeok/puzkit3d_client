@@ -40,11 +40,18 @@ export default function ProfileLayout({ children }: { children: ReactNode }) {
                 Order History
               </Link>
               <Link
-                href="/ticket-card"
+                href="/ticket-support"
                 className="hover:bg-muted text-card-foreground flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors"
               >
                 <Receipt className="text-muted-foreground h-5 w-5" />
-                Ticket Card
+                Ticket Support
+              </Link>
+              <Link
+                href="/wallet"
+                className="hover:bg-muted text-card-foreground flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors"
+              >
+                <Receipt className="text-muted-foreground h-5 w-5" />
+                Wallet
               </Link>
               <Link
                 href="#"

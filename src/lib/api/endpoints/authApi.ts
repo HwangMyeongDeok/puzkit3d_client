@@ -10,9 +10,7 @@ import type {
   ConfirmEmailRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
-  VerifyEmailRequest,
   UpdateProfileRequest,
-  ResendVerificationEmailRequest,
 } from '@/types/api/auth.api.types';
 
 export const authApi = apiSlice.injectEndpoints({
