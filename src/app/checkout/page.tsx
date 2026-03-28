@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { ShoppingBag, ArrowRight, Loader2 } from 'lucide-react';
+import { ShoppingBag, ArrowRight, Loader2, Coins } from 'lucide-react'; // 👉 Đã thêm icon Coins
 import { toast } from 'sonner';
 
 import { useAppSelector, useAppDispatch } from '@/stores';
@@ -68,7 +68,7 @@ export default function CheckoutPage() {
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState<boolean>(false);
 
-  // 👉 STATE CHO COIN (NHƯ ĐÃ THỎA THUẬN)
+  // 👉 STATE CHO COIN
   const [usedCoinInput, setUsedCoinInput] = useState<number>(0);
   const [isUsingMaxCoin, setIsUsingMaxCoin] = useState<boolean>(false);
 
@@ -133,7 +133,7 @@ export default function CheckoutPage() {
   const [wards, setWards] = useState<Ward[]>([]);
 
   // ==========================================
-  // GIỮ NGUYÊN TOÀN BỘ LOGIC FETCH ĐỊA CHỈ CỦA ÔNG
+  // GIỮ NGUYÊN TOÀN BỘ LOGIC FETCH ĐỊA CHỈ
   // ==========================================
   useEffect(() => {
     fetchProfile(undefined, false);
@@ -171,7 +171,7 @@ export default function CheckoutPage() {
   const isAutoFilling = useRef(false);
   const pendingWardName = useRef<string>('');
 
-  // AUTO-FILL PROFILE (GIỮ NGUYÊN)
+  // AUTO-FILL PROFILE
   useEffect(() => {
     if (!profile) return;
     isAutoFilling.current = true;
@@ -221,7 +221,7 @@ export default function CheckoutPage() {
     if (profile.wardName) pendingWardName.current = profile.wardName;
   }, [profile, provinces]);
 
-  // ĐỒNG BỘ ĐỊA CHỈ (GIỮ NGUYÊN)
+  // ĐỒNG BỘ ĐỊA CHỈ
   useEffect(() => {
     if (provinces.length > 0 && provinceName) {
       const p = provinces.find(
@@ -286,6 +286,9 @@ export default function CheckoutPage() {
         .unwrap()
         .catch(() => profile);
 
+      const isPayFullByCoin = finalTotal === 0 && usedCoinInput > 0;
+
+      const finalPaymentMethod = isPayFullByCoin ? 'COIN' : data.paymentMethod;
       const orderPayload: CreateInstockOrderRequestDto = {
         customerName: data.fullName,
         customerPhone: data.phone,
@@ -300,10 +303,9 @@ export default function CheckoutPage() {
           quantity: item.quantity ?? 1,
         })),
         shippingFee: shippingFee,
-        // 👉 GỬI SỐ COIN KHÁCH NHẬP VÀ TỔNG TIỀN ĐÃ TRỪ
         usedCoinAmount: usedCoinInput,
         grandTotalAmount: finalTotal,
-        paymentMethod: data.paymentMethod,
+        paymentMethod: finalPaymentMethod,
       };
 
       const orderId = await createOrder(orderPayload).unwrap();
@@ -312,7 +314,6 @@ export default function CheckoutPage() {
       localStorage.removeItem(APP_CONFIG.DRAFT_KEY);
       sessionStorage.removeItem('checkout_active_ids');
 
-      // Update profile nếu cần (giữ nguyên logic của ông)
       if (data.saveProfile) {
         const nameParts = data.fullName.trim().split(' ');
         const lastName = nameParts.length > 1 ? nameParts.pop() || '' : ' ';
@@ -330,7 +331,6 @@ export default function CheckoutPage() {
         } catch (updateErr) {}
       }
 
-      // Điều hướng (Có trừ tiền về 0đ thì coi như xong)
       if (finalTotal === 0 || data.paymentMethod === 'COD') {
         setIsRedirecting(true);
         toast.success('Order placed successfully!');
@@ -382,12 +382,71 @@ export default function CheckoutPage() {
               <CheckoutPaymentSection form={form} />
             </div>
 
-            <div className="lg:col-span-2">
+            {/* CỘT BÊN PHẢI ĐƯỢC CHIA LÀM 2 KHỐI RÕ RÀNG */}
+            <div className="flex flex-col gap-6 lg:col-span-2">
+              {/* 👉 KHỐI UI APPLY COIN TINH TẾ (Thêm mới) */}
+              {availableCoin > 0 && (
+                <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="mb-4 flex items-center gap-2">
+                    <Coins className="h-5 w-5 text-amber-500" />
+                    <h2 className="text-lg font-semibold text-slate-800">Use PuzCoins</h2>
+                  </div>
+
+                  <div className="mb-3 flex items-center justify-between text-sm text-slate-600">
+                    <span>Available Balance:</span>
+                    <span className="font-bold text-amber-600">
+                      {availableCoin.toLocaleString()} Coins
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="relative flex-1">
+                      <input
+                        type="number"
+                        min="0"
+                        max={Math.min(availableCoin, baseTotal)}
+                        value={usedCoinInput === 0 ? '' : usedCoinInput}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          const maxAllowed = Math.min(availableCoin, baseTotal);
+                          if (val > maxAllowed) {
+                            setUsedCoinInput(maxAllowed);
+                          } else {
+                            setUsedCoinInput(val);
+                          }
+                        }}
+                        placeholder="0"
+                        className="w-full rounded-lg border border-slate-300 py-2.5 pr-12 pl-4 text-slate-800 transition-all focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      />
+                      <span className="absolute top-1/2 right-4 -translate-y-1/2 text-sm font-medium text-slate-400">
+                        Xu
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const maxUsable = Math.min(availableCoin, baseTotal);
+                        setUsedCoinInput(maxUsable);
+                      }}
+                      className="rounded-lg bg-amber-100 px-4 py-2.5 text-sm font-semibold whitespace-nowrap text-amber-700 transition-colors hover:bg-amber-200"
+                    >
+                      Apply Max
+                    </button>
+                  </div>
+
+                  {usedCoinInput > 0 && (
+                    <p className="mt-3 text-sm font-medium text-emerald-600">
+                      -{usedCoinInput.toLocaleString()} VND will be deducted from your total.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* KHỐI TỔNG KẾT ĐƠN HÀNG (Giữ nguyên) */}
               <CheckoutOrderSummary
                 selectedItems={selectedItems}
                 subtotal={subtotal}
                 shippingFee={shippingFee}
-                // 👉 TRUYỀN CÁC PROPS COIN XUỐNG ĐÂY
                 total={finalTotal}
                 availableCoin={availableCoin}
                 usedCoinInput={usedCoinInput}

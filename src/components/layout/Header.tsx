@@ -47,16 +47,23 @@ export default function Header() {
     setMounted(true);
   }, []);
 
-  // 2. CHỐT CHẶN API: Chỉ gọi Cart & Wallet khi Auth đã nạp xong (isAuthLoading === false)
-  // và thực sự đã login (isAuthenticated === true)
+  // 2. Gọi API Giỏ hàng
   const { data: cartData } = useGetCartQuery(undefined, {
     skip: !mounted || isAuthLoading || !isAuthenticated,
   });
 
-  // GỌI API LẤY SỐ DƯ COIN
-  const { data: walletData } = useGetWalletQuery(undefined, {
+  // 3. Gọi API Wallet + Bắt lỗi (Radar dò bóng ma)
+  const { data: walletData, error: walletError } = useGetWalletQuery(undefined, {
     skip: !mounted || isAuthLoading || !isAuthenticated,
   });
+
+  // 👉 HIỆU ỨNG RADAR: Bắt lỗi nếu mất User trong Database
+  useEffect(() => {
+    if (walletError && isAuthenticated) {
+      console.warn('Phát hiện User ảo (DB bị xóa hoặc lỗi Token). Đang dọn dẹp state...');
+      handleLogout(true); // Tham số true để báo hiệu là force logout
+    }
+  }, [walletError, isAuthenticated]);
 
   const cartCount = useMemo(() => {
     if (!cartData?.items) return 0;
@@ -71,15 +78,26 @@ export default function Header() {
     }
   };
 
-  const handleLogout = () => {
+  // 👉 HÀM LOGOUT MẠNH TAY HƠN
+  const handleLogout = (isForced = false) => {
     dispatch(logout());
-    localStorage.removeItem(APP_CONFIG.AUTH_STORAGE_KEY);
+
+    // Xóa cứng toàn bộ local/session storage
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Xóa cookies
     document.cookie = `${APP_CONFIG.ACCESS_TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
     document.cookie = `${APP_CONFIG.REFRESH_TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
 
-    toast.success('Logged out successfully!');
-    router.push('/');
-    router.refresh();
+    if (!isForced) {
+      toast.success('Logged out successfully!');
+    } else {
+      toast.error('Session expired. Please log in again.');
+    }
+
+    // F5 lại toàn bộ app để clean sạch RAM và Redux Store
+    window.location.href = '/login';
   };
 
   if (!mounted) return <div className="h-16 w-full bg-white shadow-sm" />;
@@ -167,7 +185,7 @@ export default function Header() {
           {/* Logout button */}
           {isAuthenticated && (
             <button
-              onClick={handleLogout}
+              onClick={() => handleLogout(false)}
               className="ml-1 hidden p-2 text-slate-500 transition-colors hover:text-red-600 sm:block"
             >
               <LogOut className="h-5 w-5" />
@@ -202,7 +220,7 @@ export default function Header() {
             <button
               onClick={() => {
                 setMobileMenuOpen(false);
-                handleLogout();
+                handleLogout(false);
               }}
               className="flex w-full items-center gap-2 text-base font-medium text-red-600"
             >

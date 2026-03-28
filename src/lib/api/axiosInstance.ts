@@ -36,8 +36,9 @@ const forceLogout = () => {
   document.cookie = `${APP_CONFIG.ACCESS_TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
   document.cookie = `${APP_CONFIG.REFRESH_TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
 
-  // 2. Xóa cứng LocalStorage
-  localStorage.removeItem(APP_CONFIG.AUTH_STORAGE_KEY);
+  // 2. Xóa cứng LocalStorage & SessionStorage (Diệt sạch Redux Persist rác)
+  localStorage.clear();
+  sessionStorage.clear();
 
   // 3. Clear Redux
   if (store) {
@@ -45,7 +46,6 @@ const forceLogout = () => {
   }
 
   // 4. Đá văng về trang Login (F5 lại toàn bộ app, dọn dẹp sạch UI)
-  // Lưu ý: Chỉ redirect nếu không phải đang ở trang login sẵn
   if (!window.location.pathname.includes('/login')) {
     window.location.href = '/login';
   }

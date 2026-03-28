@@ -5,12 +5,12 @@ import Link from 'next/link';
 import { Loader2, Receipt, Package, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useGetCustomerOrdersQuery } from '@/lib/api/endpoints/orderApi';
-import type { InstockOrderStatus } from '@/types';
 
 // Components đã tách
 import PaymentActionDialog from '@/components/checkout/PaymentActionDialog';
 import OrderStatusFilter from '@/components/order/OrderStatusFilter';
 import OrderCard from '@/components/order/OrderCard';
+import { InstockOrderStatus } from '@/types/api/order.api.types';
 
 export default function OrdersPage() {
   const [paymentOrderId, setPaymentOrderId] = useState<string | null>(null);
