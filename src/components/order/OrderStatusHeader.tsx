@@ -1,7 +1,7 @@
 import { Calendar, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ORDER_STATUS_MAP, ORDER_STEPPER_STEPS } from '@/constants';
-import OrderStepper from '@/components/custom/OrderStepper';
+import OrderStepper from '@/components/orderDetail/OrderStepper';
 import { InstockOrderStatus } from '@/types/api/order.api.types';
 
 // Copied existing badge logic

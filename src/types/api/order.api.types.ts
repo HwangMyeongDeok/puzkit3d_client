@@ -20,12 +20,13 @@ export interface OrderProductDetailsDto {
   productId?: string;
   code?: string;
   name?: string;
+  slug?: string; // Bổ sung slug theo JSON
   description?: string;
   difficultLevel?: string;
   estimatedBuildTime?: number;
   totalPieceCount?: number;
   thumbnailUrl?: string;
-  previewAsset?: string;
+  previewAsset?: string[]; // 👉 ĐÃ SỬA: Đổi thành mảng chuỗi (array of strings)
   isActive?: boolean;
 }
 
@@ -80,21 +81,18 @@ export interface GetCustomerOrderByIdResponseDto {
   customerName?: string;
   customerPhone?: string;
   customerEmail?: string;
-  customerProvinceCode?: string;
   customerProvinceName?: string;
-  customerDistrictCode?: string;
   customerDistrictName?: string;
-  customerWardCode?: string;
   customerWardName?: string;
+  detailAddress?: string; // 👉 ĐÃ THÊM: Theo đúng key trong JSON
   subTotalAmount?: number;
   shippingFee?: number;
-  usedCoinAmount?: number;
-  usedCoinAmountAsMoney?: number;
+  usedCoinAmount?: number; // 👉 GIỮ LẠI CÁI NÀY, BỎ CÁI AsMoney ĐI
   grandTotalAmount?: number;
-  status?: InstockOrderStatus; // Xài type xịn
-  paymentMethod?: PaymentMethod; // Xài type xịn thay vì string
+  status?: InstockOrderStatus;
+  paymentMethod?: PaymentMethod;
   isPaid?: boolean;
-  paidAt?: string;
+  paidAt?: string | null; // Cập nhật cho phép null
   createdAt?: string;
   updatedAt?: string;
   orderDetails?: OrderDetailDto[];
@@ -118,10 +116,10 @@ export interface GetCustomerOrderResponseDto {
   code?: string;
   grandTotalAmount?: number;
   totalQuantity?: number;
-  status?: InstockOrderStatus; // Xài type xịn
-  paymentMethod?: PaymentMethod; // Xài type xịn thay vì string
+  status?: InstockOrderStatus;
+  paymentMethod?: PaymentMethod;
   isPaid?: boolean;
-  paidAt?: string;
+  paidAt?: string | null;
   createdAt?: string;
   orderDetailsPreview?: OrderPreviewDto[];
 }

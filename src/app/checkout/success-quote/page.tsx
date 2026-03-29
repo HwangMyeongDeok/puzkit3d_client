@@ -3,7 +3,7 @@ import { FileText, ArrowRight, Clock } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/constants';
-import OrderStepper from '@/components/custom/OrderStepper';
+import OrderStepper from '@/components/orderDetail/OrderStepper';
 
 const PARTNER_STEPS = ['Submit Request', 'Staff Quote', 'Deposit Payment', 'Delivery'];
 

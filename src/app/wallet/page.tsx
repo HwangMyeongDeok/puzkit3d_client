@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import OrderBadge from '@/components/order/OrderBadge'; // Tận dụng lại OrderBadge cho đẹp
+import OrderBadge from '@/components/orderDetail/OrderBadge'; // Tận dụng lại OrderBadge cho đẹp
 
 // ----------------------------------------------------------------------
 // COMPONENT CON: Hiển thị từng dòng giao dịch và fetch data Order

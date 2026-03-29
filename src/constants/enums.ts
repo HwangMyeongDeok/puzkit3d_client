@@ -1,3 +1,5 @@
+import { InstockOrderStatus } from '@/types/api/order.api.types';
+
 export const MATERIAL = {
   PAPER: 'paper',
   PLASTIC: 'plastic',
@@ -27,8 +29,6 @@ export const DIFFICULTY_LABELS: Record<string, string> = {
   hard: 'Hard',
   expert: 'Expert',
 };
-
-import type { InstockOrderStatus } from '@/types/order.types';
 
 /** Shared config for all order-status UI. Keyed by backend string enum. */
 export const ORDER_STATUS_MAP: Record<

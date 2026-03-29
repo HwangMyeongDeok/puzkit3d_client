@@ -1,9 +1,18 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Calendar, Box, Eye, CreditCard, Wallet, Banknote } from 'lucide-react';
+import {
+  Calendar,
+  Box,
+  Eye,
+  CreditCard,
+  Wallet,
+  Banknote,
+  AlertCircle, // 👉 Thêm icon này cho Badge
+  Ticket, // 👉 Thêm icon này cho nút View Ticket
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatPrice } from '@/lib/utils';
-import OrderBadge from './OrderBadge';
+import OrderBadge from '../orderDetail/OrderBadge';
 
 // Import Types chuẩn từ API của ông
 import type {
@@ -11,6 +20,7 @@ import type {
   InstockOrderStatus,
   OrderPreviewDto,
 } from '@/types/api/order.api.types';
+import { useGetTicketByOrderIdQuery } from '@/lib/api/endpoints/supportTicketApi';
 
 const TERMINAL_STATUSES: InstockOrderStatus[] = ['Cancelled', 'Rejected', 'Returned', 'Completed'];
 
@@ -23,25 +33,38 @@ export default function OrderCard({ order, onPayNow }: OrderCardProps) {
   const isOnlinePayment = order.paymentMethod === 'Online';
   const PaymentIcon = isOnlinePayment ? Wallet : Banknote;
 
+  const { data: ticketInfo, isSuccess } = useGetTicketByOrderIdQuery(order.id);
+
+  const hasComplaint = isSuccess && ticketInfo != null;
+
   return (
     <div className="bg-card border-border hover:border-brand/30 flex flex-col gap-4 rounded-xl border p-5 shadow-sm transition-all duration-300 hover:shadow-md">
       {/* 1. CARD HEADER */}
-      <div className="border-border flex flex-col justify-between gap-4 border-b pb-4 md:flex-row md:items-center">
-        <div className="flex items-center gap-3">
+      <div className="border-border flex flex-col justify-between gap-4 border-b pb-4 md:flex-row md:items-start">
+        <div className="flex items-start gap-3">
           <div className="bg-brand/10 text-brand flex h-12 w-12 shrink-0 items-center justify-center rounded-xl">
             <Box className="h-6 w-6" />
           </div>
           <div>
-            <h3 className="mb-1 text-lg leading-none font-bold">
-              Order #{order.code || order.id.split('-')[0].toUpperCase()}
-            </h3>
+            <div className="mb-1 flex flex-wrap items-center gap-2">
+              <h3 className="text-lg leading-none font-bold">
+                Order #{order.code || order.id.split('-')[0].toUpperCase()}
+              </h3>
+
+              {/* 👉 THÊM BADGE CẢNH BÁO KHIẾU NẠI Ở ĐÂY */}
+              {hasComplaint && (
+                <span className="flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-bold tracking-wider text-rose-700 uppercase dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400">
+                  <AlertCircle className="h-3 w-3" />
+                  Complaint Opened
+                </span>
+              )}
+            </div>
+
             <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-3 text-sm">
               <span className="flex items-center gap-1.5">
                 <Calendar className="h-4 w-4" />
                 {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'Updating'}
               </span>
-
-              {/* ĐÃ CHỈNH SỬA: Bỏ badge isPaid, thêm phương thức thanh toán vào đây */}
               <span className="flex items-center gap-1.5 border-l border-slate-300 pl-3">
                 <PaymentIcon className="h-4 w-4 text-slate-500" />
                 <span className="font-medium text-slate-700">{order.paymentMethod}</span>
@@ -107,13 +130,12 @@ export default function OrderCard({ order, onPayNow }: OrderCardProps) {
             Total Amount
           </span>
           <span className="text-brand text-xl font-bold">
-            {/* ĐÃ CHỈNH SỬA: Xài hàm formatPrice chuẩn */}
             {formatPrice(order.grandTotalAmount ?? 0)}
           </span>
         </div>
 
         <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row">
-          {/* Nút Pay Now VẪN GIỮ LOGIC (nhưng ẩn UI isPaid ở trên) */}
+          {/* Nút Pay Now */}
           {!order.isPaid &&
             isOnlinePayment &&
             order.status &&
@@ -125,6 +147,19 @@ export default function OrderCard({ order, onPayNow }: OrderCardProps) {
                 <CreditCard className="h-4 w-4" /> Pay Now
               </Button>
             )}
+
+          {/* 👉 THÊM NÚT VIEW TICKET NẾU CÓ KHIẾU NẠI */}
+          {hasComplaint && ticketInfo && (
+            <Link
+              // Sửa lại URL trỏ thẳng vô trang danh sách ticket hoặc chi tiết ticket của ông nha
+              href={`/ticket-support/${ticketInfo.id}`}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-6 py-2.5 font-semibold text-rose-700 shadow-sm transition-colors hover:bg-rose-100 md:w-auto dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20"
+            >
+              <Ticket className="h-4 w-4" /> View Ticket
+            </Link>
+          )}
+
+          {/* Nút View Details */}
           <Link
             href={`/orders/${order.id}`}
             className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg px-6 py-2.5 font-semibold shadow-sm transition-colors md:w-auto"
