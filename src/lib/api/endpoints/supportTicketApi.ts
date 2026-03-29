@@ -1,15 +1,9 @@
-// src/lib/api/endpoints/supportTicketApi.ts
 import { apiSlice } from '../apiSlice';
 
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
+export type TicketType = 'ReplacePart' | 'Exchange' | 'Return';
 
-/** 'Return' is intentionally removed — only two types are exposed to customers */
-export type TicketType = 'ReplacePart' | 'Exchange';
 export type TicketStatus = 'Open' | 'Processing' | 'Resolved' | 'Rejected';
 
-/** Returned by GET /api/instock-products/{productId}/parts */
 export interface ProductPartDto {
   id: string;
   name: string;
@@ -20,10 +14,8 @@ export interface ProductPartDto {
 
 export interface CreateTicketDetailDto {
   orderDetailId: string;
-  /** Only included for ReplacePart. Omit entirely for Exchange. */
   partId?: string;
   quantity: number;
-  /** Omit when empty — never send null or empty string */
   note?: string;
 }
 
@@ -38,16 +30,15 @@ export interface CreateTicketRequestDto {
 export interface TicketDetailDto {
   id: string;
   orderDetailId: string;
-  partId?: string | null;
+  partId: string | null;
   quantity: number;
-  note?: string | null;
-  productName?: string;
-  variantName?: string;
-  thumbnailUrl?: string;
+  note: string | null;
 }
 
 export interface SupportTicketDto {
   id: string;
+  code: string;
+  userId: string;
   orderId: string;
   orderCode?: string;
   type: TicketType;
@@ -55,7 +46,7 @@ export interface SupportTicketDto {
   reason: string;
   proof: string;
   createdAt: string;
-  updatedAt?: string;
+  updatedAt: string;
   details: TicketDetailDto[];
 }
 
@@ -74,6 +65,10 @@ export type GetTicketsParams = {
   pageSize: number;
   status?: TicketStatus | string;
 };
+
+export interface UpdateTicketStatusRequest {
+  status: TicketStatus | string;
+}
 
 export const supportTicketApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -106,6 +101,16 @@ export const supportTicketApi = apiSlice.injectEndpoints({
     getTicketById: builder.query<SupportTicketDto, string>({
       query: (id) => ({ url: `/support-tickets/${id}` }),
       providesTags: (_result, _error, id) => [{ type: 'SupportTicket', id }],
+    }),
+
+    getTicketByOrderId: builder.query<SupportTicketDto, string>({
+      query: (orderId) => ({
+        url: `/support-tickets/order/${orderId}`,
+        method: 'GET',
+      }),
+      providesTags: (_result, _error, orderId) => [
+        { type: 'SupportTicket', id: `ORDER-${orderId}` },
+      ],
     }),
 
     /* POST /api/support-tickets */
@@ -149,6 +154,7 @@ export const {
   useGetProductPartsQuery,
   useGetTicketsQuery,
   useGetTicketByIdQuery,
+  useGetTicketByOrderIdQuery,
   useCreateTicketMutation,
   useUpdateTicketStatusMutation,
   useDeleteTicketMutation,

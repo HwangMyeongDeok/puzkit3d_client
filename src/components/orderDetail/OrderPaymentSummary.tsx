@@ -1,60 +1,140 @@
-import { Banknote } from 'lucide-react';
+import {
+  Banknote,
+  Receipt,
+  CreditCard,
+  Coins,
+  Truck,
+  CheckCircle2,
+  Clock,
+  Minus,
+  Plus,
+} from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { formatPrice } from '@/lib/utils';
 import type { GetCustomerOrderByIdResponseDto } from '@/types/api/order.api.types';
 
-export default function OrderPaymentSummary({ order }: { order: GetCustomerOrderByIdResponseDto }) {
+interface OrderPaymentSummaryProps {
+  order: GetCustomerOrderByIdResponseDto;
+}
+
+export default function OrderPaymentSummary({ order }: OrderPaymentSummaryProps) {
+  // Logic kiểm tra điều kiện
+  const isCOD = order.paymentMethod === 'COD';
+  const usedCoin = order.usedCoinAmount ?? 0;
+  const hasCoinDiscount = usedCoin > 0;
+
+  // Tính tổng tiền gốc (Chưa trừ Coin) để minh bạch hóa đơn
+  const originalTotal = (order.subTotalAmount ?? 0) + (order.shippingFee ?? 0);
+
+  // Tổng tiền phải trả cuối cùng
+  const amountToPay = order.grandTotalAmount ?? 0;
+
   return (
-    <div className="bg-card border-border flex flex-col gap-5 rounded-xl border p-6 shadow-sm">
-      <h3 className="flex items-center gap-2 text-lg font-bold">
-        <Banknote className="text-brand h-5 w-5" />
-        Payment Details
+    <div className="bg-card border-border flex flex-col gap-6 overflow-hidden rounded-xl border p-6 shadow-sm">
+      {/* --- HEADER --- */}
+      <h3 className="flex items-center gap-2 text-lg font-bold text-slate-800">
+        <Receipt className="text-brand h-5 w-5" />
+        Payment Summary
       </h3>
 
-      <div className="flex flex-col gap-3 text-sm">
+      {/* --- 1. STATUS & METHOD BLOCK --- */}
+      <div className="flex flex-col gap-4 rounded-lg border border-slate-100 bg-slate-50 p-4">
         <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Method:</span>
-          <span className="bg-secondary text-secondary-foreground rounded-md px-2.5 py-1 text-xs font-medium tracking-wider uppercase">
+          <span className="flex items-center gap-2 text-sm font-medium text-slate-500">
+            {isCOD ? <Truck className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
+            Payment Method
+          </span>
+          <span className="rounded-md border border-slate-200 bg-white px-3 py-1 text-xs font-bold tracking-wider text-slate-700 uppercase shadow-sm">
             {order.paymentMethod || 'COD'}
           </span>
         </div>
+
+        <Separator className="bg-slate-200" />
+
         <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Status:</span>
+          <span className="flex items-center gap-2 text-sm font-medium text-slate-500">
+            <Banknote className="h-4 w-4" />
+            Payment Status
+          </span>
           {order.isPaid ? (
-            <span className="text-success flex items-center gap-1.5 font-medium">
-              <div className="bg-success h-2 w-2 rounded-full" /> Paid
+            <span className="flex items-center gap-1.5 rounded-md bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-600">
+              <CheckCircle2 className="h-4 w-4" /> Paid Successfully
             </span>
           ) : (
-            <span className="text-warning flex items-center gap-1.5 font-medium">
-              <div className="bg-warning h-2 w-2 rounded-full" /> Pending Payment
+            <span className="flex items-center gap-1.5 rounded-md bg-amber-50 px-3 py-1 text-sm font-bold text-amber-600">
+              <Clock className="h-4 w-4" /> Pending Payment
             </span>
           )}
         </div>
       </div>
 
-      <Separator className="border-dashed" />
+      {/* --- 2. THE MATH (ITEMIZED BILL) --- */}
+      <div className="flex flex-col gap-3.5 px-1 text-sm">
+        <div className="flex items-center justify-between text-slate-600">
+          <span>Subtotal</span>
+          <span className="font-medium text-slate-800">
+            {formatPrice(order.subTotalAmount ?? 0)}
+          </span>
+        </div>
 
-      <div className="flex flex-col gap-3 text-sm">
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Subtotal:</span>
-          <span className="font-medium">{formatPrice(order.subTotalAmount ?? 0)}</span>
+        <div className="flex items-center justify-between text-slate-600">
+          <span>Shipping Fee</span>
+          <span className="flex items-center gap-1 font-medium text-slate-800">
+            <Plus className="h-3 w-3 text-slate-400" /> {formatPrice(order.shippingFee ?? 0)}
+          </span>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Shipping Fee:</span>
-          <span className="font-medium">{formatPrice(order.shippingFee ?? 0)}</span>
+
+        <Separator className="my-1 border-dashed border-slate-200 bg-transparent" />
+
+        {/* Tổng trước khi trừ Coin (Giúp khách thấy sự chênh lệch) */}
+        <div className="flex items-center justify-between font-semibold text-slate-800">
+          <span>Total Order Value</span>
+          <span>{formatPrice(originalTotal)}</span>
         </div>
-        {(order.usedCoinAmountAsMoney ?? 0) > 0 && (
-          <div className="text-success flex items-center justify-between">
-            <span>Coin Discount:</span>
-            <span className="font-medium">- {formatPrice(order.usedCoinAmountAsMoney ?? 0)}</span>
+
+        {/* Highlight phần Coin Discount */}
+        {hasCoinDiscount && (
+          <div className="-mx-2 mt-1 flex items-center justify-between rounded-lg border border-emerald-100/50 bg-emerald-50/70 p-3 font-bold text-emerald-600">
+            <div className="flex flex-col gap-0.5">
+              <span className="flex items-center gap-2 text-sm">
+                <Coins className="h-4 w-4" /> PuzCoin Applied
+              </span>
+              <span className="ml-6 text-[11px] font-medium text-emerald-600/70">
+                Used {usedCoin.toLocaleString('en-US')} coins
+              </span>
+            </div>
+            <span className="flex items-center gap-1 text-base">
+              <Minus className="h-4 w-4" /> {formatPrice(usedCoin)}
+            </span>
           </div>
         )}
       </div>
 
-      <div className="bg-brand/5 border-brand/20 mt-2 rounded-lg border p-4">
-        <div className="flex items-center justify-between font-bold">
-          <span className="text-brand text-sm tracking-wider uppercase">Total</span>
-          <span className="text-brand text-2xl">{formatPrice(order.grandTotalAmount ?? 0)}</span>
+      <Separator className="border-dashed border-slate-200 bg-transparent" />
+
+      {/* --- 3. FINAL AMOUNT TO PAY --- */}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-base font-bold text-slate-800">
+              {order.isPaid ? 'Total Paid' : 'Amount to Pay'}
+            </span>
+            <span className="text-muted-foreground text-[11px] italic">
+              Via {order.paymentMethod || 'COD'}
+            </span>
+          </div>
+          <span className="text-brand text-2xl font-black tracking-tight drop-shadow-sm">
+            {formatPrice(amountToPay)}
+          </span>
+        </div>
+
+        {/* --- LỜI NHẮN NHỦ BÊN DƯỚI (CALL TO ACTION / INSIGHT) --- */}
+        <div className="bg-brand/5 border-brand/20 rounded-lg border p-3">
+          <p className="text-brand/80 text-center text-xs leading-relaxed font-medium">
+            {order.isPaid
+              ? `Thank you! You have successfully paid ${formatPrice(amountToPay)}.`
+              : `Please prepare ${formatPrice(amountToPay)} in cash to pay upon delivery.`}
+          </p>
         </div>
       </div>
     </div>
