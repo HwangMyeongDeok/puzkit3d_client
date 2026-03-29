@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface OrderStepperProps {
-  steps: string[];
+  steps: readonly string[];
   activeStep?: number;
   isPaid?: boolean;
   isCancelled?: boolean; // đã có prop
@@ -13,7 +13,7 @@ export default function OrderStepper({
   isPaid = false,
   isCancelled = false, // Nhớ destructure nó ra đây nhé
 }: OrderStepperProps) {
-  console.log('🔥 Stepper props:', { activeStep, isPaid, isCancelled, steps });
+  console.log('Stepper props:', { activeStep, isPaid, isCancelled, steps });
 
   return (
     <div className="flex items-center gap-1 overflow-x-auto py-2">

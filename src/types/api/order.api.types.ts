@@ -1,7 +1,4 @@
-// ==========================================
-// 1. SHARED UNIONS & ENUMS (Đã gộp vào đây)
-// ==========================================
-export type PaymentMethod = 'COD' | 'Online'; // Đổi 'ONLINE' thành 'Online' cho khớp data BE trả về
+export type PaymentMethod = 'COD' | 'Online' | 'COIN';
 
 export type InstockOrderStatus =
   | 'Pending'
@@ -74,7 +71,7 @@ export interface CreateInstockOrderRequestDto {
   shippingFee: number;
   usedCoinAmount: number;
   grandTotalAmount: number;
-  paymentMethod: string;
+  paymentMethod: PaymentMethod;
 }
 
 export interface GetCustomerOrderByIdResponseDto {
