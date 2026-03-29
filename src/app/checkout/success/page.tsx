@@ -52,7 +52,11 @@ function SuccessContent() {
               Payment Method
             </p>
             <p className="text-card-foreground font-semibold">
-              {order?.paymentMethod === 'Online' ? 'Online Payment' : 'Cash on Delivery (COD)'}
+              {order?.paymentMethod === 'Online'
+                ? 'Online Payment'
+                : order?.paymentMethod === 'COIN'
+                  ? 'COIN'
+                  : 'Cash on Delivery (COD)'}
             </p>
           </div>
         </div>

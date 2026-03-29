@@ -38,16 +38,14 @@ export default function CheckoutOrderSummary({
   isUsingMaxCoin,
   setIsUsingMaxCoin,
 }: CheckoutOrderSummaryProps) {
-  const COIN_STEP = 1000;
+  // Đã sửa lại step thành 100
+  const COIN_STEP = 100;
 
-  // Số xu tối đa có thể dùng (không vượt quá tổng hóa đơn)
   const maxPossible = Math.min(availableCoin, subtotal + shippingFee);
 
-  // Xử lý khi bật/tắt Switch dùng tối đa
   const handleToggleMax = (checked: boolean) => {
     setIsUsingMaxCoin(checked);
     if (checked) {
-      // Làm tròn xuống theo bước 1000
       const roundedMax = Math.floor(maxPossible / COIN_STEP) * COIN_STEP;
       setUsedCoinInput(roundedMax);
     } else {
@@ -62,7 +60,6 @@ export default function CheckoutOrderSummary({
     setUsedCoinInput(val);
   };
 
-  // Khi người dùng click ra ngoài, tự động làm tròn về bội số của 1000
   const handleBlur = () => {
     const rounded = Math.floor(usedCoinInput / COIN_STEP) * COIN_STEP;
     setUsedCoinInput(rounded);
@@ -75,12 +72,11 @@ export default function CheckoutOrderSummary({
         Order Summary ({selectedItems.length} items)
       </h2>
 
-      {/* --- DANH SÁCH SẢN PHẨM --- */}
+      {/* --- PRODUCT LIST --- */}
       <div className="scrollbar-thin flex max-h-72 flex-col gap-4 overflow-y-auto pr-2">
         {selectedItems.map((item) => (
           <div key={item.itemId} className="flex gap-4">
-            {/* Đã xóa bỏ thẻ span số lượng đè lên ảnh */}
-            <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border bg-slate-50">
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border bg-slate-50">
               <Image
                 src={item.thumbnailUrl || '/images/placeholder.webp'}
                 alt={item.name || 'Product'}
@@ -96,7 +92,6 @@ export default function CheckoutOrderSummary({
                   Variant: {item.variantName}
                 </p>
               )}
-              {/* Chuyển số lượng xuống đây, nằm ngang hàng với giá tiền */}
               <div className="mt-1 flex items-center justify-between">
                 <span className="text-xs font-medium text-slate-500">Qty: {item.quantity}</span>
                 <span className="text-sm font-semibold text-slate-700">
@@ -110,7 +105,7 @@ export default function CheckoutOrderSummary({
 
       <Separator className="my-5" />
 
-      {/* --- PHẦN PUZCOIN THÔNG MINH --- */}
+      {/* --- SMART PUZCOIN SECTION --- */}
       {availableCoin >= COIN_STEP && (
         <div className="mb-5 space-y-4 rounded-xl border border-amber-200 bg-amber-50/50 p-4">
           <div className="flex items-center justify-between">
@@ -145,23 +140,23 @@ export default function CheckoutOrderSummary({
                   value={usedCoinInput === 0 ? '' : usedCoinInput}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  placeholder="Nhập số xu..."
+                  placeholder="Enter coin amount..."
                   className="border-amber-200 bg-white pr-10 focus-visible:ring-amber-500"
                 />
                 <span className="absolute top-1/2 right-3 -translate-y-1/2 text-[10px] font-bold text-amber-400">
-                  đ
+                  VND
                 </span>
               </div>
               <p className="px-1 text-[10px] leading-relaxed text-amber-600/70 italic">
-                * Tối đa dùng được {formatPrice(maxPossible)}. Tự động làm tròn về đơn vị 1.000đ khi
-                thanh toán.
+                * Max usable is {formatPrice(maxPossible)}. Automatically rounded to multiples of{' '}
+                {COIN_STEP} VND.
               </p>
             </div>
           )}
         </div>
       )}
 
-      {/* --- CHI TIẾT TÍNH TOÁN RÕ RÀNG --- */}
+      {/* --- CALCULATION DETAILS --- */}
       <div className="flex flex-col gap-3 text-sm">
         <div className="text-muted-foreground flex items-center justify-between">
           <span>Subtotal</span>
@@ -191,7 +186,7 @@ export default function CheckoutOrderSummary({
 
       <Separator className="my-5" />
 
-      {/* --- TỔNG CUỐI CÙNG --- */}
+      {/* --- GRAND TOTAL --- */}
       <div className="flex items-center justify-between rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4">
         <span className="text-base font-bold text-slate-700">Grand Total</span>
         <div className="flex flex-col items-end">

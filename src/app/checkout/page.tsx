@@ -384,64 +384,6 @@ export default function CheckoutPage() {
 
             {/* CỘT BÊN PHẢI ĐƯỢC CHIA LÀM 2 KHỐI RÕ RÀNG */}
             <div className="flex flex-col gap-6 lg:col-span-2">
-              {/* 👉 KHỐI UI APPLY COIN TINH TẾ (Thêm mới) */}
-              {availableCoin > 0 && (
-                <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <div className="mb-4 flex items-center gap-2">
-                    <Coins className="h-5 w-5 text-amber-500" />
-                    <h2 className="text-lg font-semibold text-slate-800">Use PuzCoins</h2>
-                  </div>
-
-                  <div className="mb-3 flex items-center justify-between text-sm text-slate-600">
-                    <span>Available Balance:</span>
-                    <span className="font-bold text-amber-600">
-                      {availableCoin.toLocaleString()} Coins
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="relative flex-1">
-                      <input
-                        type="number"
-                        min="0"
-                        max={Math.min(availableCoin, baseTotal)}
-                        value={usedCoinInput === 0 ? '' : usedCoinInput}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          const maxAllowed = Math.min(availableCoin, baseTotal);
-                          if (val > maxAllowed) {
-                            setUsedCoinInput(maxAllowed);
-                          } else {
-                            setUsedCoinInput(val);
-                          }
-                        }}
-                        placeholder="0"
-                        className="w-full rounded-lg border border-slate-300 py-2.5 pr-12 pl-4 text-slate-800 transition-all focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
-                      />
-                      <span className="absolute top-1/2 right-4 -translate-y-1/2 text-sm font-medium text-slate-400">
-                        Xu
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const maxUsable = Math.min(availableCoin, baseTotal);
-                        setUsedCoinInput(maxUsable);
-                      }}
-                      className="rounded-lg bg-amber-100 px-4 py-2.5 text-sm font-semibold whitespace-nowrap text-amber-700 transition-colors hover:bg-amber-200"
-                    >
-                      Apply Max
-                    </button>
-                  </div>
-
-                  {usedCoinInput > 0 && (
-                    <p className="mt-3 text-sm font-medium text-emerald-600">
-                      -{usedCoinInput.toLocaleString()} VND will be deducted from your total.
-                    </p>
-                  )}
-                </div>
-              )}
-
               {/* KHỐI TỔNG KẾT ĐƠN HÀNG (Giữ nguyên) */}
               <CheckoutOrderSummary
                 selectedItems={selectedItems}
