@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { Store } from '@reduxjs/toolkit';
 
-import { logout } from '@/stores/slices/authSlice';
+// import { logout } from '@/stores/slices/authSlice'; // Không cần dùng nữa nếu bỏ forceLogout
 import { APP_CONFIG } from '@/constants';
 
 // ---------------------------------------------------------------------------
@@ -14,7 +14,7 @@ export const injectStore = (_store: Store) => {
 };
 
 // ---------------------------------------------------------------------------
-// Cookie Helpers (để khỏi phải cài thêm thư viện js-cookie)
+// Cookie Helpers
 // ---------------------------------------------------------------------------
 const getCookie = (name: string) => {
   if (typeof document === 'undefined') return null;
@@ -28,28 +28,7 @@ const setCookie = (name: string, value: string, maxAge: number) => {
   }
 };
 
-// HÀM CHUYÊN TRỊ BÓNG MA (GHOST BUSTER 👻🔫)
-const forceLogout = () => {
-  if (typeof window === 'undefined') return;
-
-  // 1. Xóa cứng Cookie
-  document.cookie = `${APP_CONFIG.ACCESS_TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-  document.cookie = `${APP_CONFIG.REFRESH_TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-
-  // 2. Xóa cứng LocalStorage & SessionStorage (Diệt sạch Redux Persist rác)
-  localStorage.clear();
-  sessionStorage.clear();
-
-  // 3. Clear Redux
-  if (store) {
-    store.dispatch(logout());
-  }
-
-  // 4. Đá văng về trang Login (F5 lại toàn bộ app, dọn dẹp sạch UI)
-  if (!window.location.pathname.includes('/login')) {
-    window.location.href = '/login';
-  }
-};
+// ĐÃ BỎ HÀM forceLogout Ở ĐÂY ĐỂ TRÁNH BỊ ĐÁ VĂNG LIÊN TỤC
 
 // ---------------------------------------------------------------------------
 // Axios instance
@@ -127,9 +106,8 @@ axiosInstance.interceptors.response.use(
       try {
         const refreshToken = getCookie(APP_CONFIG.REFRESH_TOKEN_KEY);
 
-        // NẾU KHÔNG CÓ REFRESH TOKEN -> ĐÁ VĂNG
+        // NẾU KHÔNG CÓ REFRESH TOKEN -> Trả về lỗi luôn, không forceLogout nữa
         if (!refreshToken) {
-          forceLogout();
           return Promise.reject(error);
         }
 
@@ -160,9 +138,8 @@ axiosInstance.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return axiosInstance(originalRequest);
       } catch (refreshError) {
-        // NẾU REFRESH TOKEN CŨNG HẾT HẠN HOẶC LỖI TRÊN DB -> ĐÁ VĂNG LUÔN
+        // NẾU REFRESH TOKEN CŨNG HẾT HẠN HOẶC LỖI -> Trả về lỗi, không forceLogout nữa
         processQueue(refreshError as Error, null);
-        forceLogout();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

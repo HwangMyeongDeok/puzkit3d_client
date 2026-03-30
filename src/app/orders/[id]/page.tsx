@@ -2,15 +2,17 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link'; // 👉 Thêm import Link
 import {
   useGetCustomerOrderByIdQuery,
   useCompleteOrderMutation,
   useCancelOrderMutation,
 } from '@/lib/api/endpoints/orderApi';
 import { useDeliveryTracking } from '@/lib/hooks/useDeliveryTracking';
+import { useGetTicketByOrderIdQuery } from '@/lib/api/endpoints/supportTicketApi';
 import type { DeliveryTracking } from '@/types/api/delivery.api.types';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, Ticket } from 'lucide-react'; // 👉 Thêm icon Ticket
 import { Button } from '@/components/ui/button';
 
 // Các Component đã tách trước đó
@@ -56,6 +58,11 @@ export default function OrderDetailsPage() {
     pollInterval: 5000,
   });
 
+  // 3. Fetch Ticket Data để check Complaint
+  const { data: ticketData, isLoading: isTicketLoading } = useGetTicketByOrderIdQuery(orderId!, {
+    skip: !orderId, // Chỉ fetch khi có orderId
+  });
+
   const originalTrackingData =
     deliveryData?.data?.filter((tracking: DeliveryTracking) => tracking.type === 'Original') || [];
 
@@ -86,7 +93,8 @@ export default function OrderDetailsPage() {
   /* ---- Status Override Logic ---- */
   let effectiveStatus = order.status;
   if (
-    ['HandedOverToDelivery', 'Delivering'].includes(order.status) &&
+    order.status &&
+    ['HandedOverToDelivery', 'Delivering'].includes(order.status as string) &&
     originalTrackingData.length > 0
   ) {
     const trackingStatusLower = originalTrackingData[0].status?.toLowerCase() || '';
@@ -101,7 +109,12 @@ export default function OrderDetailsPage() {
   const isCancelled = effectiveStatus === 'Cancelled';
   const isReturned = effectiveStatus === 'Returned';
 
-  const canReport = !!order.orderDetails?.length && isDelivered && !order.hasComplaint;
+  // CHECK COMPLAINT LOGIC: Có data ticket VÀ status chưa Resolved
+  const hasActiveComplaint = !!ticketData && ticketData.status !== 'Resolved';
+
+  // Cập nhật lại canReport dùng hasActiveComplaint
+  const canReport = !!order.orderDetails?.length && isDelivered && !hasActiveComplaint;
+
   const canCancel = (!isCOD && order.status === 'Paid') || (isCOD && order.status === 'Waiting');
 
   /* ---- Handlers ---- */
@@ -136,17 +149,30 @@ export default function OrderDetailsPage() {
   return (
     <div className="container-custom py-8 lg:py-12">
       <div className="flex flex-col gap-6">
-        {/* Header Navigation */}
-        <div className="flex items-center gap-4">
-          <Button
-            onClick={() => router.back()}
-            variant="ghost"
-            size="icon"
-            className="hover:bg-muted shrink-0"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold md:text-3xl">Order Details</h1>
+        {/* 👉 Header Navigation - Đã chỉnh sửa để chứa nút View Ticket */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Button
+              onClick={() => router.back()}
+              variant="ghost"
+              size="icon"
+              className="hover:bg-muted shrink-0"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-2xl font-bold md:text-3xl">Order Details</h1>
+          </div>
+
+          {/* 👉 NÚT BAY SANG TICKET */}
+          {ticketData && (
+            <Link
+              href={`/ticket-support/${ticketData.id}`}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 shadow-sm transition-colors hover:bg-rose-100 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20"
+            >
+              <Ticket className="h-4 w-4" />
+              <span className="hidden sm:inline">View Ticket</span>
+            </Link>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -167,7 +193,7 @@ export default function OrderDetailsPage() {
               isCOD={isCOD}
               isCanceling={isCanceling}
               isCompleting={isCompleting}
-              hasComplaint={!!order.hasComplaint}
+              hasComplaint={hasActiveComplaint}
               onCancelClick={() => setConfirmCancelOpen(true)}
               onCompleteClick={() => setConfirmCompleteOpen(true)}
               onReportClick={() => setReportDialogOpen(true)}
