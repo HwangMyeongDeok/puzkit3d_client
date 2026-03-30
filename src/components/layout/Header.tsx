@@ -12,6 +12,10 @@ import { useGetWalletQuery } from '@/lib/api/endpoints/walletApi';
 import { toast } from 'sonner';
 import type { CartItemDto } from '@/types/api/cart.api.types';
 
+// 👉 THÊM IMPORT NÀY ĐỂ DỌN RÁC
+import { clearAxiosState } from '@/lib/api/axiosInstance';
+import { apiSlice } from '@/lib/api/apiSlice';
+
 // Redux
 import { useAppSelector, useAppDispatch } from '@/stores/hooks';
 import {
@@ -52,18 +56,22 @@ export default function Header() {
     skip: !mounted || isAuthLoading || !isAuthenticated,
   });
 
-  // 3. Gọi API Wallet + Bắt lỗi (Radar dò bóng ma)
+  // 3. Gọi API Wallet
   const { data: walletData, error: walletError } = useGetWalletQuery(undefined, {
     skip: !mounted || isAuthLoading || !isAuthenticated,
   });
 
-  // 👉 HIỆU ỨNG RADAR: Bắt lỗi nếu mất User trong Database
+  // 👉 HIỆU ỨNG RADAR ĐÃ ĐƯỢC LÀM CHO THÔNG MINH HƠN
   useEffect(() => {
-    if (walletError && isAuthenticated) {
-      console.warn('Phát hiện User ảo (DB bị xóa hoặc lỗi Token). Đang dọn dẹp state...');
-      handleLogout(true); // Tham số true để báo hiệu là force logout
+    // Chỉ kích hoạt force logout nếu có lỗi thật sự VÀ lỗi đó là 401 (Unauthorized)
+    // Nếu dùng fetchBaseQuery, error.status là HTTP code.
+    const isUnauthorized = (walletError as any)?.status === 401;
+
+    if (isUnauthorized && isAuthenticated && !isAuthLoading) {
+      console.warn('Phát hiện Token hết hạn không thể refresh. Đang dọn dẹp state...');
+      handleLogout(true);
     }
-  }, [walletError, isAuthenticated]);
+  }, [walletError, isAuthenticated, isAuthLoading]);
 
   const cartCount = useMemo(() => {
     if (!cartData?.items) return 0;
@@ -78,25 +86,29 @@ export default function Header() {
     }
   };
 
-  // 👉 HÀM LOGOUT MẠNH TAY HƠN
+  // 👉 HÀM LOGOUT CHUẨN: Dọn SẠCH SẼ từ trên xuống dưới
   const handleLogout = (isForced = false) => {
+    // 1. Dọn Queue và Cookie của Axios
+    clearAxiosState();
+
+    // 2. Xóa TOÀN BỘ cache của RTK Query (để không bị lỗi chéo giữa các acc)
+    dispatch(apiSlice.util.resetApiState());
+
+    // 3. Xóa Redux State
     dispatch(logout());
 
-    // Xóa cứng toàn bộ local/session storage
+    // 4. Xóa cứng toàn bộ local/session storage
     localStorage.clear();
     sessionStorage.clear();
 
-    // Xóa cookies
-    document.cookie = `${APP_CONFIG.ACCESS_TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-    document.cookie = `${APP_CONFIG.REFRESH_TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-
+    // 5. Hiển thị thông báo
     if (!isForced) {
       toast.success('Logged out successfully!');
     } else {
       toast.error('Session expired. Please log in again.');
     }
 
-    // F5 lại toàn bộ app để clean sạch RAM và Redux Store
+    // 6. F5 lại toàn bộ app để clean sạch RAM
     window.location.href = '/login';
   };
 

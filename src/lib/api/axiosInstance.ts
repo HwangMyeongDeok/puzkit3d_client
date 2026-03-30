@@ -1,7 +1,5 @@
 import axios from 'axios';
 import type { Store } from '@reduxjs/toolkit';
-
-// import { logout } from '@/stores/slices/authSlice'; // Không cần dùng nữa nếu bỏ forceLogout
 import { APP_CONFIG } from '@/constants';
 
 // ---------------------------------------------------------------------------
@@ -14,21 +12,25 @@ export const injectStore = (_store: Store) => {
 };
 
 // ---------------------------------------------------------------------------
-// Cookie Helpers
+// Cookie Helpers (Đã export ra để các file khác có thể tái sử dụng chung chuẩn)
 // ---------------------------------------------------------------------------
-const getCookie = (name: string) => {
+export const getCookie = (name: string) => {
   if (typeof document === 'undefined') return null;
   const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
   return match ? match[2] : null;
 };
 
-const setCookie = (name: string, value: string, maxAge: number) => {
+export const setCookie = (name: string, value: string, maxAge: number) => {
   if (typeof document !== 'undefined') {
     document.cookie = `${name}=${value}; path=/; max-age=${maxAge}; SameSite=Lax`;
   }
 };
 
-// ĐÃ BỎ HÀM forceLogout Ở ĐÂY ĐỂ TRÁNH BỊ ĐÁ VĂNG LIÊN TỤC
+export const removeCookie = (name: string) => {
+  if (typeof document !== 'undefined') {
+    document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`;
+  }
+};
 
 // ---------------------------------------------------------------------------
 // Axios instance
@@ -43,7 +45,7 @@ const axiosInstance = axios.create({
 });
 
 // ---------------------------------------------------------------------------
-// Token refresh queue (prevents multiple concurrent refresh calls)
+// Token refresh queue
 // ---------------------------------------------------------------------------
 let isRefreshing = false;
 let failedQueue: Array<{
@@ -62,8 +64,17 @@ const processQueue = (error: Error | null, token: string | null = null) => {
   failedQueue = [];
 };
 
+// Hàm này CỰC KỲ QUAN TRỌNG: Ông nhớ gọi nó ở trong hàm Xử lý nút Đăng Xuất nhé!
+export const clearAxiosState = () => {
+  isRefreshing = false;
+  failedQueue.forEach((prom) => prom.reject(new Error('Logout interrupted')));
+  failedQueue = [];
+  removeCookie(APP_CONFIG.ACCESS_TOKEN_KEY);
+  removeCookie(APP_CONFIG.REFRESH_TOKEN_KEY);
+};
+
 // ---------------------------------------------------------------------------
-// Request interceptor — attach Bearer token từ Cookie
+// Request interceptor
 // ---------------------------------------------------------------------------
 axiosInstance.interceptors.request.use(
   (config) => {
@@ -77,17 +88,18 @@ axiosInstance.interceptors.request.use(
 );
 
 // ---------------------------------------------------------------------------
-// Response interceptor — handle 401 + token refresh
+// Response interceptor
 // ---------------------------------------------------------------------------
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
+    if (!originalRequest) return Promise.reject(error);
+
     const authEndpoints = ['auth/login', 'auth/register', 'auth/refresh-token'];
     const isAuthRequest = authEndpoints.some((url) => originalRequest.url?.includes(url));
 
-    // NẾU BỊ LỖI 401 VÀ KHÔNG PHẢI ĐANG Ở API LOGIN/REGISTER
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthRequest) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -106,12 +118,11 @@ axiosInstance.interceptors.response.use(
       try {
         const refreshToken = getCookie(APP_CONFIG.REFRESH_TOKEN_KEY);
 
-        // NẾU KHÔNG CÓ REFRESH TOKEN -> Trả về lỗi luôn, không forceLogout nữa
         if (!refreshToken) {
+          clearAxiosState();
           return Promise.reject(error);
         }
 
-        // TIẾN HÀNH GỌI API REFRESH TOKEN
         const response = await axios.post(
           `${process.env.NEXT_PUBLIC_API_URL}auth/refresh-token`,
           { refreshToken },
@@ -119,7 +130,8 @@ axiosInstance.interceptors.response.use(
         );
 
         const accessToken = response.data.token || response.data.accessToken;
-        const newRefreshToken = response.data.refreshToken;
+        // Check kỹ xem backend trả về refreshToken hay newRefreshToken
+        const newRefreshToken = response.data.refreshToken || response.data.newRefreshToken;
 
         setCookie(APP_CONFIG.ACCESS_TOKEN_KEY, accessToken, 604800);
         if (newRefreshToken) {
@@ -127,8 +139,10 @@ axiosInstance.interceptors.response.use(
         }
 
         try {
-          const { apiSlice } = await import('@/lib/api/apiSlice');
-          store.dispatch(apiSlice.util.invalidateTags(['User']));
+          if (store) {
+            const { apiSlice } = await import('@/lib/api/apiSlice');
+            store.dispatch(apiSlice.util.invalidateTags(['User']));
+          }
         } catch (importError) {
           console.warn('Could not invalidate User tag after token refresh');
         }
@@ -138,7 +152,7 @@ axiosInstance.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return axiosInstance(originalRequest);
       } catch (refreshError) {
-        // NẾU REFRESH TOKEN CŨNG HẾT HẠN HOẶC LỖI -> Trả về lỗi, không forceLogout nữa
+        clearAxiosState();
         processQueue(refreshError as Error, null);
         return Promise.reject(refreshError);
       } finally {
