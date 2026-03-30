@@ -1,226 +1,385 @@
 'use client';
 
-import { useState } from 'react';
-import { SlidersHorizontal, ChevronDown, Search, X, Sparkles } from 'lucide-react';
+import { useMemo, useEffect, useState } from 'react';
+import { Search } from 'lucide-react';
+
 import { Input } from '@/components/ui/input';
 import { useDebounce } from '@/lib/hooks/useDebounce';
-
-import { partnerProducts, getPartnerNames } from '@/lib/partnerMockData';
 import PartnerProductCard from '@/components/custom/PartnerProductCard';
+import PartnerProductFilterSidebar from '@/components/custom/PartnerProductFilterSidebar';
 
-const SORT_OPTIONS = [
-  { value: 'popular', label: 'Popular' },
-  { value: 'price-asc', label: 'Price: Low → High' },
-  { value: 'price-desc', label: 'Price: High → Low' },
-  { value: 'rating', label: 'Top Rated' },
-];
-
-type SortValue = (typeof SORT_OPTIONS)[number]['value'];
+import {
+  useGetPartnerProductsQuery,
+  type PartnerProductListItem,
+} from '@/lib/api/endpoints/partnerProductApi';
+import { useGetPartnersQuery } from '@/lib/api/endpoints/partnerApi';
+import { useGetImportServiceConfigsSelectQuery } from '@/lib/api/endpoints/importServiceConfigApi';
 
 export default function BrandsPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const debouncedSearch = useDebounce(searchQuery, 300);
+  const [partnerSearch, setPartnerSearch] = useState('');
+  const [configSearch, setConfigSearch] = useState('');
+  const [selectedPartnerIds, setSelectedPartnerIds] = useState<string[]>([]);
+  const [selectedConfigIds, setSelectedConfigIds] = useState<string[]>([]);
 
-  const [selectedPartners, setSelectedPartners] = useState<string[]>([]);
-  const [priceMin, setPriceMin] = useState('');
-  const [priceMax, setPriceMax] = useState('');
-  const debouncedMin = useDebounce(priceMin, 500);
-  const debouncedMax = useDebounce(priceMax, 500);
-  const [sortBy, setSortBy] = useState<SortValue>('popular');
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const debouncedSearch = useDebounce(searchQuery, 400);
 
-  const allPartnerNames = getPartnerNames();
+  const {
+    data: productResponse,
+    isLoading: productsLoading,
+    isFetching: productsFetching,
+    isError: productsError,
+    error: productsErrorObj,
+  } = useGetPartnerProductsQuery({
+    pageNumber: 1,
+    pageSize: 100,
+    searchTerm: debouncedSearch || undefined,
+  });
 
-  const togglePartner = (partnerName: string) =>
-    setSelectedPartners((prev) =>
-      prev.includes(partnerName) ? prev.filter((p) => p !== partnerName) : [...prev, partnerName]
+  const {
+    data: partnerResponse,
+    isLoading: partnersLoading,
+    isError: partnersError,
+    error: partnersErrorObj,
+  } = useGetPartnersQuery({
+    pageNumber: 1,
+    pageSize: 100,
+  });
+
+  const {
+    data: configResponse,
+    isLoading: configsLoading,
+    isError: configsError,
+    error: configsErrorObj,
+  } = useGetImportServiceConfigsSelectQuery();
+
+  const allPartners = partnerResponse?.items ?? [];
+  const allConfigs = configResponse ?? [];
+  const rawProducts = productResponse?.items ?? [];
+
+  const partnerMap = useMemo(() => {
+    return new Map(allPartners.map((partner) => [partner.id, partner]));
+  }, [allPartners]);
+
+  const configMap = useMemo(() => {
+    return new Map(allConfigs.map((config) => [config.id, config]));
+  }, [allConfigs]);
+
+  const partnerNameById = useMemo(() => {
+    const map = new Map<string, string>();
+
+    for (const partner of allPartners) {
+      map.set(partner.id, partner.name);
+    }
+
+    return map;
+  }, [allPartners]);
+
+  const partnerDebugErrors = useMemo(() => {
+    const errors: Array<{
+      productId: string;
+      productName: string;
+      partnerId: string;
+      availablePartnerIds: string[];
+    }> = [];
+
+    for (const product of rawProducts) {
+      const partnerName = partnerNameById.get(product.partnerId);
+
+      if (!partnerName) {
+        errors.push({
+          productId: product.id,
+          productName: product.name,
+          partnerId: product.partnerId,
+          availablePartnerIds: Array.from(partnerNameById.keys()),
+        });
+      }
+    }
+
+    return errors;
+  }, [rawProducts, partnerNameById]);
+
+  useEffect(() => {
+    if (partnerDebugErrors.length > 0) {
+      console.warn('[BrandsPage] Partner mapping errors:', partnerDebugErrors);
+    } else if (rawProducts.length > 0) {
+      console.log('[BrandsPage] Partner mapping OK');
+    }
+  }, [partnerDebugErrors, rawProducts.length]);
+  useEffect(() => {
+    console.log('[BrandsPage] partnerResponse:', partnerResponse);
+    console.log('[BrandsPage] allPartners:', allPartners);
+  }, [partnerResponse, allPartners]);
+  <div className="mb-4 rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-800">
+    <div className="font-semibold">Partner response debug</div>
+    <pre className="mt-2 text-xs whitespace-pre-wrap">
+      {JSON.stringify(partnerResponse, null, 2)}
+    </pre>
+  </div>;
+  const allProducts: PartnerProductListItem[] = useMemo(() => {
+    return rawProducts.map((product) => ({
+      ...product,
+      partnerName: partnerNameById.get(product.partnerId) || '',
+    }));
+  }, [rawProducts, partnerNameById]);
+
+  const filteredPartnersForSearch = useMemo(() => {
+    const keyword = partnerSearch.trim().toLowerCase();
+    if (!keyword) return allPartners;
+
+    return allPartners.filter((partner) =>
+      [partner.name, partner.description, partner.address]
+        .filter(Boolean)
+        .some((field) => field!.toLowerCase().includes(keyword))
     );
+  }, [allPartners, partnerSearch]);
 
-  const filteredProducts = (() => {
-    let results = [...partnerProducts];
+  const filteredConfigsForSearch = useMemo(() => {
+    const keyword = configSearch.trim().toLowerCase();
+    if (!keyword) return allConfigs;
 
-    if (debouncedSearch) {
-      results = results.filter((p) => p.name.toLowerCase().includes(debouncedSearch.toLowerCase()));
-    }
-    if (selectedPartners.length > 0) {
-      results = results.filter((p) => selectedPartners.includes(p.partner.name));
-    }
+    return allConfigs.filter((config) =>
+      [config.countryName, config.countryCode]
+        .filter(Boolean)
+        .some((field) => field!.toLowerCase().includes(keyword))
+    );
+  }, [allConfigs, configSearch]);
 
-    const minVal = debouncedMin ? parseInt(debouncedMin, 10) : 0;
-    const maxVal = debouncedMax ? parseInt(debouncedMax, 10) : Infinity;
-    if (minVal > 0 || maxVal < Infinity) {
-      results = results.filter((p) => p.referencePrice >= minVal && p.referencePrice <= maxVal);
-    }
-
-    switch (sortBy) {
-      case 'price-asc':
-        results.sort((a, b) => a.referencePrice - b.referencePrice);
-        break;
-      case 'price-desc':
-        results.sort((a, b) => b.referencePrice - a.referencePrice);
-        break;
-      case 'rating':
-        results.sort((a, b) => b.rating - a.rating);
-        break;
-      default:
-        break;
+  const enabledConfigIds = useMemo(() => {
+    if (allPartners.length === 0) {
+      return new Set(allConfigs.map((config) => config.id));
     }
 
-    return results;
-  })();
+    if (selectedPartnerIds.length === 0) {
+      return new Set(allPartners.map((partner) => partner.importServiceConfigId));
+    }
 
-  const hasActiveFilters =
-    selectedPartners.length > 0 || searchQuery !== '' || priceMin || priceMax;
+    return new Set(
+      allPartners
+        .filter((partner) => selectedPartnerIds.includes(partner.id))
+        .map((partner) => partner.importServiceConfigId)
+    );
+  }, [allPartners, allConfigs, selectedPartnerIds]);
 
-  const clearAllFilters = () => {
-    setSelectedPartners([]);
-    setSearchQuery('');
-    setPriceMin('');
-    setPriceMax('');
+  const enabledPartnerIds = useMemo(() => {
+    if (selectedConfigIds.length === 0) {
+      return new Set(allPartners.map((partner) => partner.id));
+    }
+
+    return new Set(
+      allPartners
+        .filter((partner) => selectedConfigIds.includes(partner.importServiceConfigId))
+        .map((partner) => partner.id)
+    );
+  }, [allPartners, selectedConfigIds]);
+
+  const finalProducts = useMemo(() => {
+    return allProducts.filter((product) => {
+      const partner = partnerMap.get(product.partnerId);
+
+      const matchPartner =
+        selectedPartnerIds.length === 0 || selectedPartnerIds.includes(product.partnerId);
+
+      if (selectedConfigIds.length === 0) {
+        return matchPartner;
+      }
+
+      if (!partner) return false;
+
+      const matchConfig = selectedConfigIds.includes(partner.importServiceConfigId);
+
+      return matchPartner && matchConfig;
+    });
+  }, [allProducts, partnerMap, selectedPartnerIds, selectedConfigIds]);
+
+  const activeCountryNames = useMemo(() => {
+    return selectedConfigIds
+      .map((id) => configMap.get(id)?.countryName)
+      .filter(Boolean) as string[];
+  }, [selectedConfigIds, configMap]);
+
+  const togglePartner = (partnerId: string) => {
+    setSelectedPartnerIds((prev) =>
+      prev.includes(partnerId) ? prev.filter((id) => id !== partnerId) : [...prev, partnerId]
+    );
   };
 
-  const FiltersContent = (
-    <div className="flex flex-col gap-6">
-      <div className="relative">
-        <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-        <Input
-          placeholder="Search partner products..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9"
-        />
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery('')}
-            className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
-      </div>
+  const toggleConfig = (configId: string) => {
+    setSelectedConfigIds((prev) =>
+      prev.includes(configId) ? prev.filter((id) => id !== configId) : [...prev, configId]
+    );
+  };
 
-      <div>
-        <h3 className="text-foreground mb-3 text-sm font-bold">Partner</h3>
-        <div className="flex flex-col gap-2">
-          {allPartnerNames.map((name) => (
-            <label
-              key={name}
-              className="text-foreground/80 hover:text-foreground flex cursor-pointer items-center gap-2.5 text-sm transition-colors"
-            >
-              <input
-                type="checkbox"
-                checked={selectedPartners.includes(name)}
-                onChange={() => togglePartner(name)}
-                className="border-border text-warning accent-warning h-4 w-4 rounded"
-              />
-              {name}
-            </label>
-          ))}
-        </div>
-      </div>
+  const clearAll = () => {
+    setSelectedPartnerIds([]);
+    setSelectedConfigIds([]);
+    setPartnerSearch('');
+    setConfigSearch('');
+  };
 
-      <div>
-        <h3 className="text-foreground mb-3 text-sm font-bold">Price Range</h3>
-        <div className="flex items-center gap-2">
-          <Input
-            type="number"
-            placeholder="Min"
-            value={priceMin}
-            onChange={(e) => setPriceMin(e.target.value)}
-            className="h-9 text-sm"
-          />
-          <span className="text-muted-foreground text-xs">—</span>
-          <Input
-            type="number"
-            placeholder="Max"
-            value={priceMax}
-            onChange={(e) => setPriceMax(e.target.value)}
-            className="h-9 text-sm"
-          />
-        </div>
-      </div>
-
-      {hasActiveFilters && (
-        <button
-          onClick={clearAllFilters}
-          className="text-warning hover:text-warning/80 justify-start text-left text-xs font-semibold transition-colors"
-        >
-          Clear all filters
-        </button>
-      )}
-    </div>
-  );
+  const isLoading = productsLoading || partnersLoading || configsLoading;
+  const isFetching = productsFetching;
 
   return (
-    <div className="container-custom py-8 lg:py-12">
-      <div className="mb-8 flex items-center gap-3">
-        <Sparkles className="text-warning h-8 w-8" />
-        <div>
-          <h1 className="text-3xl font-bold md:text-4xl">Partner Products</h1>
-          <p className="text-muted-foreground">
-            Premium models from international brands — made to order.
-          </p>
-        </div>
-      </div>
-
-      <div className="flex gap-8">
-        <aside className="hidden w-[250px] shrink-0 lg:block">
-          <div className="border-warning/20 bg-card sticky top-20 rounded-xl border p-5">
-            <h2 className="text-foreground mb-4 text-base font-bold">Filters</h2>
-            {FiltersContent}
-          </div>
-        </aside>
-
-        <div className="min-w-0 flex-1">
-          <div className="border-warning/20 bg-card mb-6 flex items-center justify-between rounded-xl border px-4 py-3">
-            <button
-              onClick={() => setShowMobileFilters(!showMobileFilters)}
-              className="text-foreground flex items-center gap-2 text-sm font-medium lg:hidden"
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-              Filters
-            </button>
-
-            <span className="text-muted-foreground hidden text-sm lg:block">
-              {filteredProducts.length} products
-            </span>
-
-            <div className="relative">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortValue)}
-                className="border-border bg-background text-foreground appearance-none rounded-lg border py-2 pr-8 pl-3 text-sm font-medium outline-none"
-              >
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="text-muted-foreground pointer-events-none absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2" />
-            </div>
+    <div className="min-h-screen bg-slate-50">
+      <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
+        <div className="mb-8 rounded-3xl bg-white p-6 shadow-sm">
+          <div className="max-w-3xl">
+            <p className="mb-2 text-sm font-semibold tracking-[0.2em] text-amber-600 uppercase">
+              Exclusive Partner Collections
+            </p>
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">
+              Browse Partner Products
+            </h1>
+            <p className="mt-3 text-base text-slate-600">
+              Find imported products by partner and country, then submit a quote request.
+            </p>
           </div>
 
-          {showMobileFilters && (
-            <div className="animate-slide-up border-warning/20 bg-card mb-6 rounded-xl border p-5 lg:hidden">
-              {FiltersContent}
-            </div>
-          )}
+          <div className="relative mt-6 max-w-2xl">
+            <Search className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-400" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search product name..."
+              className="h-12 rounded-2xl border-slate-200 bg-slate-50 pl-11 text-sm shadow-none"
+            />
+          </div>
 
-          {filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredProducts.map((product) => (
-                <PartnerProductCard key={product.id} product={product} />
+          {(selectedPartnerIds.length > 0 || activeCountryNames.length > 0) && (
+            <div className="mt-5 flex flex-wrap gap-2">
+              {selectedPartnerIds.map((partnerId) => {
+                const partner = partnerMap.get(partnerId);
+                if (!partner) return null;
+
+                return (
+                  <span
+                    key={partnerId}
+                    className="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white"
+                  >
+                    {partner.name}
+                  </span>
+                );
+              })}
+
+              {activeCountryNames.map((country) => (
+                <span
+                  key={country}
+                  className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800"
+                >
+                  {country}
+                </span>
               ))}
             </div>
-          ) : (
-            <div className="border-border bg-card flex flex-col items-center justify-center rounded-xl border py-20 text-center">
-              <p className="text-foreground mb-2 text-lg font-semibold">No products found</p>
-              <p className="text-muted-foreground text-sm">
-                Try changing your filters to see more results.
-              </p>
-            </div>
           )}
+        </div>
+
+        {(partnersError || configsError || productsError) && (
+          <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            <div className="font-semibold">API debug</div>
+            <pre className="mt-2 text-xs whitespace-pre-wrap">
+              {JSON.stringify(
+                {
+                  partnersError: partnersErrorObj ?? null,
+                  configsError: configsErrorObj ?? null,
+                  productsError: productsErrorObj ?? null,
+                },
+                null,
+                2
+              )}
+            </pre>
+          </div>
+        )}
+
+        {partnerDebugErrors.length > 0 && (
+          <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+            <div className="font-semibold">Partner mapping debug</div>
+
+            <div className="mt-3 space-y-3">
+              {partnerDebugErrors.map((item) => (
+                <div
+                  key={item.productId}
+                  className="rounded-xl border border-amber-200 bg-white p-3"
+                >
+                  <div>
+                    <b>Product:</b> {item.productName}
+                  </div>
+                  <div>
+                    <b>Product ID:</b> {item.productId}
+                  </div>
+                  <div>
+                    <b>Partner ID from product:</b> {item.partnerId}
+                  </div>
+                  <div className="mt-1 break-all">
+                    <b>Available partner IDs:</b> {item.availablePartnerIds.join(', ')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+          <PartnerProductFilterSidebar
+            partnerSearch={partnerSearch}
+            configSearch={configSearch}
+            selectedPartnerIds={selectedPartnerIds}
+            selectedConfigIds={selectedConfigIds}
+            partners={filteredPartnersForSearch}
+            configs={filteredConfigsForSearch}
+            enabledConfigIds={enabledConfigIds}
+            enabledPartnerIds={enabledPartnerIds}
+            onPartnerSearchChange={setPartnerSearch}
+            onConfigSearchChange={setConfigSearch}
+            onTogglePartner={togglePartner}
+            onToggleConfig={toggleConfig}
+            onClearAll={clearAll}
+          />
+
+          <section>
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Products</h2>
+                <p className="text-sm text-slate-500">
+                  Showing {finalProducts.length} product{finalProducts.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+            </div>
+
+            {isLoading || isFetching ? (
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="h-[360px] animate-pulse rounded-2xl border bg-white"
+                  />
+                ))}
+              </div>
+            ) : finalProducts.length === 0 ? (
+              <div className="rounded-2xl border bg-white p-10 text-center shadow-sm">
+                <h3 className="text-lg font-bold text-slate-900">No products found</h3>
+                <p className="mt-2 text-sm text-slate-500">
+                  Try changing the selected partner, country, or search keyword.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {finalProducts.map((product) => {
+                  const partner = allPartners.find((item) => item.id === product.partnerId);
+                  const config = partner ? configMap.get(partner.importServiceConfigId) : undefined;
+
+                  return (
+                    <PartnerProductCard
+                      key={product.id}
+                      product={product}
+                      partnerName={product.partnerName || ''}
+                      countryName={config?.countryName}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </section>
         </div>
       </div>
     </div>

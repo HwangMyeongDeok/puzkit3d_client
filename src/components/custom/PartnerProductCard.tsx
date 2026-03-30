@@ -2,73 +2,81 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Star, FileText } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
-import type { PartnerProduct } from '@/types';
 import { formatPrice } from '@/lib/utils';
-import { useAppDispatch } from '@/stores';
-import { ROUTES } from '@/constants';
+import type { PartnerProductListItem } from '@/lib/api/endpoints/partnerProductApi';
 
 type PartnerProductCardProps = {
-  product: PartnerProduct;
+  product: PartnerProductListItem;
+  partnerName?: string;
+  countryName?: string;
 };
 
-export default function PartnerProductCard({ product }: PartnerProductCardProps) {
-  const dispatch = useAppDispatch();
-
+export default function PartnerProductCard({
+  product,
+  partnerName,
+  countryName,
+}: PartnerProductCardProps) {
   const handleRequestQuote = (e: React.MouseEvent) => {
     e.preventDefault();
     toast.success(`Added "${product.name}" to quote request`);
   };
 
   return (
-    <Link href={ROUTES.PRODUCT_DETAIL(product.slug)} className="group block">
-      <div className="card-hover border-border bg-card overflow-hidden rounded-xl border">
-        <div className="bg-muted relative aspect-square overflow-hidden">
+    <Link href={`/brands/${product.id}`} className="group block">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg">
+        <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
           <Image
             src={product.thumbnailUrl}
             alt={product.name}
             fill
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
-          <span className="bg-warning text-warning-foreground absolute top-2 left-2 rounded-md px-2 py-0.5 text-xs font-bold">
+          <span className="absolute top-3 left-3 rounded-full bg-amber-400 px-3 py-1 text-xs font-bold text-slate-900 shadow">
             Partner Product
           </span>
         </div>
 
-        <div className="flex flex-col gap-2 p-3">
-          <span className="text-brand text-[11px] font-semibold tracking-wider uppercase">
-            {product.partner.name}
-          </span>
+        <div className="space-y-3 p-4">
+          <div className="space-y-1">
+            {partnerName ? (
+              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                {partnerName}
+              </p>
+            ) : null}
 
-          <h3 className="text-card-foreground line-clamp-2 min-h-[2.5rem] text-sm leading-tight font-semibold">
-            {product.name}
-          </h3>
+            <h3 className="line-clamp-2 min-h-[3rem] text-base font-bold text-slate-900">
+              {product.name}
+            </h3>
 
-          <div className="flex flex-col gap-0.5">
-            <span className="text-muted-foreground text-[10px] font-medium">Reference Price</span>
-            <span className="text-accent text-base font-bold">
-              {formatPrice(product.referencePrice)}
-            </span>
+            {countryName ? <p className="text-xs text-slate-500">{countryName}</p> : null}
           </div>
 
-          <div className="text-muted-foreground flex items-center gap-1 text-xs">
-            <Star className="fill-warning text-warning h-3 w-3" />
-            <span>{product.rating}</span>
-            <span className="bg-warning/10 text-warning ml-auto rounded-full px-2 py-0.5 text-[10px] font-semibold">
-              Pre-order
-            </span>
-          </div>
+          <p className="line-clamp-2 min-h-[2.5rem] text-sm text-slate-600">
+            {product.description || 'No description available'}
+          </p>
 
-          <button
-            className="bg-warning text-warning-foreground mt-1 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
-            onClick={handleRequestQuote}
-          >
-            <FileText className="h-3.5 w-3.5" />
-            Request Quote
-          </button>
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-medium tracking-wide text-slate-400 uppercase">
+                Reference Price
+              </p>
+              <p className="text-xl font-extrabold text-rose-600">
+                {formatPrice(product.referencePrice)}
+              </p>
+            </div>
+
+            <button
+              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+              onClick={handleRequestQuote}
+            >
+              <FileText className="h-3.5 w-3.5" />
+              Request Quote
+            </button>
+          </div>
         </div>
       </div>
     </Link>
