@@ -13,6 +13,8 @@ import {
   AlertCircle,
   Loader2,
   Hash,
+  Truck,
+  Check,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -21,7 +23,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
 // Hooks & Types
-import { useGetTicketByIdQuery, type TicketType } from '@/lib/api/endpoints/supportTicketApi';
+import {
+  useGetTicketByIdQuery,
+  useGetTicketDeliveryTrackingQuery,
+  type TicketType,
+} from '@/lib/api/endpoints/supportTicketApi';
 import { useGetCustomerOrderByIdQuery } from '@/lib/api/endpoints/orderApi';
 
 // Components
@@ -47,6 +53,27 @@ const TICKET_TYPE_CONFIG: Record<TicketType, { label: string; className: string 
   },
 };
 
+// 👉 Cấu hình các bước giao hàng
+const DELIVERY_STEPS = [
+  'Pending',
+  'Processing',
+  'Handed Over',
+  'Delivering',
+  'Delivered',
+  'Completed',
+];
+
+const getDeliveryStepIndex = (status: string | undefined | null) => {
+  if (!status) return 0;
+  const s = status.toLowerCase();
+  if (s.includes('completed')) return 5;
+  if (s.includes('delivered')) return 4;
+  if (s.includes('delivering')) return 3;
+  if (s.includes('handed')) return 2;
+  if (s.includes('processing')) return 1;
+  return 0; // Default Pending
+};
+
 export default function TicketDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -66,6 +93,10 @@ export default function TicketDetailPage() {
     ticket?.orderId ?? '',
     { skip: !ticket?.orderId }
   );
+
+  // 3. Fetch Delivery Tracking cho Ticket
+  const { data: deliveryTracking, isLoading: isDeliveryLoading } =
+    useGetTicketDeliveryTrackingQuery(ticketId!, { skip: !ticketId });
 
   /* ---- Loading / Error states ---- */
   if (isTicketLoading) {
@@ -162,7 +193,7 @@ export default function TicketDetailPage() {
                 </div>
               </div>
 
-              {/* Stepper */}
+              {/* Stepper của Ticket */}
               <div className="border-border mt-2 border-t pt-6">
                 <TicketStepper
                   steps={ticketSteps}
@@ -172,7 +203,78 @@ export default function TicketDetailPage() {
               </div>
             </div>
 
-            {/* 2. Reason Info */}
+            {/* 👉 2. MỚI: Delivery Tracking Stepper */}
+            {(isDeliveryLoading || deliveryTracking) && (
+              <div className="bg-card border-border flex flex-col gap-6 rounded-xl border p-6 shadow-sm">
+                <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+                  <h2 className="text-muted-foreground flex items-center gap-2 text-sm font-bold tracking-wider uppercase">
+                    <Truck className="h-4 w-4" /> Delivery Tracking
+                  </h2>
+                  {deliveryTracking?.deliveryOrderCode && (
+                    <div className="bg-muted text-foreground flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium">
+                      Tracking Code:{' '}
+                      <span className="font-bold">{deliveryTracking.deliveryOrderCode}</span>
+                    </div>
+                  )}
+                </div>
+
+                {isDeliveryLoading ? (
+                  <div className="text-muted-foreground flex items-center justify-center gap-2 py-8">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <span className="text-sm">Loading delivery status...</span>
+                  </div>
+                ) : (
+                  <div className="w-full overflow-x-auto py-4">
+                    <div className="relative w-full min-w-[500px]">
+                      {/* Đường line xám chìm ở dưới */}
+                      <div className="bg-muted absolute top-4 right-[5%] left-[5%] h-1 -translate-y-1/2 rounded-full"></div>
+
+                      {/* Đường line chạy tiến độ */}
+                      <div
+                        className="absolute top-4 left-[5%] h-1 -translate-y-1/2 rounded-full bg-emerald-500 transition-all duration-500 ease-in-out"
+                        style={{
+                          width: `${(getDeliveryStepIndex(deliveryTracking!.status) / (DELIVERY_STEPS.length - 1)) * 90}%`,
+                        }}
+                      ></div>
+
+                      <div className="relative z-10 flex items-start justify-between">
+                        {DELIVERY_STEPS.map((step, index) => {
+                          const currentIndex = getDeliveryStepIndex(deliveryTracking!.status);
+                          const isCompleted = index <= currentIndex;
+                          const isActive = index === currentIndex;
+
+                          return (
+                            <div key={step} className="flex w-[16%] flex-col items-center gap-3">
+                              <div
+                                className={cn(
+                                  'flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold transition-all duration-300',
+                                  isCompleted
+                                    ? 'border-emerald-500 bg-emerald-500 text-white shadow-sm'
+                                    : 'bg-background border-muted text-muted-foreground',
+                                  isActive && 'ring-4 ring-emerald-500/20'
+                                )}
+                              >
+                                {isCompleted ? <Check className="h-4 w-4" /> : index + 1}
+                              </div>
+                              <span
+                                className={cn(
+                                  'text-center text-xs leading-tight font-semibold',
+                                  isCompleted ? 'text-foreground' : 'text-muted-foreground'
+                                )}
+                              >
+                                {step}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 3. Reason Info */}
             <div className="bg-card border-border flex flex-col gap-4 rounded-xl border p-6 shadow-sm">
               <h2 className="text-muted-foreground flex items-center gap-2 text-sm font-bold tracking-wider uppercase">
                 <FileWarning className="h-4 w-4" /> Customer Reason
@@ -182,7 +284,7 @@ export default function TicketDetailPage() {
               </div>
             </div>
 
-            {/* 3. Affected Items */}
+            {/* 4. Affected Items */}
             <div className="bg-card border-border flex flex-col gap-4 rounded-xl border p-6 shadow-sm">
               <h2 className="text-muted-foreground flex items-center gap-2 text-sm font-bold tracking-wider uppercase">
                 <PackageSearch className="h-4 w-4" /> Affected Items ({ticket.details.length})
@@ -204,7 +306,7 @@ export default function TicketDetailPage() {
               </div>
             </div>
 
-            {/* 4. Evidence (Nếu có) */}
+            {/* 5. Evidence (Nếu có) */}
             {ticket.proof && (
               <div className="bg-card border-border flex flex-col gap-4 rounded-xl border p-6 shadow-sm">
                 <h2 className="text-muted-foreground flex items-center gap-2 text-sm font-bold tracking-wider uppercase">

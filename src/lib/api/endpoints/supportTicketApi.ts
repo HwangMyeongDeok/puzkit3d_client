@@ -70,6 +70,30 @@ export interface UpdateTicketStatusRequest {
   status: TicketStatus | string;
 }
 
+// 👉 NEW TYPES CHO DELIVERY TRACKING
+export interface TicketDeliveryDetailDto {
+  id: string;
+  type: string;
+  itemId: string;
+  quantity: number;
+}
+
+export interface TicketDeliveryTrackingDto {
+  id: string;
+  orderId: string;
+  supportTicketId: string;
+  deliveryOrderCode: string;
+  status: string;
+  type: string;
+  note: string;
+  handOverImageUrl: string;
+  expectedDeliveryDate: string;
+  deliveredAt: string;
+  createdAt: string;
+  updatedAt: string;
+  details: TicketDeliveryDetailDto[];
+}
+
 export const supportTicketApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     /* GET /api/instock-products/{productId}/parts */
@@ -110,6 +134,17 @@ export const supportTicketApi = apiSlice.injectEndpoints({
       }),
       providesTags: (_result, _error, orderId) => [
         { type: 'SupportTicket', id: `ORDER-${orderId}` },
+      ],
+    }),
+
+    /* 👉 GET /api/delivery-trackings/support-ticket/{supportTicketId} */
+    getTicketDeliveryTracking: builder.query<TicketDeliveryTrackingDto, string>({
+      query: (supportTicketId) => ({
+        url: `/delivery-trackings/support-ticket/${supportTicketId}`,
+        method: 'GET',
+      }),
+      providesTags: (_result, _error, supportTicketId) => [
+        { type: 'SupportTicket', id: `DELIVERY-${supportTicketId}` },
       ],
     }),
 
@@ -155,6 +190,7 @@ export const {
   useGetTicketsQuery,
   useGetTicketByIdQuery,
   useGetTicketByOrderIdQuery,
+  useGetTicketDeliveryTrackingQuery,
   useCreateTicketMutation,
   useUpdateTicketStatusMutation,
   useDeleteTicketMutation,

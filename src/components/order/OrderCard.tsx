@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -7,14 +9,14 @@ import {
   CreditCard,
   Wallet,
   Banknote,
-  AlertCircle, // 👉 Thêm icon này cho Badge
-  Ticket, // 👉 Thêm icon này cho nút View Ticket
+  AlertCircle,
+  Ticket,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatPrice } from '@/lib/utils';
 import OrderBadge from '../orderDetail/OrderBadge';
 
-// Import Types chuẩn từ API của ông
+// Import Types chuẩn từ API
 import type {
   GetCustomerOrderResponseDto,
   InstockOrderStatus,
@@ -33,8 +35,10 @@ export default function OrderCard({ order, onPayNow }: OrderCardProps) {
   const isOnlinePayment = order.paymentMethod === 'Online';
   const PaymentIcon = isOnlinePayment ? Wallet : Banknote;
 
+  // Gọi API lấy ticket theo orderId
   const { data: ticketInfo, isSuccess } = useGetTicketByOrderIdQuery(order.id);
 
+  // Check xem có complaint không
   const hasComplaint = isSuccess && ticketInfo != null;
 
   return (
@@ -50,14 +54,6 @@ export default function OrderCard({ order, onPayNow }: OrderCardProps) {
               <h3 className="text-lg leading-none font-bold">
                 Order #{order.code || order.id.split('-')[0].toUpperCase()}
               </h3>
-
-              {/* 👉 THÊM BADGE CẢNH BÁO KHIẾU NẠI Ở ĐÂY */}
-              {hasComplaint && (
-                <span className="flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-bold tracking-wider text-rose-700 uppercase dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400">
-                  <AlertCircle className="h-3 w-3" />
-                  Complaint Opened
-                </span>
-              )}
             </div>
 
             <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-3 text-sm">
@@ -73,8 +69,16 @@ export default function OrderCard({ order, onPayNow }: OrderCardProps) {
           </div>
         </div>
 
+        {/* 👉 LOGIC STATUS Ở ĐÂY: Nếu có complaint thì đè luôn cái OrderBadge */}
         <div className="flex items-center gap-3 self-start md:self-auto">
-          <OrderBadge status={order.status} />
+          {hasComplaint ? (
+            <span className="flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-sm font-semibold tracking-wide text-rose-700 uppercase shadow-sm dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
+              <AlertCircle className="h-4 w-4" />
+              Complaint
+            </span>
+          ) : (
+            <OrderBadge status={order.status} />
+          )}
         </div>
       </div>
 
@@ -148,10 +152,9 @@ export default function OrderCard({ order, onPayNow }: OrderCardProps) {
               </Button>
             )}
 
-          {/* 👉 THÊM NÚT VIEW TICKET NẾU CÓ KHIẾU NẠI */}
+          {/* NÚT VIEW TICKET NẾU CÓ KHIẾU NẠI */}
           {hasComplaint && ticketInfo && (
             <Link
-              // Sửa lại URL trỏ thẳng vô trang danh sách ticket hoặc chi tiết ticket của ông nha
               href={`/ticket-support/${ticketInfo.id}`}
               className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-6 py-2.5 font-semibold text-rose-700 shadow-sm transition-colors hover:bg-rose-100 md:w-auto dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20"
             >
