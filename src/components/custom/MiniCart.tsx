@@ -35,19 +35,21 @@ export default function MiniCart({ children }: MiniCartProps) {
     skip: isAuthLoading || !isAuthenticated,
   });
 
-  // Lấy hàm mutation để bắn API update giá
   const [updateCartItem, { isLoading: isUpdating }] = useUpdateCartItemMutation();
 
   const cartItems = cartDto?.items || [];
 
   let totalPrice = 0;
   cartItems.forEach((item) => {
-    totalPrice += item.totalPrice;
+    // Chỉ cộng tiền những sản phẩm còn hàng
+    if (item.availableInventory > 0) {
+      totalPrice += item.totalPrice;
+    }
   });
 
   const totalQuantity = cartDto?.totalItem ?? 0;
 
-  // Xử lý khi user bấm nút "Update Price"
+  // 1. Hàm xử lý update giá
   const handleUpdatePrice = async (itemId: string, quantity: number, newPriceDetailId: string) => {
     try {
       await updateCartItem({
@@ -58,6 +60,19 @@ export default function MiniCart({ children }: MiniCartProps) {
       toast.success('Cart updated with the new price!');
     } catch (error) {
       toast.error('Failed to update price. Please try again.');
+    }
+  };
+
+  // 2. Hàm xử lý giảm số lượng về mức tồn kho tối đa
+  const handleUpdateToMaxInventory = async (itemId: string, maxInventory: number) => {
+    try {
+      await updateCartItem({
+        itemId,
+        quantity: maxInventory,
+      }).unwrap();
+      toast.success(`Quantity updated to maximum available (${maxInventory})`);
+    } catch (error) {
+      toast.error('Failed to update quantity.');
     }
   };
 
@@ -96,11 +111,22 @@ export default function MiniCart({ children }: MiniCartProps) {
               {cartItems.map((item) => {
                 const variantDisplay = item.variantName || item.color || 'Default';
 
+                // Các cờ trạng thái giống hệt page cart
+                const isOutOfStock = item.availableInventory === 0;
+                const isOverStock =
+                  item.availableInventory > 0 && item.quantity > item.availableInventory;
+                const isPriceChanged =
+                  item.isValidPrice === false && item.newPriceDetailId && item.newUnitPrice;
+
                 return (
                   <div
                     key={item.itemId}
-                    className={`border-border bg-card flex flex-col gap-2 rounded-lg border p-3 hover:shadow-sm ${
-                      item.isValidPrice === false ? 'border-amber-300 bg-amber-50/30' : ''
+                    className={`border-border bg-card flex flex-col gap-2 rounded-lg border p-3 transition-colors hover:shadow-sm ${
+                      isOutOfStock
+                        ? 'bg-secondary/40 opacity-60 grayscale-[40%]'
+                        : item.isValidPrice === false
+                          ? 'border-amber-300 bg-amber-50/30'
+                          : ''
                     }`}
                   >
                     {/* Phần thân item chính */}
@@ -137,7 +163,11 @@ export default function MiniCart({ children }: MiniCartProps) {
 
                         <div className="mt-2 flex items-center justify-between">
                           <p
-                            className={`text-xs font-bold ${item.isValidPrice === false ? 'text-muted-foreground line-through' : 'text-primary'}`}
+                            className={`text-xs font-bold ${
+                              item.isValidPrice === false
+                                ? 'text-muted-foreground line-through'
+                                : 'text-primary'
+                            }`}
                           >
                             {formatPrice(item.unitPrice)}
                           </p>
@@ -146,7 +176,7 @@ export default function MiniCart({ children }: MiniCartProps) {
                             <div className="border-border bg-background flex items-center rounded border">
                               <button
                                 onClick={() => handleDecrement(item.itemId, item.quantity)}
-                                disabled={item.quantity <= 1 || isUpdating}
+                                disabled={item.quantity <= 1 || isUpdating || isOutOfStock}
                                 className="text-foreground/50 hover:bg-secondary flex h-6 w-6 items-center justify-center transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                               >
                                 <Minus className="h-3 w-3" />
@@ -158,7 +188,7 @@ export default function MiniCart({ children }: MiniCartProps) {
 
                               <button
                                 onClick={() => handleIncrement(item.itemId, item.quantity)}
-                                disabled={isUpdating}
+                                disabled={isUpdating || isOutOfStock}
                                 className="text-foreground/50 hover:bg-secondary flex h-6 w-6 items-center justify-center transition-colors disabled:opacity-40"
                               >
                                 <Plus className="h-3 w-3" />
@@ -176,8 +206,43 @@ export default function MiniCart({ children }: MiniCartProps) {
                       </div>
                     </div>
 
-                    {/* VÙNG CẢNH BÁO GIÁ THAY ĐỔI */}
-                    {item.isValidPrice === false && item.newPriceDetailId && item.newUnitPrice && (
+                    {/* VÙNG CẢNH BÁO 1: VƯỢT QUÁ TỒN KHO */}
+                    {isOverStock && (
+                      <div className="mt-1 flex flex-col gap-2 rounded-md border border-blue-200 bg-blue-50 p-2.5">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                          <p className="text-[11px] leading-relaxed text-blue-800">
+                            <span className="font-bold text-blue-900">Limited Stock!</span>
+                            <br />
+                            Only <span className="font-bold">{item.availableInventory}</span> items
+                            available.
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          disabled={isUpdating}
+                          onClick={() =>
+                            handleUpdateToMaxInventory(item.itemId, item.availableInventory)
+                          }
+                          className="h-7 w-full bg-blue-600 text-[10px] font-bold text-white shadow-sm transition-all hover:bg-blue-700"
+                        >
+                          {isUpdating ? 'Updating...' : `Update to ${item.availableInventory}`}
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* VÙNG CẢNH BÁO 2: HẾT HÀNG */}
+                    {isOutOfStock && (
+                      <div className="bg-destructive/10 border-destructive/20 mt-1 flex items-center gap-2 rounded-md border p-2.5">
+                        <AlertCircle className="text-destructive mt-0.5 h-4 w-4 shrink-0" />
+                        <p className="text-destructive-foreground text-[11px] leading-relaxed font-medium">
+                          Out of stock. Please remove it from your cart.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* VÙNG CẢNH BÁO 3: GIÁ THAY ĐỔI (ẩn đi nếu đang hết hàng) */}
+                    {!isOutOfStock && isPriceChanged && (
                       <div className="mt-1 flex flex-col gap-2 rounded-md border border-amber-200 bg-amber-100/50 p-2.5">
                         <div className="flex items-start gap-2">
                           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
@@ -185,9 +250,10 @@ export default function MiniCart({ children }: MiniCartProps) {
                             <span className="font-bold text-amber-900">Price changed!</span>
                             <br />
                             Update to{' '}
-                            <span className="font-bold">{formatPrice(item.newUnitPrice)}</span>{' '}
-                            {item.newPriceName && `(${item.newPriceName})`} to proceed with
-                            checkout.
+                            <span className="font-bold">
+                              {formatPrice(item.newUnitPrice!)}
+                            </span>{' '}
+                            {item.newPriceName && `(${item.newPriceName})`} to proceed.
                           </p>
                         </div>
                         <Button
@@ -221,10 +287,15 @@ export default function MiniCart({ children }: MiniCartProps) {
             <div className="flex w-full flex-col gap-2">
               <SheetClose asChild>
                 <Link href={ROUTES.CART}>
-                  {/* Có thể block nút này nếu giỏ hàng còn item chưa update giá (tùy nghiệp vụ) */}
+                  {/* Chặn nút Checkout nếu có bất kỳ item nào bị lỗi (giá, hết hàng, quá tồn kho) */}
                   <Button
                     className="w-full gap-2 rounded-xl py-5 text-sm font-bold shadow-lg"
-                    disabled={cartItems.some((item) => !item.isValidPrice)}
+                    disabled={cartItems.some(
+                      (item) =>
+                        !item.isValidPrice ||
+                        item.availableInventory === 0 ||
+                        item.quantity > item.availableInventory
+                    )}
                   >
                     View Cart & Checkout
                   </Button>
