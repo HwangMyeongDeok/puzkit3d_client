@@ -1,42 +1,4 @@
-// // src/types/api/cart.api.types.ts
-
-// export interface ProductDetailsDto {
-//   name: string | null;
-//   sku: string | null;
-//   color: string | null;
-//   assembledLengthMm: number | null;
-//   assembledWidthMm: number | null;
-//   assembledHeightMm: number | null;
-//   thumbnailUrl: string | null;
-//   isActive: boolean;
-// }
-
-// export interface CartItemDto {
-//   id: string; // Đây là ID của bản ghi trong CartItem table
-//   itemId: string; // Thường là ProductID hoặc ID định danh item
-//   unitPrice: number | null;
-//   inStockProductPriceDetailId: string | null;
-//   quantity: number;
-//   totalPrice: number | null;
-//   productDetails: ProductDetailsDto; // Thông tin chi tiết sản phẩm nằm ở đây
-// }
-
-// export interface CartDto {
-//   id: string;
-//   userId: string;
-//   cartType: string | null; // INSTOCK_CART hoặc PARTNER_CART
-//   totalItem: number;
-//   items: CartItemDto[] | null;
-// }
-
-// export interface AddItemToInStockCartRequest {
-//   itemId: string;
-//   inStockProductPriceDetailId?: string | null;
-//   quantity: number;
-// }
-
-// --- 1. TYPE DÀNH CHO DỮ LIỆU THÔ TỪ BACKEND ---
-// --- 1. TYPE CỦA DATA TỪ BACKEND TRẢ VỀ (RAW) ---
+// --- 1. RAW TYPE (Dữ liệu gốc từ API trả về) ---
 export interface RawProductDetailsDto {
   productId: string;
   productName: string;
@@ -49,6 +11,8 @@ export interface RawProductDetailsDto {
   assembledHeightMm: number;
   thumbnailUrl: string;
   isActive: boolean;
+  partnerId: string | null; // MỚI: Bổ sung từ API
+  referencePrice: number | null; // MỚI: Bổ sung từ API
 }
 
 export interface RawCartItemDto {
@@ -59,6 +23,13 @@ export interface RawCartItemDto {
   quantity: number;
   totalPrice: number;
   productDetails: RawProductDetailsDto;
+  isVariantActive: boolean; // MỚI: Bổ sung từ API
+  isValidPrice: boolean;
+  newUnitPrice: number | null;
+  newPriceDetailId: string | null;
+  newPriceName: string | null;
+  isValidInventory: boolean; // MỚI: Bổ sung từ API
+  availableInventory: number | null; // MỚI: Bổ sung từ API (có thể null nếu là vô hạn hoặc không quản lý)
 }
 
 export interface RawCartDto {
@@ -69,7 +40,6 @@ export interface RawCartDto {
   items: RawCartItemDto[];
 }
 
-// --- 2. TYPE ĐÃ LÀM PHẲNG CHO GIAO DIỆN (UI) ---
 export interface CartItemDto {
   id: string;
   itemId: string;
@@ -84,6 +54,17 @@ export interface CartItemDto {
   unitPrice: number;
   quantity: number;
   totalPrice: number;
+
+  // Logic check Giá
+  isValidPrice: boolean;
+  newUnitPrice?: number | null;
+  newPriceDetailId?: string | null;
+  newPriceName?: string | null;
+
+  // Logic check Kho & Trạng thái (MỚI BỔ SUNG CHO UI)
+  isVariantActive: boolean;
+  isValidInventory: boolean;
+  availableInventory: number; // Để kiểu number để dễ so sánh > < (Khi map từ API sang, nếu null thì gán mặc định bằng 0 hoặc 9999 tùy ông)
 }
 
 export interface CartDto {
@@ -92,7 +73,9 @@ export interface CartDto {
   items: CartItemDto[];
 }
 
+// --- 3. REQUEST PAYLOADS ---
 export interface AddItemToInStockCartRequest {
   itemId: string;
   quantity: number;
+  inStockProductPriceDetailId: string;
 }

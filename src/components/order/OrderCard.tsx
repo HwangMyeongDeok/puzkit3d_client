@@ -38,8 +38,8 @@ export default function OrderCard({ order, onPayNow }: OrderCardProps) {
   // Gọi API lấy ticket theo orderId
   const { data: ticketInfo, isSuccess } = useGetTicketByOrderIdQuery(order.id);
 
-  // Check xem có complaint không
-  const hasComplaint = isSuccess && ticketInfo != null;
+  // 👉 CẬP NHẬT LOGIC: Chỉ coi là có complaint nếu có ticket VÀ trạng thái chưa phải là 'Resolved'
+  const hasComplaint = isSuccess && ticketInfo != null && ticketInfo.status !== 'Resolved';
 
   return (
     <div className="bg-card border-border hover:border-brand/30 flex flex-col gap-4 rounded-xl border p-5 shadow-sm transition-all duration-300 hover:shadow-md">
@@ -69,7 +69,7 @@ export default function OrderCard({ order, onPayNow }: OrderCardProps) {
           </div>
         </div>
 
-        {/* 👉 LOGIC STATUS Ở ĐÂY: Nếu có complaint thì đè luôn cái OrderBadge */}
+        {/* 👉 LOGIC STATUS Ở ĐÂY: Nếu có complaint (chưa resolve) thì đè luôn cái OrderBadge */}
         <div className="flex items-center gap-3 self-start md:self-auto">
           {hasComplaint ? (
             <span className="flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-sm font-semibold tracking-wide text-rose-700 uppercase shadow-sm dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">

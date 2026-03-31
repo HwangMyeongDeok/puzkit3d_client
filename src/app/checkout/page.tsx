@@ -18,10 +18,8 @@ import { APP_CONFIG, ROUTES } from '@/constants';
 import { useLazyGetProfileQuery, useUpdateProfileMutation } from '@/lib/api/endpoints/authApi';
 import { Form } from '@/components/ui/form';
 
-// 👉 THÊM IMPORT VÍ
 import { useGetWalletQuery } from '@/lib/api/endpoints/walletApi';
 
-// IMPORT SCHEMAS & TYPES
 import {
   checkoutSchema,
   type CheckoutFormValues,
