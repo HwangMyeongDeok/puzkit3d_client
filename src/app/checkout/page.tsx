@@ -1,25 +1,31 @@
 'use client';
+
 import { useState, useMemo, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { ShoppingBag, ArrowRight, Loader2, Coins } from 'lucide-react'; // 👉 Đã thêm icon Coins
 import { toast } from 'sonner';
 
+// REDUX & API HOOKS
 import { useAppSelector, useAppDispatch } from '@/stores';
 import { selectCurrentUser } from '@/stores/slices/authSlice';
 import { selectSelectedIds, clearSelection } from '@/stores/slices/checkoutSlice';
 import { useGetCartQuery } from '@/lib/api/endpoints/cartApi';
 import { useCreateInstockOrderMutation } from '@/lib/api/endpoints/orderApi';
 import { useGetShippingFeeQuery } from '@/lib/api/endpoints/deliveryApi';
+import { useLazyGetProfileQuery, useUpdateProfileMutation } from '@/lib/api/endpoints/authApi';
+import { useGetWalletQuery } from '@/lib/api/endpoints/walletApi';
+import {
+  useGetOrderConfigQuery,
+  useGetPaymentConfigQuery,
+  useGetWalletConfigQuery,
+} from '@/lib/api/endpoints/configApi';
+
+// UTILS & CONSTANTS
 import { handleErrorToast } from '@/lib/utils/error-handler';
 import { APP_CONFIG, ROUTES } from '@/constants';
-import { useLazyGetProfileQuery, useUpdateProfileMutation } from '@/lib/api/endpoints/authApi';
-import { Form } from '@/components/ui/form';
 
-import { useGetWalletQuery } from '@/lib/api/endpoints/walletApi';
-
+// SCHEMAS & TYPES
 import {
   checkoutSchema,
   type CheckoutFormValues,
@@ -30,11 +36,16 @@ import {
 import type { CreateInstockOrderRequestDto } from '@/types/api/order.api.types';
 import type { CartItemDto } from '@/types/api/cart.api.types';
 
-// IMPORT COMPONENTS
+// UI COMPONENTS
+import { Form } from '@/components/ui/form';
+
+// CHECKOUT COMPONENTS
 import PaymentActionDialog from '@/components/checkout/PaymentActionDialog';
 import CheckoutAddressForm from '@/components/checkout/CheckoutAddressForm';
 import CheckoutPaymentSection from '@/components/checkout/CheckoutPaymentSection';
 import CheckoutOrderSummary from '@/components/checkout/CheckoutOrderSummary';
+import BusinessPolicyDialog from '@/components/checkout/BusinessPolicyDialog';
+import CheckoutLoader from '@/components/checkout/CheckoutLoader';
 
 interface AuthUser {
   email?: string;
@@ -51,12 +62,16 @@ export default function CheckoutPage() {
   const [updateProfile] = useUpdateProfileMutation();
   const { data: cartData, isLoading: isCartLoading } = useGetCartQuery();
   const [createOrder] = useCreateInstockOrderMutation();
-
-  // 👉 LẤY DATA VÍ
   const { data: walletData, refetch: refetchWallet } = useGetWalletQuery(undefined, {
     skip: !user,
   });
 
+  // Config hooks (Business Rules)
+  const { data: orderConfig } = useGetOrderConfigQuery();
+  const { data: paymentConfig } = useGetPaymentConfigQuery();
+  const { data: walletConfig } = useGetWalletConfigQuery();
+
+  // State Management
   const allCartItems: CartItemDto[] = cartData?.items || [];
   const selectedIdsFromRedux = useAppSelector(selectSelectedIds);
 
@@ -66,11 +81,15 @@ export default function CheckoutPage() {
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState<boolean>(false);
 
-  // 👉 STATE CHO COIN
+  // Coin State
   const [usedCoinInput, setUsedCoinInput] = useState<number>(0);
   const [isUsingMaxCoin, setIsUsingMaxCoin] = useState<boolean>(false);
 
-  // Lấy các sản phẩm đang được chọn
+  // Policy Dialog State
+  const [showTermsDialog, setShowTermsDialog] = useState<boolean>(false);
+  const [pendingOrderData, setPendingOrderData] = useState<CheckoutFormValues | null>(null);
+
+  // Restore selected items
   useEffect(() => {
     if (selectedIdsFromRedux.length > 0) {
       sessionStorage.setItem('checkout_active_ids', JSON.stringify(selectedIdsFromRedux));
@@ -96,6 +115,7 @@ export default function CheckoutPage() {
     0
   );
 
+  // Form setup
   const form = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
@@ -120,19 +140,18 @@ export default function CheckoutPage() {
   );
 
   const shippingFee = shippingFeeData ?? 0;
-
-  // 👉 LOGIC TÍNH TIỀN MỚI CÓ COIN
   const availableCoin = walletData?.balance ?? 0;
   const baseTotal = subtotal + shippingFee;
   const finalTotal = Math.max(0, baseTotal - usedCoinInput);
 
+  // Location Data State
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
   const [wards, setWards] = useState<Ward[]>([]);
+  const isAutoFilling = useRef(false);
+  const pendingWardName = useRef<string>('');
 
-  // ==========================================
-  // GIỮ NGUYÊN TOÀN BỘ LOGIC FETCH ĐỊA CHỈ
-  // ==========================================
+  // Fetch Profile & Locations
   useEffect(() => {
     fetchProfile(undefined, false);
   }, [fetchProfile]);
@@ -166,10 +185,7 @@ export default function CheckoutPage() {
     }
   }, [selectedDistrictCode]);
 
-  const isAutoFilling = useRef(false);
-  const pendingWardName = useRef<string>('');
-
-  // AUTO-FILL PROFILE
+  // Sync Profile -> Form
   useEffect(() => {
     if (!profile) return;
     isAutoFilling.current = true;
@@ -217,9 +233,9 @@ export default function CheckoutPage() {
       }
     }
     if (profile.wardName) pendingWardName.current = profile.wardName;
-  }, [profile, provinces]);
+  }, [profile, provinces, form, selectedDistrictCode]);
 
-  // ĐỒNG BỘ ĐỊA CHỈ
+  // Sync Selects <-> Inputs
   useEffect(() => {
     if (provinces.length > 0 && provinceName) {
       const p = provinces.find(
@@ -250,7 +266,7 @@ export default function CheckoutPage() {
       if (selectedDistrictCode !== String(d.code)) setSelectedDistrictCode(String(d.code));
       if (d.name !== districtName) form.setValue('districtName', d.name, { shouldValidate: true });
     }
-  }, [districts, districtName]);
+  }, [districts, districtName, selectedDistrictCode, form]);
 
   useEffect(() => {
     if (wards.length === 0) return;
@@ -272,21 +288,34 @@ export default function CheckoutPage() {
       );
       if (w && w.name !== wardName) form.setValue('wardName', w.name, { shouldValidate: true });
     }
-  }, [wards]);
+  }, [wards, wardName, form]);
 
   // ==========================================
-  // SUBMIT ĐƠN HÀNG (CẬP NHẬT COIN PAYLOAD)
+  // HANDLERS
   // ==========================================
-  const onSubmit = async (data: CheckoutFormValues) => {
+
+  // 1. Chặn form submit để mở Dialog Policy
+  const handlePreSubmit = (data: CheckoutFormValues) => {
+    setPendingOrderData(data);
+    setShowTermsDialog(true);
+  };
+
+  // 2. Chạy execute order sau khi đồng ý Policy
+  const executeOrder = async () => {
+    if (!pendingOrderData) return;
+    setShowTermsDialog(false);
     setIsSubmitting(true);
+
+    const data = pendingOrderData;
+
     try {
       const latestProfile = await fetchProfile(undefined, false)
         .unwrap()
         .catch(() => profile);
 
       const isPayFullByCoin = finalTotal === 0 && usedCoinInput > 0;
-
       const finalPaymentMethod = isPayFullByCoin ? 'COIN' : data.paymentMethod;
+
       const orderPayload: CreateInstockOrderRequestDto = {
         customerName: data.fullName,
         customerPhone: data.phone,
@@ -350,21 +379,29 @@ export default function CheckoutPage() {
 
   return (
     <>
-      {(isSubmitting || isRedirecting) && (
-        <div className="bg-background/80 fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 backdrop-blur-md">
-          <Loader2 className="text-brand h-12 w-12 animate-spin" />
-          <p className="text-xl font-bold">Processing your order...</p>
-        </div>
-      )}
+      {/* LOADER OVERLAY */}
+      <CheckoutLoader isLoading={isSubmitting || isRedirecting} />
 
+      {/* POLICY DIALOG */}
+      <BusinessPolicyDialog
+        isOpen={showTermsDialog}
+        onClose={() => setShowTermsDialog(false)}
+        onConfirm={executeOrder}
+        orderConfig={orderConfig}
+        paymentConfig={paymentConfig}
+        walletConfig={walletConfig}
+      />
+
+      {/* MAIN CHECKOUT PAGE */}
       <div className="container-custom min-h-screen bg-slate-50/50 py-8 lg:py-12">
         <h1 className="mb-8 text-3xl font-bold text-slate-800 md:text-4xl">Checkout</h1>
 
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit(onSubmit)}
+            onSubmit={form.handleSubmit(handlePreSubmit)}
             className="grid grid-cols-1 gap-8 lg:grid-cols-5"
           >
+            {/* Cột trái: Thông tin địa chỉ & Phương thức thanh toán */}
             <div className="flex flex-col gap-8 lg:col-span-3">
               <CheckoutAddressForm
                 form={form}
@@ -380,9 +417,8 @@ export default function CheckoutPage() {
               <CheckoutPaymentSection form={form} />
             </div>
 
-            {/* CỘT BÊN PHẢI ĐƯỢC CHIA LÀM 2 KHỐI RÕ RÀNG */}
+            {/* Cột phải: Tổng kết đơn hàng & Nút đặt hàng */}
             <div className="flex flex-col gap-6 lg:col-span-2">
-              {/* KHỐI TỔNG KẾT ĐƠN HÀNG (Giữ nguyên) */}
               <CheckoutOrderSummary
                 selectedItems={selectedItems}
                 subtotal={subtotal}
@@ -402,6 +438,7 @@ export default function CheckoutPage() {
         </Form>
       </div>
 
+      {/* ONLINE PAYMENT DIALOG (VNPay / PayOS) */}
       <PaymentActionDialog
         open={showPaymentDialog}
         orderId={createdOrderId}
