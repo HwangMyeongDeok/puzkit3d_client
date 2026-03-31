@@ -44,11 +44,10 @@ import {
   type CreateTicketDetailDto,
 } from '@/lib/api/endpoints/supportTicketApi';
 
-// !!! ĐỪNG QUÊN IMPORT MUTATION UPLOAD CỦA ÔNG VÀO ĐÂY NHÉ !!!
 import { useGetPresignedUrlMutation } from '@/lib/api/endpoints/uploadApi';
 
 /* ------------------------------------------------------------------ */
-/* Constants — Return is intentionally excluded                      */
+/* Constants                                                          */
 /* ------------------------------------------------------------------ */
 
 const TICKET_TYPES: { value: TicketType; label: string; description: string }[] = [
@@ -65,7 +64,7 @@ const TICKET_TYPES: { value: TicketType; label: string; description: string }[] 
 ];
 
 /* ------------------------------------------------------------------ */
-/* Per-item state                                                    */
+/* Per-item state                                                     */
 /* ------------------------------------------------------------------ */
 
 interface ItemSelection {
@@ -80,16 +79,15 @@ function defaultItemState(): ItemSelection {
 }
 
 /* ------------------------------------------------------------------ */
-/* URL validation (Relaxed a bit to allow multiple comma-separated)  */
+/* URL validation                                                     */
 /* ------------------------------------------------------------------ */
 
 function isValidInput(value: string): boolean {
-  // Chỉ cần có nội dung là tạm chấp nhận vì có thể là path từ S3 hoặc link youtube
   return value.trim().length > 0;
 }
 
 /* ------------------------------------------------------------------ */
-/* Part selector sub-component                                       */
+/* Part selector sub-component                                        */
 /* ------------------------------------------------------------------ */
 
 interface PartSelectorProps {
@@ -156,7 +154,7 @@ function PartSelector({ productId, value, onChange, hasError }: PartSelectorProp
 }
 
 /* ------------------------------------------------------------------ */
-/* Props                                                             */
+/* Props                                                              */
 /* ------------------------------------------------------------------ */
 
 interface ReportIssueDialogProps {
@@ -167,7 +165,7 @@ interface ReportIssueDialogProps {
 }
 
 /* ------------------------------------------------------------------ */
-/* Main component                                                    */
+/* Main component                                                     */
 /* ------------------------------------------------------------------ */
 
 export default function ReportIssueDialog({
@@ -187,9 +185,14 @@ export default function ReportIssueDialog({
     Object.fromEntries(orderDetails.map((d) => [d.id, defaultItemState()]))
   );
 
-  /* ── upload state ── */
+  /* ── upload & preview state ── */
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // [MỚI THÊM] State để lưu URL preview local của ảnh/video
+  const [mediaPreviews, setMediaPreviews] = useState<{ url: string; type: 'image' | 'video' }[]>(
+    []
+  );
 
   /* ── field errors ── */
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -212,6 +215,10 @@ export default function ReportIssueDialog({
     setProof('');
     setItems(Object.fromEntries(orderDetails.map((d) => [d.id, defaultItemState()])));
     setErrors({});
+
+    // [MỚI THÊM] Xoá bộ nhớ đệm preview để chống leak RAM và reset mảng preview
+    mediaPreviews.forEach((media) => URL.revokeObjectURL(media.url));
+    setMediaPreviews([]);
   };
 
   /* ── file upload logic ── */
@@ -219,6 +226,11 @@ export default function ReportIssueDialog({
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // [MỚI THÊM] Tạo preview ngay lập tức lúc chọn file xong
+    const localUrl = URL.createObjectURL(file);
+    const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
+    setMediaPreviews((prev) => [...prev, { url: localUrl, type: mediaType }]);
 
     try {
       setIsUploading(true);
@@ -231,7 +243,7 @@ export default function ReportIssueDialog({
         fileName: file.name,
       }).unwrap();
 
-      // 2. Upload file trực tiếp lên Storage (S3/Cloud) bằng fetch (PUT)
+      // 2. Upload file trực tiếp lên Storage
       await fetch(presignedUrl, {
         method: 'PUT',
         body: file,
@@ -240,7 +252,7 @@ export default function ReportIssueDialog({
         },
       });
 
-      // 3. Nối cái path mới vào state proof hiện tại (Cho phép nhập nhiều link)
+      // 3. Nối cái path mới vào state proof hiện tại
       const currentProof = proof.trim();
       const newProof = currentProof ? `${currentProof}, ${path}` : path;
 
@@ -254,7 +266,7 @@ export default function ReportIssueDialog({
       });
     } finally {
       setIsUploading(false);
-      // Reset input file để có thể up lại cùng 1 file nếu cần
+      // Reset input file
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -281,7 +293,6 @@ export default function ReportIssueDialog({
       });
     }
 
-    // ── Validate quantity for Exchange ──
     if (type === 'Exchange') {
       selectedItems.forEach((d) => {
         const item = items[d.id];
@@ -442,7 +453,6 @@ export default function ReportIssueDialog({
             </Label>
 
             <div className="flex items-center gap-2">
-              {/* Input Link */}
               <div className="relative flex-1">
                 <LinkIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                 <Input
@@ -457,7 +467,6 @@ export default function ReportIssueDialog({
                 />
               </div>
 
-              {/* Upload Button */}
               <input
                 type="file"
                 ref={fileInputRef}
@@ -487,6 +496,29 @@ export default function ReportIssueDialog({
               <p className="text-muted-foreground text-xs">
                 You can enter multiple links separated by commas.
               </p>
+            )}
+
+            {/* [MỚI THÊM] UI hiển thị mảng Preview Ảnh/Video */}
+            {mediaPreviews.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-3">
+                {mediaPreviews.map((media, idx) => (
+                  <div
+                    key={idx}
+                    className="border-border bg-muted/20 relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-md border"
+                  >
+                    {media.type === 'video' ? (
+                      <video src={media.url} className="h-full w-full object-cover" controls />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={media.url}
+                        alt={`Upload preview ${idx}`}
+                        className="h-full w-full object-cover"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 

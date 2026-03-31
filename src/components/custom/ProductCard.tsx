@@ -3,17 +3,22 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { Puzzle, Timer, ShoppingCart, Loader2, Star } from 'lucide-react';
+import { Puzzle, Timer, ShoppingCart, Loader2, Layers, Wrench, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 
-import type { ProductDto } from '@/types';
+import type { ProductDto } from '@/types/api/product.api.types';
 import { ROUTES } from '@/constants';
 import { useAppSelector } from '@/stores/hooks';
 import { selectIsAuthenticated } from '@/stores/slices/authSlice';
-import { useAddToCartMutation } from '@/lib/api/endpoints/cartApi';
 
+// API Hooks
+import { useAddToCartMutation } from '@/lib/api/endpoints/cartApi';
 import { useGetPriceDetailByVariantIdQuery } from '@/lib/api/endpoints/priceApi';
 import { useGetProductVariantsQuery } from '@/lib/api/endpoints/productApi';
+import { useGetCapabilitiesQuery } from '@/lib/api/endpoints/metaData';
+import { useGetMaterialsQuery } from '@/lib/api/endpoints/metaData';
+import { useGetAssemblyMethodsQuery } from '@/lib/api/endpoints/metaData';
+
 import { handleErrorToast } from '@/lib/utils/error-handler';
 import { skipToken } from '@reduxjs/toolkit/query';
 
@@ -42,18 +47,52 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   const [addToCartMutate, { isLoading: isAdding }] = useAddToCartMutation();
 
-  // Fetch product variants
+  // 1. Fetch Danh Mục
+  const { data: capsData } = useGetCapabilitiesQuery({ pageNumber: 1, pageSize: 100 });
+  const { data: materialsData } = useGetMaterialsQuery({ pageNumber: 1, pageSize: 100 });
+  const { data: assemblyData } = useGetAssemblyMethodsQuery({ pageNumber: 1, pageSize: 100 });
+
+  const materialName =
+    materialsData?.items?.find((m) => m.id === product.materialId)?.name || '...';
+  const assemblyName =
+    assemblyData?.items?.find((a) => a.id === product.assemblyMethodId)?.name || '...';
+  const capabilityNames = product.capabilityIds
+    ?.map((id) => capsData?.items?.find((c) => c.id === id)?.name)
+    .filter(Boolean);
+
+  // 2. Fetch Variant & Price Array
   const { data: variantsData, isLoading: isVariantsLoading } = useGetProductVariantsQuery(
     product.id,
     { refetchOnMountOrArgChange: true }
   );
   const defaultVariant = variantsData?.variants?.[0];
 
-  // Fetch price based on first variant
-  const { data: priceData, isLoading: isPriceLoading } = useGetPriceDetailByVariantIdQuery(
+  // API trả về Array mảng giá
+  const { data: priceArray, isLoading: isPriceLoading } = useGetPriceDetailByVariantIdQuery(
     defaultVariant?.id ?? skipToken,
     { refetchOnMountOrArgChange: true }
   );
+
+  const isFetchingData = isVariantsLoading || isPriceLoading;
+
+  // XỬ LÝ LOGIC GIÁ (Array)
+  const prices = Array.isArray(priceArray) ? priceArray : [];
+  const standardPriceObj = prices.find((p: any) => p.priceName === 'Standard');
+  const salePriceObj = prices.find((p: any) => p.priceName !== 'Standard');
+
+  // Ưu tiên hiển thị và thêm vào giỏ hàng cái giá Sale (nếu có)
+  const activePriceObj = salePriceObj || standardPriceObj;
+  const isSale = !!salePriceObj && !!standardPriceObj; // Chỉ show gạch ngang nếu có đủ cả 2
+
+  const formatCurrency = (val: number) =>
+    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
+
+  const formattedActivePrice = activePriceObj?.unitPrice
+    ? formatCurrency(activePriceObj.unitPrice)
+    : 'Updating...';
+  const formattedStandardPrice = standardPriceObj?.unitPrice
+    ? formatCurrency(standardPriceObj.unitPrice)
+    : '';
 
   const handleQuickAdd = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -65,22 +104,22 @@ export default function ProductCard({ product }: ProductCardProps) {
       return;
     }
 
-    if (!defaultVariant || !priceData) {
+    if (!defaultVariant || !activePriceObj) {
       toast.info('Product is not ready or requires configuration!');
       router.push(ROUTES.PRODUCT_DETAIL(product.slug));
       return;
     }
 
     try {
-      const priceDetailId = priceData.id.replace(/"/g, '').trim();
+      // Lấy ID của cái giá đang được áp dụng (Sale hoặc Standard)
+      const priceDetailId = activePriceObj.id.replace(/"/g, '').trim();
 
-      const payload = {
+      await addToCartMutate({
         itemId: defaultVariant.id,
         inStockProductPriceDetailId: priceDetailId,
         quantity: 1,
-      };
+      }).unwrap();
 
-      await addToCartMutate(payload).unwrap();
       toast.success('Added to cart!');
     } catch (error: any) {
       handleErrorToast(error);
@@ -91,14 +130,6 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   const productUrl = ROUTES.PRODUCT_DETAIL(product.slug);
-
-  const formattedPrice = priceData?.unitPrice
-    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'VND' }).format(
-        priceData.unitPrice
-      )
-    : 'Updating...';
-
-  const isFetchingData = isVariantsLoading || isPriceLoading;
 
   return (
     <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-slate-300 hover:shadow-xl">
@@ -114,7 +145,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             src={product.thumbnailUrl}
             alt={product.name}
             fill
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
@@ -122,7 +153,6 @@ export default function ProductCard({ product }: ProductCardProps) {
             <span className="text-sm font-medium text-slate-400">No image</span>
           </div>
         )}
-        <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/5" />
       </Link>
 
       <div className="flex flex-1 flex-col p-4">
@@ -132,24 +162,45 @@ export default function ProductCard({ product }: ProductCardProps) {
           </h3>
         </Link>
 
-        <div className="mt-2 flex items-center gap-1.5">
-          <div className="flex text-amber-400">
-            <Star className="h-4 w-4 fill-current" />
-            <Star className="h-4 w-4 fill-current" />
-            <Star className="h-4 w-4 fill-current" />
-            <Star className="h-4 w-4 fill-current" />
-            <Star className="h-4 w-4 fill-amber-400/30 text-amber-400/30" />
+        {/* THÔNG TIN VẬT LIỆU, CÁCH LẮP... */}
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] font-medium text-slate-600">
+          <div
+            className="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5"
+            title="Material"
+          >
+            <Layers className="h-3 w-3 text-slate-400" />
+            <span className="max-w-[80px] truncate">{materialName}</span>
           </div>
-          <span className="text-xs font-semibold text-slate-700">4.8</span>
-          <span className="text-xs text-slate-400">(120 reviews)</span>
+          <div
+            className="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5"
+            title="Assembly Method"
+          >
+            <Wrench className="h-3 w-3 text-slate-400" />
+            <span className="max-w-[80px] truncate">{assemblyName}</span>
+          </div>
+
+          {capabilityNames && capabilityNames.length > 0 && (
+            <div
+              className="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5"
+              title="Capabilities"
+            >
+              <Zap className="h-3 w-3 text-amber-500" />
+              <span className="max-w-[80px] truncate">{capabilityNames[0]}</span>
+              {capabilityNames.length > 1 && (
+                <span className="text-[9px] font-bold text-slate-400">
+                  +{capabilityNames.length - 1}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="mt-3 flex items-center gap-2 text-[11px] font-medium text-slate-600">
-          <div className="flex items-center gap-1.5 rounded-full border border-slate-200/60 bg-slate-100 px-2.5 py-1 transition-colors group-hover:bg-slate-200/50">
+          <div className="flex items-center gap-1.5 rounded-full border border-slate-200/60 px-2.5 py-1">
             <Puzzle className="h-3.5 w-3.5 text-slate-500" />
             <span>{product.totalPieceCount} Pcs</span>
           </div>
-          <div className="flex items-center gap-1.5 rounded-full border border-slate-200/60 bg-slate-100 px-2.5 py-1 transition-colors group-hover:bg-slate-200/50">
+          <div className="flex items-center gap-1.5 rounded-full border border-slate-200/60 px-2.5 py-1">
             <Timer className="h-3.5 w-3.5 text-slate-500" />
             <span>{product.estimatedBuildTime} Min</span>
           </div>
@@ -167,14 +218,15 @@ export default function ProductCard({ product }: ProductCardProps) {
               <div className="h-6 w-24 animate-pulse rounded bg-slate-200"></div>
             ) : (
               <div className="flex items-end gap-2">
+                {/* Giá Đang Bán (Sale hoặc Standard) */}
                 <span className="text-lg font-extrabold tracking-tight text-[#e51636]">
-                  {formattedPrice}
+                  {formattedActivePrice}
                 </span>
-                {priceData?.unitPrice && (
+
+                {/* Nếu đang Sale thì gạch ngang giá Standard */}
+                {isSale && (
                   <span className="mb-0.5 text-xs font-medium text-slate-400 line-through decoration-slate-300">
-                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'VND' }).format(
-                      priceData.unitPrice * 1.2
-                    )}
+                    {formattedStandardPrice}
                   </span>
                 )}
               </div>

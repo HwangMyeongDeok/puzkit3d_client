@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
+import { Minus, Plus, Trash2, ShoppingBag, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { formatPrice } from '@/lib/utils';
 import { useCartSync } from '@/lib/hooks/useCartSync';
-import { useGetCartQuery } from '@/lib/api/endpoints/cartApi';
+import { useGetCartQuery, useUpdateCartItemMutation } from '@/lib/api/endpoints/cartApi';
 import { ROUTES } from '@/constants';
 import { useAppSelector } from '@/stores/hooks';
 
@@ -28,12 +29,14 @@ interface MiniCartProps {
 
 export default function MiniCart({ children }: MiniCartProps) {
   const { handleIncrement, handleDecrement, handleRemove } = useCartSync();
-
   const { isAuthenticated, isLoading: isAuthLoading } = useAppSelector((state) => state.auth);
 
   const { data: cartDto } = useGetCartQuery(undefined, {
     skip: isAuthLoading || !isAuthenticated,
   });
+
+  // Lấy hàm mutation để bắn API update giá
+  const [updateCartItem, { isLoading: isUpdating }] = useUpdateCartItemMutation();
 
   const cartItems = cartDto?.items || [];
 
@@ -43,6 +46,20 @@ export default function MiniCart({ children }: MiniCartProps) {
   });
 
   const totalQuantity = cartDto?.totalItem ?? 0;
+
+  // Xử lý khi user bấm nút "Update Price"
+  const handleUpdatePrice = async (itemId: string, quantity: number, newPriceDetailId: string) => {
+    try {
+      await updateCartItem({
+        itemId,
+        quantity,
+        inStockProductPriceDetailId: newPriceDetailId,
+      }).unwrap();
+      toast.success('Cart updated with the new price!');
+    } catch (error) {
+      toast.error('Failed to update price. Please try again.');
+    }
+  };
 
   return (
     <Sheet>
@@ -77,84 +94,114 @@ export default function MiniCart({ children }: MiniCartProps) {
           ) : (
             <div className="flex flex-col gap-3">
               {cartItems.map((item) => {
-                // Đã sửa lại đúng chuẩn CartItemDto phẳng
                 const variantDisplay = item.variantName || item.color || 'Default';
 
                 return (
                   <div
                     key={item.itemId}
-                    className="border-border bg-card flex gap-4 rounded-lg border p-3 hover:shadow-sm"
+                    className={`border-border bg-card flex flex-col gap-2 rounded-lg border p-3 hover:shadow-sm ${
+                      item.isValidPrice === false ? 'border-amber-300 bg-amber-50/30' : ''
+                    }`}
                   >
-                    <SheetClose asChild>
-                      {/* Đã sửa thành item.slug */}
-                      <Link
-                        href={`/shop/${item.slug}`}
-                        className="bg-muted relative h-20 w-20 shrink-0 overflow-hidden rounded-md transition-opacity hover:opacity-80"
-                      >
-                        <Image
-                          src={item.thumbnailUrl} // Đã sửa
-                          alt={item.name} // Đã sửa
-                          fill
-                          sizes="80px"
-                          className="object-cover"
-                        />
-                      </Link>
-                    </SheetClose>
+                    {/* Phần thân item chính */}
+                    <div className="flex gap-4">
+                      <SheetClose asChild>
+                        <Link
+                          href={`/shop/${item.slug}`}
+                          className="bg-muted relative h-20 w-20 shrink-0 overflow-hidden rounded-md transition-opacity hover:opacity-80"
+                        >
+                          <Image
+                            src={item.thumbnailUrl}
+                            alt={item.name}
+                            fill
+                            sizes="80px"
+                            className="object-cover"
+                          />
+                        </Link>
+                      </SheetClose>
 
-                    <div className="flex min-w-0 flex-1 flex-col justify-between">
-                      <div>
-                        <SheetClose asChild>
-                          <Link href={`/shop/${item.slug}`}>
-                            <p className="text-card-foreground hover:text-primary line-clamp-2 cursor-pointer text-sm font-semibold transition-colors">
-                              {item.name} {/* Đã sửa */}
-                            </p>
-                          </Link>
-                        </SheetClose>
+                      <div className="flex min-w-0 flex-1 flex-col justify-between">
+                        <div>
+                          <SheetClose asChild>
+                            <Link href={`/shop/${item.slug}`}>
+                              <p className="text-card-foreground hover:text-primary line-clamp-2 cursor-pointer text-sm font-semibold transition-colors">
+                                {item.name}
+                              </p>
+                            </Link>
+                          </SheetClose>
 
-                        <p className="text-muted-foreground mt-0.5 line-clamp-1 text-[11px]">
-                          {variantDisplay}
-                        </p>
-                      </div>
+                          <p className="text-muted-foreground mt-0.5 line-clamp-1 text-[11px]">
+                            {variantDisplay}
+                          </p>
+                        </div>
 
-                      <div className="mt-2 flex items-center justify-between">
-                        <p className="text-primary text-xs font-bold">
-                          {formatPrice(item.unitPrice)}
-                        </p>
+                        <div className="mt-2 flex items-center justify-between">
+                          <p
+                            className={`text-xs font-bold ${item.isValidPrice === false ? 'text-muted-foreground line-through' : 'text-primary'}`}
+                          >
+                            {formatPrice(item.unitPrice)}
+                          </p>
 
-                        <div className="flex items-center gap-3">
-                          <div className="border-border flex items-center rounded border">
+                          <div className="flex items-center gap-3">
+                            <div className="border-border bg-background flex items-center rounded border">
+                              <button
+                                onClick={() => handleDecrement(item.itemId, item.quantity)}
+                                disabled={item.quantity <= 1 || isUpdating}
+                                className="text-foreground/50 hover:bg-secondary flex h-6 w-6 items-center justify-center transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </button>
+
+                              <span className="border-border flex h-6 w-7 items-center justify-center border-x text-[11px] font-bold">
+                                {item.quantity}
+                              </span>
+
+                              <button
+                                onClick={() => handleIncrement(item.itemId, item.quantity)}
+                                disabled={isUpdating}
+                                className="text-foreground/50 hover:bg-secondary flex h-6 w-6 items-center justify-center transition-colors disabled:opacity-40"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </button>
+                            </div>
+
                             <button
-                              onClick={() => handleDecrement(item.itemId, item.quantity)}
-                              disabled={item.quantity <= 1}
-                              className="text-foreground/50 hover:bg-secondary flex h-6 w-6 items-center justify-center transition-colors disabled:cursor-not-allowed disabled:opacity-40"
-                              aria-label="Decrease quantity"
+                              onClick={() => handleRemove(item.itemId)}
+                              className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded p-1 transition-colors"
                             >
-                              <Minus className="h-3 w-3" />
-                            </button>
-
-                            <span className="border-border flex h-6 w-7 items-center justify-center border-x text-[11px] font-bold">
-                              {item.quantity}
-                            </span>
-
-                            <button
-                              onClick={() => handleIncrement(item.itemId, item.quantity)}
-                              className="text-foreground/50 hover:bg-secondary flex h-6 w-6 items-center justify-center transition-colors"
-                              aria-label="Increase quantity"
-                            >
-                              <Plus className="h-3 w-3" />
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
-
-                          <button
-                            onClick={() => handleRemove(item.itemId)}
-                            className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded p-1 transition-colors"
-                            aria-label="Remove item"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
                         </div>
                       </div>
                     </div>
+
+                    {/* VÙNG CẢNH BÁO GIÁ THAY ĐỔI */}
+                    {item.isValidPrice === false && item.newPriceDetailId && item.newUnitPrice && (
+                      <div className="mt-1 flex flex-col gap-2 rounded-md border border-amber-200 bg-amber-100/50 p-2.5">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                          <p className="text-[11px] leading-relaxed text-amber-800">
+                            <span className="font-bold text-amber-900">Price changed!</span>
+                            <br />
+                            Update to{' '}
+                            <span className="font-bold">{formatPrice(item.newUnitPrice)}</span>{' '}
+                            {item.newPriceName && `(${item.newPriceName})`} to proceed with
+                            checkout.
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          disabled={isUpdating}
+                          onClick={() =>
+                            handleUpdatePrice(item.itemId, item.quantity, item.newPriceDetailId!)
+                          }
+                          className="h-7 w-full bg-amber-500 text-[10px] font-bold text-white shadow-sm transition-all hover:bg-amber-600"
+                        >
+                          {isUpdating ? 'Updating...' : 'Update Price'}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -174,7 +221,11 @@ export default function MiniCart({ children }: MiniCartProps) {
             <div className="flex w-full flex-col gap-2">
               <SheetClose asChild>
                 <Link href={ROUTES.CART}>
-                  <Button className="w-full gap-2 rounded-xl py-5 text-sm font-bold shadow-lg">
+                  {/* Có thể block nút này nếu giỏ hàng còn item chưa update giá (tùy nghiệp vụ) */}
+                  <Button
+                    className="w-full gap-2 rounded-xl py-5 text-sm font-bold shadow-lg"
+                    disabled={cartItems.some((item) => !item.isValidPrice)}
+                  >
                     View Cart & Checkout
                   </Button>
                 </Link>

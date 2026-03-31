@@ -29,7 +29,7 @@ export const cartApi = apiSlice.injectEndpoints({
 
         const rawData = result.data as RawCartDto;
 
-        // Bỏ hết ?. và || đi vì ProductDetails chắc chắn có từ BE
+        // Map RawCartDto sang CartDto (làm phẳng dữ liệu)
         const cleanData: CartDto = {
           id: rawData.id || '',
           totalItem: rawData.totalItem || 0,
@@ -50,6 +50,18 @@ export const cartApi = apiSlice.injectEndpoints({
               unitPrice: item.unitPrice,
               quantity: item.quantity,
               totalPrice: item.totalPrice,
+
+              // Check Giá
+              isValidPrice: item.isValidPrice ?? true,
+              newUnitPrice: item.newUnitPrice,
+              newPriceDetailId: item.newPriceDetailId,
+              newPriceName: item.newPriceName,
+
+              // MỚI: Check Kho & Biến thể
+              isVariantActive: item.isVariantActive ?? true,
+              isValidInventory: item.isValidInventory ?? true,
+              // Fallback: Nếu null (không track kho) -> gán 9999 để ko bị khóa nút
+              availableInventory: item.availableInventory ?? 9999,
             })
           ),
         };
@@ -69,24 +81,47 @@ export const cartApi = apiSlice.injectEndpoints({
       invalidatesTags: ['Cart'],
     }),
 
-    // 3. Cập nhật số lượng
-    updateCartItem: builder.mutation<void, { itemId: string; quantity: number }>({
-      query: ({ itemId, quantity }) => ({
+    // 3. Cập nhật số lượng HOẶC cập nhật giá mới
+    // 3. Cập nhật số lượng HOẶC cập nhật giá mới
+    updateCartItem: builder.mutation<
+      void,
+      { itemId: string; quantity: number; inStockProductPriceDetailId?: string }
+    >({
+      query: ({ itemId, quantity, inStockProductPriceDetailId }) => ({
         url: `/instock-carts/items/${itemId}`,
         method: 'PUT',
-        data: { quantity },
+        data: { quantity, inStockProductPriceDetailId },
       }),
-      async onQueryStarted({ itemId, quantity }, { dispatch, queryFulfilled }) {
+
+      // FIX TẠI ĐÂY: Nếu có update giá thì mới bắt RTK Query fetch lại giỏ hàng
+      invalidatesTags: (result, error, arg) => (arg.inStockProductPriceDetailId ? ['Cart'] : []),
+
+      async onQueryStarted(
+        { itemId, quantity, inStockProductPriceDetailId },
+        { dispatch, queryFulfilled }
+      ) {
         const patchResult = dispatch(
           cartApi.util.updateQueryData('getCart', undefined, (draft) => {
             if (draft?.items) {
               const item = draft.items.find((i) => i.itemId === itemId);
               if (item) {
-                // FIX LOGIC: Cộng/trừ chênh lệch vào tổng số lượng giỏ hàng
+                // Xử lý cập nhật số lượng
                 const qtyDiff = quantity - item.quantity;
                 draft.totalItem += qtyDiff;
-
                 item.quantity = quantity;
+
+                // Optimistic Update cho việc đổi giá (để UI đổi trong 0.1s trước khi fetch lại)
+                if (inStockProductPriceDetailId && item.newUnitPrice) {
+                  item.unitPrice = item.newUnitPrice;
+                  item.isValidPrice = true;
+                  item.priceDetailId = inStockProductPriceDetailId;
+
+                  item.newUnitPrice = undefined;
+                  item.newPriceDetailId = undefined;
+                  item.newPriceName = undefined;
+                }
+
+                // Cập nhật lại tổng tiền của item này
                 item.totalPrice = item.unitPrice * quantity;
               }
             }
@@ -112,9 +147,7 @@ export const cartApi = apiSlice.injectEndpoints({
             if (draft?.items) {
               const itemToRemove = draft.items.find((i) => i.itemId === itemId);
               if (itemToRemove) {
-                // FIX LOGIC: Trừ đi số lượng của cái item vừa bị xóa khỏi tổng
                 draft.totalItem -= itemToRemove.quantity;
-
                 draft.items = draft.items.filter((i) => i.itemId !== itemId);
               }
             }

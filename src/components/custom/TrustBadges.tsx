@@ -3,7 +3,7 @@
 import { Lightbulb, Hand, Zap, Music, Box, Star, Loader2 } from 'lucide-react';
 
 // Chỉnh lại đường dẫn import này cho đúng với project của ông nha
-import { useGetCapabilitiesQuery } from '@/lib/api/endpoints/capabilityApi';
+import { useGetCapabilitiesQuery } from '@/lib/api/endpoints/metaData';
 
 // Từ điển map Icon dựa vào slug của Backend
 const ICON_MAP: Record<string, React.ElementType> = {
