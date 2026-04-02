@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { formatPrice } from '@/lib/utils';
 import { useGetPartnerProductByIdQuery } from '@/lib/api/endpoints/partnerProductApi';
 import { useGetPartnersQuery } from '@/lib/api/endpoints/partnerApi';
+import { useAddItemToPartnerCartMutation } from '@/lib/api/endpoints/partnerCartApi';
 
 export default function PartnerProductDetailPage() {
   const params = useParams();
@@ -34,6 +35,8 @@ export default function PartnerProductDetailPage() {
     }
   );
 
+  const [addItemToPartnerCart, { isLoading: isAddingToCart }] = useAddItemToPartnerCartMutation();
+
   const partnerName = useMemo(() => {
     if (!product?.partnerId) return '';
     const partners = partnerResponse?.items ?? [];
@@ -46,6 +49,23 @@ export default function PartnerProductDetailPage() {
   }, [product]);
 
   const [selectedImage, setSelectedImage] = useState(0);
+
+  async function handleAddToCart() {
+    if (!product?.id) return;
+
+    try {
+      await addItemToPartnerCart({
+        itemId: product.id,
+        quantity: 1,
+      }).unwrap();
+
+      toast.success(`Added "${product.name}" to cart`);
+      window.dispatchEvent(new Event('open-mini-cart'));
+    } catch (error) {
+      console.error('Add partner product to cart failed:', error);
+      toast.error('Failed to add partner product to cart');
+    }
+  }
 
   if (isLoading) {
     return (
@@ -144,11 +164,12 @@ export default function PartnerProductDetailPage() {
             <div className="mt-6 flex flex-wrap gap-3">
               <button
                 type="button"
-                onClick={() => toast.success(`Added "${product.name}" to cart`)}
-                className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
+                onClick={handleAddToCart}
+                disabled={isAddingToCart}
+                className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <ShoppingCart className="h-4 w-4" />
-                Add to Cart
+                {isAddingToCart ? 'Adding...' : 'Add to Cart'}
               </button>
 
               <button
