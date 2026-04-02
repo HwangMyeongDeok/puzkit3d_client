@@ -1,7 +1,14 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, PackageSearch, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  PackageSearch,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+  Activity,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -57,13 +64,15 @@ export default function TicketDetailPage() {
 
   if (isTicketError || !ticket) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
-        <AlertCircle className="mb-2 h-16 w-16 text-rose-500 opacity-80" />
+      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 py-20 text-center">
+        <div className="rounded-full bg-rose-50 p-4 dark:bg-rose-500/10">
+          <AlertCircle className="h-12 w-12 text-rose-500" />
+        </div>
         <h2 className="text-2xl font-bold">Ticket Not Found</h2>
         <p className="text-muted-foreground max-w-md">
           The support ticket does not exist, was deleted, or you do not have permission to view it.
         </p>
-        <Button onClick={() => router.back()} variant="outline" className="mt-4">
+        <Button onClick={() => router.back()} variant="outline" className="mt-4 rounded-full px-6">
           <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
         </Button>
       </div>
@@ -75,36 +84,42 @@ export default function TicketDetailPage() {
   const canResolve = isDelivered && ticket.status !== 'Resolved';
 
   return (
-    <div className="container-custom py-8 lg:py-12">
-      <div className="flex flex-col gap-6">
-        {/* Header Navigation */}
+    <div className="container-custom min-h-screen py-8 lg:py-12">
+      <div className="flex flex-col gap-8">
+        {/* ========== Header Navigation ========== */}
         <div className="flex items-center gap-4">
           <Button
             onClick={() => router.back()}
             variant="outline"
             size="icon"
-            className="shrink-0 rounded-full"
+            className="bg-background hover:bg-muted shrink-0 rounded-full shadow-sm"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Ticket Details</h1>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Ticket Details</h1>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Ticket ID:{' '}
+              <span className="text-foreground font-mono uppercase">{ticketId?.slice(0, 8)}</span>
+            </p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
           {/* ========== CỘT TRÁI (2/3) ========== */}
-          <div className="flex flex-col gap-6 lg:col-span-2">
-            {/* VỊ TRÍ MỚI: CTA RESOLVE TICKET - Đặt ngay đầu cột trái */}
+          <div className="flex flex-col gap-8 lg:col-span-2">
+            {/* VỊ TRÍ MỚI: CTA RESOLVE TICKET - Đổi sang tone xanh lá báo hiệu "Thành công / Hoàn tất" */}
             {canResolve && (
-              <div className="bg-primary/10 border-primary/20 animate-in fade-in slide-in-from-bottom-2 flex flex-col items-center justify-between gap-4 rounded-xl border p-5 shadow-sm transition-all sm:flex-row">
+              <div className="animate-in fade-in slide-in-from-bottom-2 flex flex-col items-center justify-between gap-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm sm:flex-row dark:border-emerald-900/30 dark:bg-emerald-950/20">
                 <div className="flex items-center gap-4">
-                  <div className="bg-primary text-primary-foreground shrink-0 rounded-full p-2.5">
+                  <div className="shrink-0 rounded-full bg-emerald-100 p-3 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400">
                     <CheckCircle2 className="h-6 w-6" />
                   </div>
                   <div>
-                    <h3 className="text-foreground text-lg font-bold">
+                    <h3 className="text-lg font-bold text-emerald-900 dark:text-emerald-50">
                       Action Required: Resolve Ticket
                     </h3>
-                    <p className="text-muted-foreground mt-0.5 text-sm">
+                    <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-300/80">
                       Your package has been delivered. If everything looks good, please confirm to
                       close this ticket.
                     </p>
@@ -112,7 +127,7 @@ export default function TicketDetailPage() {
                 </div>
                 <Button
                   size="lg"
-                  className="w-full shrink-0 font-bold shadow-md transition-all hover:shadow-lg sm:w-auto"
+                  className="w-full shrink-0 rounded-xl bg-emerald-600 font-bold text-white shadow-md transition-all hover:bg-emerald-700 hover:shadow-lg sm:w-auto"
                   onClick={handleResolveTicket}
                   disabled={isUpdating}
                 >
@@ -128,19 +143,39 @@ export default function TicketDetailPage() {
               </div>
             )}
 
-            <TicketStatusCard ticket={ticket} />
+            {/* NHÓM TIẾN TRÌNH: Gom Status và Tracking lại gần nhau để user hiểu chúng liên quan với nhau */}
+            <div className="flex flex-col gap-5">
+              <div className="flex items-center gap-2">
+                <Activity className="text-primary h-5 w-5" />
+                <h2 className="text-lg font-bold tracking-tight">Progress Tracking</h2>
+              </div>
 
-            <DeliveryTrackingCard
-              deliveryTracking={deliveryTracking}
-              isLoading={isDeliveryLoading}
-            />
+              <div className="flex flex-col gap-4">
+                <TicketStatusCard ticket={ticket} />
+
+                {/* Phân tách nhẹ nhàng nếu có dữ liệu Tracking */}
+                {deliveryTracking && (
+                  <DeliveryTrackingCard
+                    deliveryTracking={deliveryTracking}
+                    isLoading={isDeliveryLoading}
+                  />
+                )}
+              </div>
+            </div>
 
             {/* Affected Items */}
-            <div className="bg-card border-border flex flex-col gap-4 rounded-xl border p-6 shadow-sm">
-              <h2 className="text-muted-foreground flex items-center gap-2 text-sm font-bold tracking-wider uppercase">
-                <PackageSearch className="h-4 w-4" /> Affected Items ({ticket.details.length})
-              </h2>
-              <div className="flex flex-col gap-3">
+            <div className="bg-card border-border flex flex-col gap-5 rounded-2xl border p-6 shadow-sm">
+              <div className="flex items-center justify-between border-b pb-4">
+                <h2 className="text-foreground flex items-center gap-2 text-base font-bold">
+                  <PackageSearch className="text-primary h-5 w-5" />
+                  Affected Items
+                </h2>
+                <span className="bg-muted text-muted-foreground flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold">
+                  {ticket.details.length}
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-4 pt-2">
                 {ticket.details.map((detail: any) => {
                   const matchedItem = orderData?.orderDetails?.find(
                     (item: any) => item.id === detail.orderDetailId
@@ -150,6 +185,7 @@ export default function TicketDetailPage() {
                       key={detail.id}
                       detail={detail}
                       orderDetail={matchedItem}
+                      ticketType={ticket.type}
                       isLoading={isFetchingOrder}
                     />
                   );
@@ -161,7 +197,6 @@ export default function TicketDetailPage() {
           {/* ========== CỘT PHẢI (1/3) ========== */}
           <div className="flex flex-col gap-6 lg:sticky lg:top-24 lg:col-span-1">
             <TicketSidebarInfo ticket={ticket} />
-            <AttachedEvidence proof={ticket.proof} />
           </div>
         </div>
       </div>

@@ -28,7 +28,7 @@ const storage = typeof window !== 'undefined' ? createWebStorage('local') : crea
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: [apiSlice.reducerPath],
+  whitelist: [],
 };
 
 const rootReducer = combineReducers({

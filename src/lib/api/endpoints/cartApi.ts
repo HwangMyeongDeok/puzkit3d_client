@@ -82,7 +82,6 @@ export const cartApi = apiSlice.injectEndpoints({
     }),
 
     // 3. Cập nhật số lượng HOẶC cập nhật giá mới
-    // 3. Cập nhật số lượng HOẶC cập nhật giá mới
     updateCartItem: builder.mutation<
       void,
       { itemId: string; quantity: number; inStockProductPriceDetailId?: string }

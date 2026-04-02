@@ -1,12 +1,9 @@
 import { CapabilityDto, GetCapabilitiesRequest } from '@/types/api/capability.types';
-import apiSlice from '../apiSlice'; // Nhớ check lại đường dẫn apiSlice cho chuẩn nha
+import apiSlice from '../apiSlice';
 import { PagedResultDto } from '@/types';
 
 export const metaDataApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    // ==========================================
-    // 1. CÁC ENDPOINT LẤY LIST (CODE CŨ CỦA ÔNG)
-    // ==========================================
     getCapabilities: builder.query<PagedResultDto<CapabilityDto>, GetCapabilitiesRequest>({
       query: (params) => ({
         url: '/capabilities',
@@ -40,9 +37,6 @@ export const metaDataApi = apiSlice.injectEndpoints({
       }),
     }),
 
-    // ==========================================
-    // 2. CÁC ENDPOINT LẤY THEO ID (MỚI THÊM VÀO)
-    // ==========================================
     getCapabilityById: builder.query<CapabilityDto, string>({
       query: (id) => ({
         url: `/capabilities/${id}`,

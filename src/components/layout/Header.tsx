@@ -12,7 +12,6 @@ import { useGetWalletQuery } from '@/lib/api/endpoints/walletApi';
 import { toast } from 'sonner';
 import type { CartItemDto } from '@/types/api/cart.api.types';
 
-// 👉 THÊM IMPORT NÀY ĐỂ DỌN RÁC
 import { clearAxiosState } from '@/lib/api/axiosInstance';
 import { apiSlice } from '@/lib/api/apiSlice';
 
@@ -68,7 +67,7 @@ export default function Header() {
     const isUnauthorized = (walletError as any)?.status === 401;
 
     if (isUnauthorized && isAuthenticated && !isAuthLoading) {
-      console.warn('Phát hiện Token hết hạn không thể refresh. Đang dọn dẹp state...');
+      console.warn('Token expired. Logging out...');
       handleLogout(true);
     }
   }, [walletError, isAuthenticated, isAuthLoading]);
@@ -104,12 +103,11 @@ export default function Header() {
     // 5. Hiển thị thông báo
     if (!isForced) {
       toast.success('Logged out successfully!');
+      router.push('/');
     } else {
       toast.error('Session expired. Please log in again.');
+      router.push('/login');
     }
-
-    // 6. F5 lại toàn bộ app để clean sạch RAM
-    window.location.href = '/login';
   };
 
   if (!mounted) return <div className="h-16 w-full bg-white shadow-sm" />;

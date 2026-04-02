@@ -16,30 +16,24 @@ import { Button } from '@/components/ui/button';
 import { formatPrice } from '@/lib/utils';
 import OrderBadge from '../orderDetail/OrderBadge';
 
-// Import Types chuẩn từ API
 import type {
   GetCustomerOrderResponseDto,
   InstockOrderStatus,
   OrderPreviewDto,
 } from '@/types/api/order.api.types';
-import { useGetTicketByOrderIdQuery } from '@/lib/api/endpoints/supportTicketApi';
 
 const TERMINAL_STATUSES: InstockOrderStatus[] = ['Cancelled', 'Rejected', 'Returned', 'Completed'];
 
 interface OrderCardProps {
   order: GetCustomerOrderResponseDto;
   onPayNow: (orderId: string) => void;
+  hasComplaint?: boolean;
+  ticketId?: string;
 }
 
-export default function OrderCard({ order, onPayNow }: OrderCardProps) {
+export default function OrderCard({ order, onPayNow, hasComplaint, ticketId }: OrderCardProps) {
   const isOnlinePayment = order.paymentMethod === 'Online';
   const PaymentIcon = isOnlinePayment ? Wallet : Banknote;
-
-  // Gọi API lấy ticket theo orderId
-  const { data: ticketInfo, isSuccess } = useGetTicketByOrderIdQuery(order.id);
-
-  // 👉 CẬP NHẬT LOGIC: Chỉ coi là có complaint nếu có ticket VÀ trạng thái chưa phải là 'Resolved'
-  const hasComplaint = isSuccess && ticketInfo != null && ticketInfo.status !== 'Resolved';
 
   return (
     <div className="bg-card border-border hover:border-brand/30 flex flex-col gap-4 rounded-xl border p-5 shadow-sm transition-all duration-300 hover:shadow-md">
@@ -69,7 +63,6 @@ export default function OrderCard({ order, onPayNow }: OrderCardProps) {
           </div>
         </div>
 
-        {/* 👉 LOGIC STATUS Ở ĐÂY: Nếu có complaint (chưa resolve) thì đè luôn cái OrderBadge */}
         <div className="flex items-center gap-3 self-start md:self-auto">
           {hasComplaint ? (
             <span className="flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-sm font-semibold tracking-wide text-rose-700 uppercase shadow-sm dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
@@ -82,7 +75,6 @@ export default function OrderCard({ order, onPayNow }: OrderCardProps) {
         </div>
       </div>
 
-      {/* 2. PREVIEW PRODUCTS */}
       <div className="py-2">
         {order.orderDetailsPreview && order.orderDetailsPreview.length > 0 ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -127,7 +119,6 @@ export default function OrderCard({ order, onPayNow }: OrderCardProps) {
         )}
       </div>
 
-      {/* 3. CARD FOOTER */}
       <div className="border-border flex flex-col justify-between gap-4 border-t pt-4 md:flex-row md:items-center">
         <div className="flex flex-col">
           <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
@@ -139,7 +130,6 @@ export default function OrderCard({ order, onPayNow }: OrderCardProps) {
         </div>
 
         <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row">
-          {/* Nút Pay Now */}
           {!order.isPaid &&
             isOnlinePayment &&
             order.status &&
@@ -152,17 +142,15 @@ export default function OrderCard({ order, onPayNow }: OrderCardProps) {
               </Button>
             )}
 
-          {/* NÚT VIEW TICKET NẾU CÓ KHIẾU NẠI */}
-          {hasComplaint && ticketInfo && (
+          {hasComplaint && ticketId && (
             <Link
-              href={`/ticket-support/${ticketInfo.id}`}
+              href={`/ticket-support/${ticketId}`}
               className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-6 py-2.5 font-semibold text-rose-700 shadow-sm transition-colors hover:bg-rose-100 md:w-auto dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20"
             >
               <Ticket className="h-4 w-4" /> View Ticket
             </Link>
           )}
 
-          {/* Nút View Details */}
           <Link
             href={`/orders/${order.id}`}
             className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg px-6 py-2.5 font-semibold shadow-sm transition-colors md:w-auto"

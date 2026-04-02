@@ -20,7 +20,6 @@ export function AuthSyncProvider({ children }: { children: React.ReactNode }) {
     skip: !isAuthenticated,
   });
 
-  // Initialize auth from localStorage on mount (for F5 refresh)
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
