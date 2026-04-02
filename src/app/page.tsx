@@ -16,8 +16,7 @@ export const metadata: Metadata = {
 import TrustBadges from '@/components/custom/TrustBadges';
 import HeroCarousel from '@/components/home/HeroCarousel';
 import BrandMarquee from '@/components/home/BrandMarquee';
-// Đổi tên component FeaturedProducts thành tên khác (vd: ProductShowcase) cho đỡ cấn nếu rảnh
-import FeaturedProducts from '@/components/home/FeaturedProducts';
+import ProductShowcase from '@/components/home/ProductShowcase';
 
 export default function Home() {
   return (
@@ -30,7 +29,6 @@ export default function Home() {
 
       <section className="bg-slate-50/50 py-16 lg:py-24">
         <div className="container-custom">
-          {/* TIÊU ĐỀ MỚI - GỌN GÀNG, CHÂN THỰC */}
           <div className="mb-10 text-center md:text-left">
             <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">
               Explore Our Collection
@@ -41,7 +39,7 @@ export default function Home() {
             </p>
           </div>
 
-          <FeaturedProducts />
+          <ProductShowcase />
         </div>
       </section>
     </>

@@ -5,24 +5,24 @@ interface UseDeliveryTrackingProps {
   orderId: string;
   orderStatus?: string;
   enabled?: boolean;
-  pollInterval?: number; // in milliseconds
 }
 
-/**
- * Hook to auto-poll delivery tracking information when order status is "HandedOverToDelivery"
- * Continues polling through "Delivering" status
- */
 export function useDeliveryTracking({
   orderId,
   orderStatus,
   enabled = true,
-  pollInterval = 5000, // default 5 seconds
 }: UseDeliveryTrackingProps) {
-  const shouldPoll =
-    enabled &&
-    orderId &&
-    orderStatus &&
-    ['HandedOverToDelivery', 'Delivering'].includes(orderStatus);
+  const trackingEligibleStatuses = [
+    'HandedOverToDelivery',
+    'Delivering',
+    'Delivered',
+    'Completed',
+    'Returned',
+    'Resolved',
+  ];
+
+  const shouldFetch =
+    enabled && !!orderId && !!orderStatus && trackingEligibleStatuses.includes(orderStatus);
 
   const { data, isLoading, error, refetch } = useGetDeliveryTrackingQuery(
     {
@@ -31,23 +31,23 @@ export function useDeliveryTracking({
       pageSize: 10,
     },
     {
-      skip: !shouldPoll,
-      pollingInterval: shouldPoll ? pollInterval : 0,
+      skip: !shouldFetch,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
     }
   );
 
-  // Refetch when order status changes to monitored statuses
   useEffect(() => {
-    if (shouldPoll) {
+    if (shouldFetch) {
       refetch();
     }
-  }, [orderStatus, orderId, shouldPoll, refetch]);
+  }, [orderStatus, orderId, shouldFetch, refetch]);
 
   return {
     data,
     isLoading,
     error,
     refetch,
-    isPolling: shouldPoll,
+    isPolling: false,
   };
 }

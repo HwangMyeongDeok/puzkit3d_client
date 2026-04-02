@@ -9,15 +9,27 @@ import { toast } from 'sonner';
 import { useAppDispatch } from '@/stores/hooks';
 import { logout } from '@/stores/slices/authSlice';
 
+import { clearAxiosState } from '@/lib/api/axiosInstance';
+import { apiSlice } from '@/lib/api/apiSlice';
+
 export default function ProfileLayout({ children }: { children: ReactNode }) {
   const dispatch = useAppDispatch();
   const router = useRouter();
 
   const handleLogout = () => {
+    clearAxiosState();
+
+    dispatch(apiSlice.util.resetApiState());
+
     dispatch(logout());
+
+    localStorage.clear();
+    sessionStorage.clear();
+
     toast.success('Logged out successfully!');
     router.push('/');
   };
+
   return (
     <div className="container-custom py-8 lg:py-12">
       <div className="flex flex-col gap-8 md:flex-row">

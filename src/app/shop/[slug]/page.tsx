@@ -18,7 +18,6 @@ import { useGetPriceDetailByVariantIdQuery } from '@/lib/api/endpoints/priceApi'
 
 import { handleErrorToast } from '@/lib/utils/error-handler';
 import ProductVariants from '@/components/custom/ProductVariants';
-import FeedbackList from '@/components/custom/FeedbackList';
 import { useAppSelector } from '@/stores/hooks';
 import { selectIsAuthenticated } from '@/stores/slices/authSlice';
 
@@ -315,18 +314,6 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
-
-      {product.id && (
-        <div className="mt-16 border-t border-slate-200 pt-16">
-          <div className="mb-8 text-center">
-            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">
-              Customer Reviews
-            </h2>
-            <p className="mt-2 text-slate-500">See what our community thinks about this product.</p>
-          </div>
-          <FeedbackList productId={product.id} />
-        </div>
-      )}
     </div>
   );
 }

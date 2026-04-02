@@ -89,6 +89,9 @@ export default function CheckoutPage() {
   const [showTermsDialog, setShowTermsDialog] = useState<boolean>(false);
   const [pendingOrderData, setPendingOrderData] = useState<CheckoutFormValues | null>(null);
 
+  // Guard chống double-submit (race condition)
+  const isProcessingRef = useRef<boolean>(false);
+
   // Restore selected items
   useEffect(() => {
     if (selectedIdsFromRedux.length > 0) {
@@ -109,6 +112,19 @@ export default function CheckoutPage() {
     const idSet = new Set(activeIds);
     return allCartItems.filter((item: CartItemDto) => idSet.has(item.itemId));
   }, [allCartItems, activeIds]);
+
+  useEffect(() => {
+    if (
+      !isCartLoading &&
+      selectedItems.length === 0 &&
+      !isSubmitting &&
+      !isRedirecting &&
+      !showPaymentDialog
+    ) {
+      toast.warning('No items selected!');
+      router.replace(ROUTES.CART);
+    }
+  }, [isCartLoading, selectedItems.length, isSubmitting, isRedirecting, showPaymentDialog, router]);
 
   const subtotal = selectedItems.reduce(
     (sum, item) => sum + (item.unitPrice ?? 0) * (item.quantity ?? 1),
@@ -303,15 +319,23 @@ export default function CheckoutPage() {
   // 2. Chạy execute order sau khi đồng ý Policy
   const executeOrder = async () => {
     if (!pendingOrderData) return;
+
+    // Guard chống double-submit: nếu đang xử lý thì bỏ qua
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
+
     setShowTermsDialog(false);
     setIsSubmitting(true);
 
     const data = pendingOrderData;
 
     try {
-      const latestProfile = await fetchProfile(undefined, false)
-        .unwrap()
-        .catch(() => profile);
+      let latestProfile = profile;
+      try {
+        latestProfile = await fetchProfile(undefined, false).unwrap();
+      } catch (profileError) {
+        toast.warning('Network unstable. Proceeding with current session data.');
+      }
 
       const isPayFullByCoin = finalTotal === 0 && usedCoinInput > 0;
       const finalPaymentMethod = isPayFullByCoin ? 'COIN' : data.paymentMethod;
@@ -337,9 +361,6 @@ export default function CheckoutPage() {
 
       const orderId = await createOrder(orderPayload).unwrap();
       await refetchWallet();
-      dispatch(clearSelection());
-      localStorage.removeItem(APP_CONFIG.DRAFT_KEY);
-      sessionStorage.removeItem('checkout_active_ids');
 
       if (data.saveProfile) {
         const nameParts = data.fullName.trim().split(' ');
@@ -359,24 +380,53 @@ export default function CheckoutPage() {
       }
 
       if (finalTotal === 0 || data.paymentMethod === 'COD') {
+        dispatch(clearSelection());
+        localStorage.removeItem(APP_CONFIG.DRAFT_KEY);
+        sessionStorage.removeItem('checkout_active_ids');
         setIsRedirecting(true);
         toast.success('Order placed successfully!');
         router.push(`${ROUTES.CHECKOUT_SUCCESS}?orderId=${orderId}`);
       } else if (data.paymentMethod === 'Online') {
         setCreatedOrderId(orderId);
-        setIsSubmitting(false);
         setShowPaymentDialog(true);
       }
     } catch (error) {
       handleErrorToast(error);
-      setIsSubmitting(false);
       setIsRedirecting(false);
+    } finally {
+      setIsSubmitting(false);
+      isProcessingRef.current = false;
     }
   };
 
   const isButtonDisabled =
     isSubmitting || isShippingFeeLoading || !provinceName || !districtName || !wardName;
+  if (isCartLoading || isRedirecting) {
+    return (
+      <div className="container-custom flex min-h-[60vh] flex-col items-center justify-center py-12">
+        <div className="border-brand-accent h-12 w-12 animate-spin rounded-full border-b-2"></div>
+        <p className="mt-4 font-medium text-slate-500">Loading...</p>
+      </div>
+    );
+  }
 
+  // 2. Màn hình Trống (Empty State) đề phòng useEffect redirect bị delay
+  if (selectedItems.length === 0) {
+    return (
+      <div className="container-custom flex min-h-[60vh] flex-col items-center justify-center py-12">
+        <h2 className="mb-2 text-2xl font-bold text-slate-800">No items selected</h2>
+        <p className="mb-6 text-slate-500">
+          Please select at least one item from the cart to continue checkout.
+        </p>
+        <button
+          onClick={() => router.push(ROUTES.CART)}
+          className="rounded-lg bg-[#e51636] px-6 py-2.5 font-semibold text-white transition-colors hover:bg-red-700"
+        >
+          Back to cart
+        </button>
+      </div>
+    );
+  }
   return (
     <>
       {/* LOADER OVERLAY */}
@@ -442,7 +492,16 @@ export default function CheckoutPage() {
       <PaymentActionDialog
         open={showPaymentDialog}
         orderId={createdOrderId}
-        onClose={() => setShowPaymentDialog(false)}
+        onClose={() => {
+          setShowPaymentDialog(false);
+
+          dispatch(clearSelection());
+          localStorage.removeItem(APP_CONFIG.DRAFT_KEY);
+          sessionStorage.removeItem('checkout_active_ids');
+          toast.info('Order saved! You can complete the payment later in your profile.');
+
+          router.push('/orders');
+        }}
       />
     </>
   );

@@ -39,7 +39,7 @@ export default function PaymentActionDialog({ open, orderId, onClose }: PaymentD
       window.location.href = paymentUrl;
     } catch (error) {
       toast.error('Error creating payment. You can pay later in your order history.');
-      handlePayLater(); // Fallback
+      handlePayLater();
     }
   };
 

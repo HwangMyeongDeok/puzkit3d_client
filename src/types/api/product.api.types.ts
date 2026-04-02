@@ -114,3 +114,16 @@ export interface UpdateInstockProductRequestDto {
   materialId?: string;
   capabilityIds?: string[]; // Đã sửa thành mảng (chữ s)
 }
+
+export interface PartDto {
+  id: string;
+  name: string;
+  partType: string;
+  code: string;
+  quantity: number;
+}
+
+export interface GetPartByIdRequest {
+  productId: string;
+  partId: string;
+}

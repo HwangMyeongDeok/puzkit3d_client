@@ -21,7 +21,7 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   Advanced: 'bg-rose-100 text-rose-700 border-rose-200',
 };
 
-export default function FeaturedProducts() {
+export default function ProductShowcase() {
   const [visibleCount, setVisibleCount] = useState(8);
 
   // 1. State lưu trữ các bộ lọc

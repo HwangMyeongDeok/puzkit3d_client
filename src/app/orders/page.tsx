@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Loader2, Receipt, Package, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useGetCustomerOrdersQuery } from '@/lib/api/endpoints/orderApi';
+import { SupportTicketDto, useGetTicketsQuery } from '@/lib/api/endpoints/supportTicketApi';
 
 // Components đã tách
 import PaymentActionDialog from '@/components/checkout/PaymentActionDialog';
@@ -19,21 +20,23 @@ export default function OrdersPage() {
   const [selectedStatus, setSelectedStatus] = useState<InstockOrderStatus | ''>('');
   const [page, setPage] = useState<number>(1);
 
-  // Gọi API (có param phân trang đàng hoàng)
+  // Gọi API Orders
   const { data, isLoading, isFetching, isError } = useGetCustomerOrdersQuery(
     {
       pageNumber: page,
-      pageSize: 5, // Tạm để 5 cho ông dễ test nút Next/Prev, mốt chỉnh lại 10
+      pageSize: 5,
       ...(selectedStatus ? { status: selectedStatus } : {}),
     },
     { refetchOnMountOrArgChange: true }
   );
 
+  const { data: ticketsData } = useGetTicketsQuery({ pageNumber: 1, pageSize: 100 });
+  const allTickets = ticketsData?.items || [];
+
   const orders = data?.items || [];
   const hasNextPage = data?.hasNextPage;
   const hasPrevPage = data?.hasPreviousPage;
 
-  // Xử lý khi đổi tab status thì reset về trang 1
   const handleStatusChange = (status: InstockOrderStatus | '') => {
     setSelectedStatus(status);
     setPage(1);
@@ -80,18 +83,28 @@ export default function OrdersPage() {
         ) : (
           /* 3. Render List Order */
           <div className="relative flex flex-col gap-5">
-            {/* Overlay mờ đi khi đang fecth trang mới (Tránh user spam click) */}
             {isFetching && !isLoading && (
               <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/50 backdrop-blur-[1px]">
                 <Loader2 className="text-brand h-8 w-8 animate-spin" />
               </div>
             )}
 
-            {orders.map((order) => (
-              <OrderCard key={order.id} order={order} onPayNow={(id) => setPaymentOrderId(id)} />
-            ))}
+            {orders.map((order) => {
+              const activeTicket = allTickets.find(
+                (t: SupportTicketDto) => t.orderId === order.id && t.status !== 'Resolved'
+              );
 
-            {/* 4. THANH PHÂN TRANG (PAGINATION) */}
+              return (
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  onPayNow={(id) => setPaymentOrderId(id)}
+                  hasComplaint={!!activeTicket}
+                  ticketId={activeTicket?.id}
+                />
+              );
+            })}
+
             {(hasPrevPage || hasNextPage) && (
               <div className="mt-6 flex items-center justify-center gap-4">
                 <Button

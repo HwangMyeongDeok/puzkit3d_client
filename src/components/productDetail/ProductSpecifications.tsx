@@ -1,6 +1,6 @@
 'use client';
 
-import { Package, Scale, Clock, Bookmark, Layers, Wrench, Zap } from 'lucide-react';
+import { Package, Scale, Clock, Bookmark, Layers, Wrench, Zap, Loader2 } from 'lucide-react';
 import { skipToken } from '@reduxjs/toolkit/query';
 
 // Sửa lại import API theo đúng đường dẫn của ông nhé
@@ -8,36 +8,34 @@ import {
   useGetMaterialByIdQuery,
   useGetTopicByIdQuery,
   useGetAssemblyMethodByIdQuery,
-  useGetCapabilityByIdQuery,
+  useGetCapabilitiesQuery, // 👉 Dùng hook lấy danh sách này
 } from '@/lib/api/endpoints/metaData';
-
-// Component nhỏ render từng capability
-function CapabilityTag({ id }: { id: string }) {
-  const { data, isLoading } = useGetCapabilityByIdQuery(id);
-  if (isLoading)
-    return (
-      <span className="animate-pulse rounded bg-slate-200 px-2 py-1 text-xs text-transparent">
-        Loading...
-      </span>
-    );
-  if (!data) return null;
-  return (
-    <span className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-600">
-      <Zap className="h-3 w-3" /> {data.name}
-    </span>
-  );
-}
+import { CapabilityDto } from '@/types/api/capability.types';
 
 interface ProductSpecificationsProps {
   product: any; // Thay bằng type Product của ông cho chuẩn nhé
 }
 
 export default function ProductSpecifications({ product }: ProductSpecificationsProps) {
-  // Đem các hook metadata xuống đây
+  // 1. Hook metadata cơ bản
   const { data: material } = useGetMaterialByIdQuery(product.materialId ?? skipToken);
   const { data: topic } = useGetTopicByIdQuery(product.topicId ?? skipToken);
   const { data: assemblyMethod } = useGetAssemblyMethodByIdQuery(
     product.assemblyMethodId ?? skipToken
+  );
+
+  // 2. Gọi API lấy toàn bộ danh sách capabilities
+  // Vì đây là master data ít thay đổi, ta set pageSize lớn (ví dụ 100) để hốt trọn danh sách về luôn
+  const { data: allCapabilities, isLoading: isCapsLoading } = useGetCapabilitiesQuery({
+    pageNumber: 1,
+    pageSize: 10,
+  });
+
+  // 3. Lọc ra các capability mà sản phẩm này đang sở hữu
+  const capabilityList = allCapabilities?.items || [];
+
+  const productCapabilities = capabilityList.filter((cap: CapabilityDto) =>
+    product.capabilityIds?.includes(cap.id)
   );
 
   return (
@@ -48,7 +46,7 @@ export default function ProductSpecifications({ product }: ProductSpecifications
       </h3>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        {/* Mảnh ghép */}
+        {/* Pieces */}
         {product.totalPieceCount && (
           <div className="flex flex-col items-center justify-center gap-1 rounded-2xl border border-slate-100 bg-white p-4 text-center shadow-sm">
             <Package className="mb-1 h-6 w-6 text-[#052a5b]" />
@@ -59,7 +57,7 @@ export default function ProductSpecifications({ product }: ProductSpecifications
           </div>
         )}
 
-        {/* Độ khó */}
+        {/* Difficulty */}
         {product.difficultLevel && (
           <div className="flex flex-col items-center justify-center gap-1 rounded-2xl border border-slate-100 bg-white p-4 text-center shadow-sm">
             <Scale className="mb-1 h-6 w-6 text-[#e51636]" />
@@ -70,7 +68,7 @@ export default function ProductSpecifications({ product }: ProductSpecifications
           </div>
         )}
 
-        {/* Thời gian */}
+        {/* Build Time */}
         {product.estimatedBuildTime && (
           <div className="flex flex-col items-center justify-center gap-1 rounded-2xl border border-slate-100 bg-white p-4 text-center shadow-sm">
             <Clock className="mb-1 h-6 w-6 text-emerald-600" />
@@ -128,9 +126,26 @@ export default function ProductSpecifications({ product }: ProductSpecifications
             Capabilities
           </span>
           <div className="flex flex-wrap gap-2">
-            {product.capabilityIds.map((capId: string) => (
-              <CapabilityTag key={capId} id={capId} />
-            ))}
+            {isCapsLoading ? (
+              // Loading xương cá
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <Loader2 className="h-3 w-3 animate-spin" /> Loading capabilities...
+              </div>
+            ) : productCapabilities.length > 0 ? (
+              // Render ra các capability đã map thành công
+              productCapabilities.map((cap: CapabilityDto) => (
+                <span
+                  key={cap.id}
+                  className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-600"
+                  title={cap.description}
+                >
+                  <Zap className="h-3 w-3" /> {cap.name}
+                </span>
+              ))
+            ) : (
+              // Trường hợp fallback khi mảng rỗng
+              <span className="text-xs text-slate-400">No capabilities available</span>
+            )}
           </div>
         </div>
       )}

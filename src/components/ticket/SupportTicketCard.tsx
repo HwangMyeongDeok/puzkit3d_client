@@ -40,9 +40,9 @@ export default function SupportTicketCard({ ticket }: SupportTicketCardProps) {
   const typeConfig = TICKET_TYPE_CONFIG[ticket.type];
 
   const ticketSteps = [
-    'Đã gửi',
-    'Đang xử lý',
-    ticket.status === 'Rejected' ? 'Từ chối' : 'Đã giải quyết',
+    'Submitted',
+    'Processing',
+    ticket.status === 'Rejected' ? 'Rejected' : 'Resolved',
   ];
   const activeStep = ticket.status === 'Open' ? 0 : ticket.status === 'Processing' ? 1 : 2;
   const isRejected = ticket.status === 'Rejected';

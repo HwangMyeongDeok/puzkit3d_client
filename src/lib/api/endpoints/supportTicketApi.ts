@@ -155,7 +155,10 @@ export const supportTicketApi = apiSlice.injectEndpoints({
         method: 'POST',
         data,
       }),
-      invalidatesTags: [{ type: 'SupportTicket', id: 'LIST' }],
+      invalidatesTags: (_result, _error, arg) => [
+        { type: 'SupportTicket', id: 'LIST' },
+        { type: 'SupportTicket', id: `ORDER-${arg.orderId}` },
+      ],
     }),
 
     /* PATCH /api/support-tickets/:id/status — customers can ONLY set 'Resolved' */

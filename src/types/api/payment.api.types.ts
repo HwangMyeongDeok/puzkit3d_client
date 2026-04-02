@@ -10,6 +10,7 @@ export interface GetPaymentByOrderIdResponse {
   orderId: string;
   orderType?: string | null;
   amount: number;
+  paymentMethod: string;
   status?: string | null;
   expiredAt: string;
   paidAt?: string | null;
