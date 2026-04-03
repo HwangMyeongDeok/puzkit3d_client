@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Lock, ShoppingBag, Coins, Plus, Minus, Receipt } from 'lucide-react';
+import { Loader2, Lock, ShoppingBag, Coins, Plus, Minus, Receipt, Sparkles } from 'lucide-react';
 import type { CartItemDto } from '@/types/api/cart.api.types';
 
 interface CheckoutOrderSummaryProps {
@@ -217,6 +217,9 @@ export default function CheckoutOrderSummary({
               {formatPrice(total)}
             </span>
           </div>
+          <p className="text-right text-[11px] font-medium text-amber-600 italic">
+            <Sparkles className="h-3.5 w-3.5" /> Complete this order to earn PuzCoin
+          </p>
         </div>
 
         {/* --- SUBMIT BUTTON --- */}

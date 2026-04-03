@@ -19,6 +19,7 @@ export const tagTypes = [
   'Wallet',
   'Capability',
   'Part',
+  'Feedback',
 ] as const;
 
 export const apiSlice = createApi({

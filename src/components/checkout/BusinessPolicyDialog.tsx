@@ -36,7 +36,7 @@ export default function BusinessPolicyDialog({
   if (!isOpen) return null;
 
   return (
-    <div className="animate-in fade-in fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
+    <div className="animate-in fade-in fixed inset-0 z-60 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
       <div className="animate-in zoom-in-95 flex w-full max-w-lg flex-col gap-5 rounded-2xl bg-white p-6 shadow-2xl duration-200">
         <div className="flex items-center gap-3 border-b pb-4">
           <ShieldAlert className="text-brand h-6 w-6" />

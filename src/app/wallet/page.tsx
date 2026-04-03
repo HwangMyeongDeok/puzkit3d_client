@@ -86,7 +86,7 @@ function TransactionItem({ transaction }: { transaction: WalletTransactionDto })
                 <Skeleton className="h-4 w-24" />
               ) : (
                 <>
-                  <span className="text-sm font-semibold text-slate-600 uppercase">
+                  <span className="text-sm font-semibold text-blue-600 uppercase underline-offset-2 group-hover:underline">
                     #{order?.code || transaction.orderId.split('-')[0]}
                   </span>
                   {/* Hiển thị Status Badge mượt mà */}

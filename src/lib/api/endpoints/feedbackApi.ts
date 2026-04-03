@@ -14,7 +14,11 @@ export const feedbackApi = apiSlice.injectEndpoints({
         method: 'POST',
         data: payload,
       }),
-      invalidatesTags: ['Product'],
+
+      invalidatesTags: (result, error, arg) => [
+        { type: 'Feedback', id: 'LIST' },
+        ...(arg.orderDetailId ? [{ type: 'Feedback' as const, id: arg.orderDetailId }] : []),
+      ],
     }),
 
     getOrderFeedbacks: builder.query<FeedbackDto[], string>({
@@ -22,7 +26,11 @@ export const feedbackApi = apiSlice.injectEndpoints({
         url: `/orders/${orderId}/feedback`,
         method: 'GET',
       }),
-      providesTags: ['Product'],
+      // 👉 Gắn tag Feedback riêng cho cái Order này
+      providesTags: (result, error, orderId) => [
+        { type: 'Feedback', id: `Order-${orderId}` },
+        { type: 'Feedback', id: 'LIST' },
+      ],
     }),
 
     getOrderDetailFeedback: builder.query<FeedbackDto[], string>({
@@ -30,7 +38,10 @@ export const feedbackApi = apiSlice.injectEndpoints({
         url: `/order-details/${orderDetailId}/feedback`,
         method: 'GET',
       }),
-      providesTags: ['Product'],
+      providesTags: (result, error, orderDetailId) => [
+        { type: 'Feedback', id: `OrderDetail-${orderDetailId}` },
+        { type: 'Feedback', id: 'LIST' },
+      ],
     }),
 
     getProductFeedbacks: builder.query<
@@ -46,7 +57,10 @@ export const feedbackApi = apiSlice.injectEndpoints({
           ...(rating !== undefined && { rating }),
         },
       }),
-      providesTags: ['Product'],
+      providesTags: (result, error, arg) => [
+        { type: 'Feedback', id: `Product-${arg.productId}` },
+        { type: 'Feedback', id: 'LIST' },
+      ],
     }),
   }),
 });
