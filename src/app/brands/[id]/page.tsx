@@ -29,6 +29,7 @@ export default function PartnerProductDetailPage() {
     {
       pageNumber: 1,
       pageSize: 100,
+      ascending: true,
     },
     {
       skip: !product?.partnerId,
@@ -43,12 +44,22 @@ export default function PartnerProductDetailPage() {
     return partners.find((item) => item.id === product.partnerId)?.name ?? '';
   }, [partnerResponse?.items, product?.partnerId]);
 
-  const gallery = useMemo(() => {
+  const gallery = useMemo<string[]>(() => {
     if (!product) return [];
-    return product.previewImages?.length ? product.previewImages : [product.thumbnailUrl];
+
+    // Ưu tiên previewImages, nếu backend của bạn trả previewAssets thì dùng previewAssets
+    const previews =
+      product.previewImages && product.previewImages.length > 0
+        ? product.previewImages
+        : product.previewAssets && product.previewAssets.length > 0
+          ? product.previewAssets
+          : [];
+
+    if (previews.length > 0) return previews;
+    return product.thumbnailUrl ? [product.thumbnailUrl] : [];
   }, [product]);
 
-  const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedImage, setSelectedImage] = useState<number>(0);
 
   async function handleAddToCart() {
     if (!product?.id) return;
@@ -88,7 +99,7 @@ export default function PartnerProductDetailPage() {
     );
   }
 
-  const activeImage = gallery[selectedImage] || product.thumbnailUrl;
+  const activeImage = gallery[selectedImage] || product.thumbnailUrl || '';
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -119,7 +130,7 @@ export default function PartnerProductDetailPage() {
 
             {gallery.length > 1 && (
               <div className="grid grid-cols-4 gap-3">
-                {gallery.map((image, index) => (
+                {gallery.map((image: string, index: number) => (
                   <button
                     key={`${image}-${index}`}
                     type="button"
@@ -156,7 +167,9 @@ export default function PartnerProductDetailPage() {
             ) : null}
 
             <div className="mt-5 text-3xl font-extrabold text-rose-600">
-              {formatPrice(product.referencePrice)}
+              {product.referencePrice != null
+                ? formatPrice(product.referencePrice)
+                : 'Contact for pricing'}
             </div>
 
             <p className="mt-2 text-sm text-slate-500">Estimated partner product price</p>

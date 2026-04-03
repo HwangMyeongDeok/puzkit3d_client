@@ -9,7 +9,7 @@ export interface PartnerDto {
   contactPhone: string;
   address: string;
   slug: string;
-  isActive: boolean;
+  isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -24,12 +24,16 @@ export interface GetPartnersResponse {
   hasNextPage: boolean;
 }
 
+export interface GetPartnersParams {
+  pageNumber?: number;
+  pageSize?: number;
+  searchTerm?: string;
+  ascending?: boolean;
+}
+
 export const partnerApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getPartners: builder.query<
-      GetPartnersResponse,
-      { pageNumber?: number; pageSize?: number; searchTerm?: string } | void
-    >({
+    getPartners: builder.query<GetPartnersResponse, GetPartnersParams | void>({
       query: (params) => ({
         url: '/partners',
         method: 'GET',
@@ -37,6 +41,7 @@ export const partnerApi = apiSlice.injectEndpoints({
           pageNumber: params?.pageNumber ?? 1,
           pageSize: params?.pageSize ?? 100,
           searchTerm: params?.searchTerm || undefined,
+          ascending: params?.ascending ?? true,
         },
       }),
       providesTags: ['Product'],
