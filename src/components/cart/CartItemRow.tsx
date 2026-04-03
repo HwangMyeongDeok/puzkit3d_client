@@ -1,10 +1,12 @@
-'use client';
-
 import Image from 'next/image';
 import Link from 'next/link';
-import { Minus, Plus, Trash2 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import type { CartItemDto } from '@/types/api/cart.api.types';
+import {
+  CartItemCheckbox,
+  CartItemQuantityControls,
+  CartItemDeleteButton,
+} from './CartItemActions';
 
 interface CartItemRowProps {
   item: CartItemDto;
@@ -36,13 +38,7 @@ export default function CartItemRow({
       <div className="flex items-center gap-4 sm:items-start">
         {/* 1. Checkbox */}
         <div className="flex shrink-0 items-center justify-center pt-0 sm:pt-1">
-          <input
-            type="checkbox"
-            checked={isChecked}
-            onChange={onToggle}
-            className="border-border text-primary accent-primary h-5 w-5 cursor-pointer rounded transition-all focus:ring-0"
-            aria-label={`Select ${item.name}`}
-          />
+          <CartItemCheckbox isChecked={isChecked} onToggle={onToggle} itemName={item.name} />
         </div>
 
         {/* 2. Image */}
@@ -88,40 +84,17 @@ export default function CartItemRow({
           </div>
 
           {/* Nút Xóa (Đẩy lên góc phải ở Desktop) */}
-          <button
-            onClick={onRemove}
-            className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive shrink-0 rounded-md p-2 transition-colors"
-            aria-label="Remove item"
-          >
-            <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
-          </button>
+          <CartItemDeleteButton onRemove={onRemove} />
         </div>
 
         {/* Controller Số lượng & Tổng tiền của Item */}
         <div className="mt-4 flex items-center justify-between sm:mt-auto">
           {/* Box chọn số lượng */}
-          <div className="border-border bg-background flex h-9 items-center overflow-hidden rounded-md border shadow-sm">
-            <button
-              onClick={onDecrement}
-              disabled={item.quantity <= 1}
-              className="text-foreground/70 hover:bg-muted flex h-full w-9 cursor-pointer items-center justify-center transition-colors disabled:cursor-not-allowed disabled:opacity-40"
-              aria-label="Decrease quantity"
-            >
-              <Minus className="h-3.5 w-3.5" />
-            </button>
-
-            <span className="border-border flex h-full w-12 items-center justify-center border-x text-sm font-bold">
-              {item.quantity}
-            </span>
-
-            <button
-              onClick={onIncrement}
-              className="text-foreground/70 hover:bg-muted flex h-full w-9 cursor-pointer items-center justify-center transition-colors"
-              aria-label="Increase quantity"
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </button>
-          </div>
+          <CartItemQuantityControls
+            quantity={item.quantity}
+            onIncrement={onIncrement}
+            onDecrement={onDecrement}
+          />
 
           {/* Tổng tiền của Item (Price * Quantity) */}
           <div className="flex flex-col items-end">

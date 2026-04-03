@@ -49,7 +49,7 @@ export function OrderStatusHeader({
   onSetCreateTicketDialogOpen,
 }: OrderStatusHeaderProps) {
   return (
-    <div className="flex flex-col gap-6 rounded-lg border border-slate-100 bg-gradient-to-br from-white to-slate-50/50 p-6 shadow-md">
+    <div className="flex flex-col gap-6 rounded-lg border border-slate-100 bg-linear-to-br from-white to-slate-50/50 p-6 shadow-md">
       <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
         <div>
           <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
@@ -81,7 +81,7 @@ export function OrderStatusHeader({
               <Button
                 variant="default"
                 size="sm"
-                className="gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 font-medium text-white hover:from-emerald-600 hover:to-emerald-700"
+                className="gap-2 rounded-lg bg-linear-to-r from-emerald-500 to-emerald-600 font-medium text-white hover:from-emerald-600 hover:to-emerald-700"
                 onClick={() => onSetConfirmCompleteOpen(true)}
                 disabled={isCompleting}
               >

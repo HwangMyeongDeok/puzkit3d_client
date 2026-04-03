@@ -74,7 +74,7 @@ export function OrderPaymentSummary({
           )}
         </div>
 
-        <div className="mt-2 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-blue-50/50 p-4">
+        <div className="mt-2 rounded-lg border border-blue-200 bg-linear-to-r from-blue-50 to-blue-50/50 p-4">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-slate-600 uppercase">Total</span>
             <span className="text-3xl font-bold text-blue-600">

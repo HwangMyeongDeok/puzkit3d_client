@@ -1,6 +1,5 @@
-'use client';
-
 import Link from 'next/link';
+import { OrderCardPayButton } from './OrderCardActions';
 import Image from 'next/image';
 import {
   Calendar,
@@ -134,12 +133,7 @@ export default function OrderCard({ order, onPayNow, hasComplaint, ticketId }: O
             isOnlinePayment &&
             order.status &&
             !TERMINAL_STATUSES.includes(order.status) && (
-              <Button
-                onClick={() => onPayNow(order.id)}
-                className="bg-brand hover:bg-brand/90 h-11 w-full gap-2 font-bold md:w-auto"
-              >
-                <CreditCard className="h-4 w-4" /> Pay Now
-              </Button>
+              <OrderCardPayButton orderId={order.id} onPayNow={onPayNow} />
             )}
 
           {hasComplaint && ticketId && (

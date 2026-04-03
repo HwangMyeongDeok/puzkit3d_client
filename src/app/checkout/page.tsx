@@ -38,6 +38,7 @@ import type { CartItemDto } from '@/types/api/cart.api.types';
 
 // UI COMPONENTS
 import { Form } from '@/components/ui/form';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // CHECKOUT COMPONENTS
 import PaymentActionDialog from '@/components/checkout/PaymentActionDialog';
@@ -76,6 +77,7 @@ export default function CheckoutPage() {
   const selectedIdsFromRedux = useAppSelector(selectSelectedIds);
 
   const [activeIds, setActiveIds] = useState<string[]>([]);
+  const [isRestored, setIsRestored] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isRedirecting, setIsRedirecting] = useState<boolean>(false);
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
@@ -105,6 +107,8 @@ export default function CheckoutPage() {
         } catch (e) {}
       }
     }
+
+    setIsRestored(true);
   }, [selectedIdsFromRedux]);
 
   const selectedItems: CartItemDto[] = useMemo(() => {
@@ -115,6 +119,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (
+      isRestored &&
       !isCartLoading &&
       selectedItems.length === 0 &&
       !isSubmitting &&
@@ -401,11 +406,22 @@ export default function CheckoutPage() {
 
   const isButtonDisabled =
     isSubmitting || isShippingFeeLoading || !provinceName || !districtName || !wardName;
-  if (isCartLoading || isRedirecting) {
+
+  if (isCartLoading || isRedirecting || !isRestored) {
     return (
-      <div className="container-custom flex min-h-[60vh] flex-col items-center justify-center py-12">
-        <div className="border-brand-accent h-12 w-12 animate-spin rounded-full border-b-2"></div>
-        <p className="mt-4 font-medium text-slate-500">Loading...</p>
+      <div className="container-custom mx-auto min-h-screen bg-slate-50/50 py-8 lg:py-12">
+        <Skeleton className="mb-8 h-10 w-48 rounded-lg" />
+
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
+          <div className="flex flex-col gap-8 lg:col-span-3">
+            <Skeleton className="h-[500px] w-full rounded-xl shadow-sm" />
+            <Skeleton className="h-[250px] w-full rounded-xl shadow-sm" />
+          </div>
+
+          <div className="flex flex-col gap-6 lg:col-span-2">
+            <Skeleton className="sticky top-20 h-[600px] w-full rounded-xl shadow-sm" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -427,6 +443,7 @@ export default function CheckoutPage() {
       </div>
     );
   }
+
   return (
     <>
       {/* LOADER OVERLAY */}
