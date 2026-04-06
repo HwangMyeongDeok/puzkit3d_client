@@ -420,12 +420,11 @@ export default function StepCoreSpecs({
             </div>
           </div>
 
-          {/* Thông báo nhắc nhở nếu nhập sai */}
-          {((config.dimensions.length && Number(config.dimensions.length) < 10) ||
-            (config.dimensions.width && Number(config.dimensions.width) < 10) ||
-            (config.dimensions.height && Number(config.dimensions.height) < 10)) && (
+          {((config.dimensions.length > 0 && Number(config.dimensions.length) < 10) ||
+            (config.dimensions.width > 0 && Number(config.dimensions.width) < 10) ||
+            (config.dimensions.height > 0 && Number(config.dimensions.height) < 10)) && (
             <p className="animate-in fade-in slide-in-from-top-1 text-sm font-semibold text-red-500">
-              * Kích thước tối thiểu cho mỗi cạnh là 10cm.
+              * Minimum dimension is 10mm.
             </p>
           )}
         </div>

@@ -1,4 +1,13 @@
-import { CapabilityDto, GetCapabilitiesRequest } from '@/types/api/capability.types';
+import {
+  AssemblyMethodDto,
+  CapabilityDto,
+  GetAssemblyMethodsRequest,
+  GetCapabilitiesRequest,
+  GetMaterialsRequest,
+  GetTopicsRequest,
+  MaterialDto,
+  TopicDto,
+} from '@/types/api/catalog.types';
 import apiSlice from '../apiSlice';
 import { PagedResultDto } from '@/types';
 
@@ -13,29 +22,31 @@ export const metaDataApi = apiSlice.injectEndpoints({
       providesTags: ['Capability'],
     }),
 
-    getMaterials: builder.query<PagedResultDto<any>, any>({
+    getMaterials: builder.query<PagedResultDto<MaterialDto>, GetMaterialsRequest>({
       query: (params) => ({
         url: '/materials',
         method: 'GET',
-        params,
+        params: params as Record<string, unknown>,
       }),
     }),
 
-    getTopics: builder.query<PagedResultDto<any>, any>({
+    getTopics: builder.query<PagedResultDto<TopicDto>, GetTopicsRequest>({
       query: (params) => ({
         url: '/topics',
         method: 'GET',
-        params,
+        params: params as Record<string, unknown>,
       }),
     }),
 
-    getAssemblyMethods: builder.query<PagedResultDto<any>, any>({
-      query: (params) => ({
-        url: '/assembly-methods',
-        method: 'GET',
-        params,
-      }),
-    }),
+    getAssemblyMethods: builder.query<PagedResultDto<AssemblyMethodDto>, GetAssemblyMethodsRequest>(
+      {
+        query: (params) => ({
+          url: '/assembly-methods',
+          method: 'GET',
+          params: params as Record<string, unknown>,
+        }),
+      }
+    ),
 
     getCapabilityById: builder.query<CapabilityDto, string>({
       query: (id) => ({

@@ -7,7 +7,7 @@ import {
   useGetAssemblyMethodByIdQuery,
   useGetCapabilitiesQuery,
 } from '@/lib/api/endpoints/metaData';
-import { CapabilityDto } from '@/types/api/capability.types';
+import { CapabilityDto } from '@/types/api/catalog.types';
 
 export function TopicBadge({ topicId }: { topicId: string }) {
   const { data: topic } = useGetTopicByIdQuery(topicId);

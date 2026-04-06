@@ -177,6 +177,7 @@ export default function ProductDetailPage() {
             images={images}
             productName={product.name}
             difficultLevel={product.difficultLevel}
+            thumbnailUrl={product.thumbnailUrl}
           />
 
           {product.description && (
@@ -218,14 +219,14 @@ export default function ProductDetailPage() {
               <div className="flex flex-col gap-1">
                 <div className="flex items-end gap-3">
                   <span className="text-4xl font-black tracking-tight text-[#e51636]">
-                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'VND' }).format(
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
                       currentPriceObj.unitPrice
                     )}
                   </span>
                   {isOnSale && standardPriceObj && (
                     <>
                       <span className="mb-1 text-lg font-medium text-slate-400 line-through">
-                        {new Intl.NumberFormat('en-US', {
+                        {new Intl.NumberFormat('vi-VN', {
                           style: 'currency',
                           currency: 'VND',
                         }).format(standardPriceObj.unitPrice)}
