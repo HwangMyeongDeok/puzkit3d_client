@@ -44,11 +44,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${outfit.variable} font-sans antialiased`}>
+      <body
+        className={`${inter.variable} ${outfit.variable} min-h-screen bg-[#f4f8ff] font-sans text-slate-900 antialiased selection:bg-[#0f3c8a]/20 selection:text-[#0f2347]`}
+      >
         <ReduxProvider>
           <AuthSyncProvider>
             <Header />
-            <main className="min-h-screen pt-16">{children}</main>
+
+            <main className="relative min-h-screen overflow-x-hidden pt-16">
+              <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.10),transparent_22%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.08),transparent_20%),linear-gradient(180deg,#f8fbff_0%,#f4f8ff_45%,#eef5ff_100%)]" />
+              {children}
+            </main>
+
             <Footer />
             <Toaster position="top-right" richColors closeButton />
           </AuthSyncProvider>

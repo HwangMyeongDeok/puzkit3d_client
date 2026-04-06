@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingCart, Menu, X, Search, User, LogOut, Coins } from 'lucide-react';
+import { ShoppingCart, Menu, X, User, LogOut, Coins } from 'lucide-react';
 
 import { ROUTES } from '@/constants';
 import MiniCart from '@/components/custom/MiniCart';
@@ -45,17 +45,14 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // 1. Chỉ đánh dấu mounted khi đã chạy trên Browser
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // 2. Gọi API Giỏ hàng
   const { data: cartData } = useGetCartQuery(undefined, {
     skip: !mounted || isAuthLoading || !isAuthenticated,
   });
 
-  // 3. Gọi API Wallet
   const { data: walletData, error: walletError } = useGetWalletQuery(undefined, {
     skip: !mounted || isAuthLoading || !isAuthenticated,
   });
@@ -64,7 +61,6 @@ export default function Header() {
     const isUnauthorized = (walletError as any)?.status === 401;
 
     if (isUnauthorized && isAuthenticated && !isAuthLoading) {
-      console.warn('Token expired. Logging out...');
       handleLogout(true);
     }
   }, [walletError, isAuthenticated, isAuthLoading]);
@@ -84,17 +80,11 @@ export default function Header() {
 
   const handleLogout = (isForced = false) => {
     clearAxiosState();
-
     dispatch(apiSlice.util.resetApiState());
-
-    // 3. Xóa Redux State
     dispatch(logout());
-
-    // 4. Xóa cứng toàn bộ local/session storage
     localStorage.clear();
     sessionStorage.clear();
 
-    // 5. Hiển thị thông báo
     if (!isForced) {
       toast.success('Logged out successfully!');
       router.push('/');
@@ -104,16 +94,17 @@ export default function Header() {
     }
   };
 
-  if (!mounted) return <div className="h-16 w-full bg-white shadow-sm" />;
+  if (!mounted) return <div className="h-16 w-full bg-[#f8fbff]" />;
 
   const cartButton = (
     <button
-      className="text-foreground/80 hover:bg-secondary hover:text-brand-accent relative rounded-lg p-2 transition-colors"
+      className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#dbe7ff] bg-[linear-gradient(180deg,#ffffff_0%,#f5f9ff_100%)] text-[#0f2347] shadow-sm transition hover:-translate-y-0.5 hover:bg-white"
       onClick={handleCartClick}
+      aria-label="Cart"
     >
       <ShoppingCart className="h-5 w-5" />
       {isAuthenticated && cartCount > 0 && (
-        <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#e51636] text-[10px] font-bold text-white">
+        <span className="absolute -top-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#ef233c] px-1 text-[10px] font-bold text-white shadow-sm">
           {cartCount > 99 ? '99+' : cartCount}
         </span>
       )}
@@ -121,116 +112,114 @@ export default function Header() {
   );
 
   return (
-    <header className="glass border-border fixed top-0 right-0 left-0 z-50 border-b bg-white/80 backdrop-blur-md">
-      <div className="container-custom flex h-16 items-center justify-between">
-        {/* LOGO */}
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-xl font-bold tracking-tight text-[#052a5b]">PuzKit3D</span>
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-white/40 bg-[rgba(248,251,255,0.82)] backdrop-blur-xl">
+      <div className="container-custom flex h-16 items-center justify-between gap-4">
+        <Link href="/" className="flex shrink-0 items-center gap-3">
+          <span className="inline-flex h-10 items-center rounded-full border border-[#dbe7ff] bg-[linear-gradient(180deg,#ffffff_0%,#f5f9ff_100%)] px-4 text-[20px] font-extrabold tracking-tight text-[#052a5b] shadow-sm">
+            PuzKit3D
+          </span>
         </Link>
 
-        {/* DESKTOP NAV LINKS */}
-        <nav className="hidden items-center gap-8 md:flex">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`text-sm font-medium transition-colors hover:text-[#e51636] ${
-                pathname === link.href ? 'text-[#e51636]' : 'text-slate-600'
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
+        <nav className="hidden items-center rounded-full border border-[#dbe7ff] bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(245,249,255,0.96)_100%)] p-1 shadow-[0_10px_24px_rgba(15,23,42,0.05)] md:flex">
+          {NAV_LINKS.map((link) => {
+            const isActive =
+              pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
+
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
+                  isActive
+                    ? 'bg-[#0f2347] text-white shadow-sm'
+                    : 'text-[#4b6797] hover:bg-white hover:text-[#0f2347]'
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
 
-        {/* ACTIONS */}
-        <div className="flex items-center gap-1 md:gap-2">
-          {/* Search */}
-          <button className="text-foreground/80 hover:bg-secondary hidden rounded-lg p-2 transition-colors sm:block">
-            <Search className="h-5 w-5" />
-          </button>
-
-          {/* HIỂN THỊ COIN (CHỈ HIỆN KHI ĐÃ LOGIN) */}
+        <div className="flex items-center gap-2">
           {isAuthenticated && !isAuthLoading && (
             <Link
               href="/wallet"
               title="My PuzCoins"
-              className="mr-1 flex items-center gap-1.5 rounded-full border border-amber-200/60 bg-amber-50 px-3 py-1.5 text-amber-600 shadow-sm transition-all hover:bg-amber-100"
+              className="inline-flex h-11 min-w-[60px] items-center justify-center gap-1.5 rounded-full border border-amber-200/80 bg-[linear-gradient(180deg,#fff8e7_0%,#fff2c7_100%)] px-3 text-amber-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-amber-100"
             >
-              <Coins className="h-4 w-4 drop-shadow-sm" />
+              <Coins className="h-4 w-4" />
               <span className="text-sm font-bold">
                 {walletData?.balance ? walletData.balance.toLocaleString() : 0}
               </span>
             </Link>
           )}
 
-          {/* User/Profile */}
           <Link
             href={isAuthenticated ? '/profile' : ROUTES.LOGIN}
-            className={`flex items-center gap-2 rounded-lg p-2 transition-colors ${
-              isAuthenticated
-                ? 'bg-slate-100 text-[#052a5b]'
-                : 'text-foreground/80 hover:bg-secondary'
-            }`}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#dbe7ff] bg-[linear-gradient(180deg,#ffffff_0%,#f5f9ff_100%)] text-[#052a5b] shadow-sm transition hover:-translate-y-0.5 hover:bg-white"
+            aria-label="Profile"
+            title={isAuthenticated ? user?.lastName || 'Profile' : 'Login'}
           >
             <User className="h-5 w-5" />
-            {isAuthenticated && !isAuthLoading && user && (
-              <span className="hidden text-xs font-semibold italic lg:block">
-                {user.firstName && user.lastName
-                  ? `${user.firstName} ${user.lastName}`
-                  : user.email?.split('@')[0]}
-              </span>
-            )}
           </Link>
 
-          {/* Cart */}
           {!isMiniCartDisabled && !isAuthLoading ? <MiniCart>{cartButton}</MiniCart> : cartButton}
 
-          {/* Logout button */}
           {isAuthenticated && (
             <button
               onClick={() => handleLogout(false)}
-              className="ml-1 hidden p-2 text-slate-500 transition-colors hover:text-red-600 sm:block"
+              className="hidden h-11 w-11 items-center justify-center rounded-full border border-[#dbe7ff] bg-[linear-gradient(180deg,#ffffff_0%,#f5f9ff_100%)] text-slate-500 shadow-sm transition hover:-translate-y-0.5 hover:bg-white hover:text-red-600 sm:inline-flex"
+              aria-label="Logout"
             >
               <LogOut className="h-5 w-5" />
             </button>
           )}
 
-          {/* Mobile Menu Toggle */}
           <button
-            className="p-2 text-slate-600 md:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#dbe7ff] bg-[linear-gradient(180deg,#ffffff_0%,#f5f9ff_100%)] text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:bg-white md:hidden"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
           >
-            {mobileMenuOpen ? <X /> : <Menu />}
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
 
-      {/* MOBILE MENU */}
       {mobileMenuOpen && (
-        <div className="space-y-4 border-t bg-white p-4 shadow-xl md:hidden">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setMobileMenuOpen(false)}
-              className="block text-base font-medium text-slate-700"
-            >
-              {link.label}
-            </Link>
-          ))}
-          {/* Menu Mobile cho nút Logout */}
-          {isAuthenticated && (
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                handleLogout(false);
-              }}
-              className="flex w-full items-center gap-2 text-base font-medium text-red-600"
-            >
-              <LogOut className="h-4 w-4" /> Logout
-            </button>
-          )}
+        <div className="border-t border-[#dbe7ff] bg-[rgba(255,255,255,0.94)] p-4 shadow-xl backdrop-blur-xl md:hidden">
+          <div className="space-y-2 rounded-[24px] border border-[#e4ecf8] bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-3 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+            {NAV_LINKS.map((link) => {
+              const isActive =
+                pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
+
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                    isActive ? 'bg-[#0f2347] text-white' : 'text-slate-700 hover:bg-[#f4f8ff]'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+
+            {isAuthenticated && (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleLogout(false);
+                }}
+                className="flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </button>
+            )}
+          </div>
         </div>
       )}
     </header>

@@ -1,129 +1,147 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useInView } from 'react-intersection-observer';
-import { Loader2, Clock, Puzzle, BarChart } from 'lucide-react';
-
-// Nhớ check lại 2 đường dẫn import này cho khớp với project của ông nha
+import { Loader2, Clock3, Puzzle, BarChart3, ArrowUpRight, ArrowRight } from 'lucide-react';
 import { useGetProductsQuery } from '@/lib/api/endpoints/productApi';
-import type { ProductDto } from '@/types/api/product.api.types';
+
+function formatBuildTime(value?: number) {
+  if (!value) return 'N/A';
+  if (value < 60) return `${value} min`;
+
+  const hours = Math.floor(value / 60);
+  const minutes = value % 60;
+
+  return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
+}
 
 export default function InfiniteProductList() {
-  const [page, setPage] = useState(1);
-  const [products, setProducts] = useState<ProductDto[]>([]);
-
-  // Hook theo dõi xem user đã cuộn tới cái ref ở cuối list chưa
-  // rootMargin: '200px' -> kích hoạt gọi API trước khi chạm đáy 200px cho mượt
-  const { ref, inView } = useInView({
-    threshold: 0,
-    rootMargin: '200px',
+  const { data, isFetching, isLoading, isError } = useGetProductsQuery({
+    pageNumber: 1,
+    pageSize: 4,
   });
 
-  // Gọi API lấy data
-  const { data, isFetching, isLoading } = useGetProductsQuery({
-    pageNumber: page,
-    pageSize: 8, // Mỗi lần load 8 sản phẩm (ông có thể đổi thành 12 tùy ý)
-    isActive: true,
-  });
+  const products = data?.items ?? [];
 
-  // Nối data mới vào state khi API trả kết quả về
-  useEffect(() => {
-    if (data?.items) {
-      setProducts((prev) => {
-        // Lọc trùng ID để tránh lỗi render 2 lần của React StrictMode lúc Dev
-        const newItems = data.items.filter(
-          (newItem: ProductDto) => !prev.some((p) => p.id === newItem.id)
-        );
-        return [...prev, ...newItems];
-      });
-    }
-  }, [data]);
-
-  // Tự động nhảy trang khi cuộn xuống đáy
-  useEffect(() => {
-    if (inView && !isFetching && data?.hasNextPage) {
-      setPage((prev) => prev + 1);
-    }
-  }, [inView, isFetching, data]);
-
-  // UI lúc mới load trang lần đầu (chưa có data nào)
-  if (isLoading && products.length === 0) {
+  if (isLoading || isFetching) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <Loader2 className="text-primary h-10 w-10 animate-spin" />
-      </div>
+      <section id="instock-products" className="relative bg-transparent">
+        <div className="container-custom py-16 lg:py-20">
+          <div className="overflow-hidden rounded-[38px] border border-[#dbe7ff] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)] px-6 py-8 shadow-[0_18px_60px_rgba(15,23,42,0.05)] md:px-8 lg:px-10">
+            <div className="flex min-h-[40vh] items-center justify-center">
+              <Loader2 className="h-10 w-10 animate-spin text-slate-700" />
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (isError) {
+    return (
+      <section id="instock-products" className="relative bg-transparent">
+        <div className="container-custom py-16 lg:py-20">
+          <div className="overflow-hidden rounded-[38px] border border-red-200 bg-[linear-gradient(180deg,#ffffff_0%,#fffafa_100%)] px-6 py-8 shadow-[0_18px_60px_rgba(15,23,42,0.05)] md:px-8 lg:px-10">
+            <div className="rounded-[28px] border border-red-200 bg-red-50 px-6 py-10 text-center text-sm font-medium text-red-600">
+              Failed to load instock products.
+            </div>
+          </div>
+        </div>
+      </section>
     );
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      {/* 1. Danh sách sản phẩm */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:gap-6 xl:grid-cols-4">
-        {products.map((product) => (
-          <Link
-            key={product.id}
-            href={`/shop/${product.slug}`}
-            className="border-border bg-card group flex flex-col overflow-hidden rounded-xl border transition-all hover:-translate-y-1 hover:shadow-lg"
-          >
-            {/* Ảnh Thumbnail */}
-            <div className="bg-muted relative aspect-square w-full overflow-hidden">
-              <Image
-                src={product.thumbnailUrl}
-                alt={product.name}
-                fill
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-            </div>
+    <section id="instock-products" className="relative bg-transparent">
+      <div className="container-custom py-16 lg:py-20">
+        <div className="relative overflow-hidden rounded-[38px] border border-[#dbe7ff] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)] px-6 py-8 shadow-[0_18px_60px_rgba(15,23,42,0.05)] md:px-8 lg:px-10">
+          <div className="pointer-events-none absolute top-0 right-0 h-56 w-56 rounded-full bg-[#dcecff] blur-3xl" />
+          <div className="pointer-events-none absolute bottom-0 left-0 h-48 w-48 rounded-full bg-[#edf5ff] blur-3xl" />
 
-            {/* Thông tin */}
-            <div className="flex flex-1 flex-col p-4">
-              <p className="text-muted-foreground mb-1 text-xs font-medium tracking-wider uppercase">
-                {product.code}
-              </p>
-              <h3 className="text-card-foreground group-hover:text-primary line-clamp-2 text-base font-bold transition-colors">
-                {product.name}
-              </h3>
-
-              <div className="text-muted-foreground mt-auto flex flex-wrap items-center gap-3 pt-4 text-xs">
-                <div className="flex items-center gap-1">
-                  <Puzzle className="h-3.5 w-3.5" />
-                  <span>{product.totalPieceCount} pcs</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" />
-                  <span>{product.estimatedBuildTime}m</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <BarChart className="h-3.5 w-3.5" />
-                  <span>{product.difficultLevel}</span>
-                </div>
+          <div className="relative mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-2xl">
+              <div className="inline-flex rounded-full border border-[#dbe7ff] bg-[#f8fbff] px-4 py-2 text-[11px] font-semibold tracking-[0.24em] text-[#4b6797] uppercase">
+                Instock Product
               </div>
+
+              <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-[#0f2347] md:text-4xl">
+                Ready-to-ship model kits
+              </h2>
+
+              <p className="mt-4 max-w-xl text-base leading-7 text-slate-600">
+                Available now, polished presentation, and faster purchase flow for products already
+                in stock.
+              </p>
             </div>
-          </Link>
-        ))}
-      </div>
 
-      {/* 2. Sentinel: Cục chốt chặn mồi nhử gắn ref để gọi trigger load more */}
-      <div ref={ref} className="flex h-20 w-full items-center justify-center py-6">
-        {isFetching && (
-          <div className="text-muted-foreground flex items-center gap-2">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            <span className="text-sm font-medium">Loading more awesome models...</span>
+            <Link
+              href="/shop"
+              className="inline-flex items-center gap-2 self-start rounded-full border border-[#dbe7ff] bg-white px-5 py-3 text-sm font-semibold text-[#163b78] shadow-[0_10px_30px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(15,23,42,0.08)]"
+            >
+              View All
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
-        )}
 
-        {/* Hết trang thì báo cáo cho user */}
-        {!isFetching && data && !data.hasNextPage && products.length > 0 && (
-          <div className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
-            <span className="bg-border h-px w-12"></span>
-            You've seen all products
-            <span className="bg-border h-px w-12"></span>
+          <div className="relative grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+            {products.map((product: any) => (
+              <Link
+                key={product.id}
+                href={`/shop/${product.slug ?? product.id}`}
+                className="group overflow-hidden rounded-[30px] border border-[#e4ecf8] bg-white/95 shadow-[0_14px_40px_rgba(15,23,42,0.05)] transition-all duration-300 hover:-translate-y-1.5 hover:border-[#d3e4ff] hover:shadow-[0_22px_48px_rgba(15,23,42,0.09)]"
+              >
+                <div className="relative aspect-[4/4.25] overflow-hidden bg-[linear-gradient(180deg,#fbfdff_0%,#f3f8ff_100%)] p-5">
+                  <div className="absolute top-4 left-4 z-10 rounded-full border border-[#d9e6fb] bg-white/90 px-3 py-1 text-[10px] font-semibold tracking-[0.18em] text-slate-600 uppercase shadow-sm backdrop-blur-sm">
+                    {product.code || 'Instock'}
+                  </div>
+
+                  <div className="absolute inset-x-8 bottom-6 h-8 rounded-full bg-[#9bb7e7]/20 blur-2xl" />
+                  <div className="absolute inset-x-5 inset-y-5 rounded-[24px] border border-white/60 bg-white/35" />
+
+                  <Image
+                    src={product.thumbnailUrl || '/images/placeholder-product.png'}
+                    alt={product.name}
+                    fill
+                    unoptimized
+                    sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
+                    className="object-contain p-6 transition-transform duration-500 group-hover:scale-[1.06]"
+                  />
+                </div>
+
+                <div className="flex flex-col p-5">
+                  <h3 className="line-clamp-2 text-[18px] font-bold tracking-tight text-[#0f2347]">
+                    {product.name}
+                  </h3>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#e5edf9] bg-[#f6f9fe] px-3 py-1.5 text-xs font-medium text-slate-600">
+                      <Puzzle className="h-3.5 w-3.5" />
+                      {product.totalPieceCount ?? '—'} pcs
+                    </span>
+
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#e5edf9] bg-[#f6f9fe] px-3 py-1.5 text-xs font-medium text-slate-600">
+                      <Clock3 className="h-3.5 w-3.5" />
+                      {formatBuildTime(product.estimatedBuildTime)}
+                    </span>
+
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#e5edf9] bg-[#f6f9fe] px-3 py-1.5 text-xs font-medium text-slate-600">
+                      <BarChart3 className="h-3.5 w-3.5" />
+                      {product.difficultLevel || 'N/A'}
+                    </span>
+                  </div>
+
+                  <div className="mt-5 flex items-center justify-between border-t border-[#edf2f8] pt-4">
+                    <span className="text-sm font-semibold text-[#0f2347]">View details</span>
+                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#0f2347] text-white shadow-[0_10px_25px_rgba(15,35,71,0.20)] transition group-hover:bg-[#163b78]">
+                      <ArrowUpRight className="h-4 w-4" />
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
           </div>
-        )}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

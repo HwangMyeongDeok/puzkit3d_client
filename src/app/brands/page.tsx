@@ -34,6 +34,7 @@ export default function BrandsPage() {
     pageNumber: 1,
     pageSize: 100,
     searchTerm: debouncedSearch || undefined,
+    ascending: true,
   });
 
   const {
@@ -44,6 +45,7 @@ export default function BrandsPage() {
   } = useGetPartnersQuery({
     pageNumber: 1,
     pageSize: 100,
+    ascending: true,
   });
 
   const {
@@ -372,7 +374,7 @@ export default function BrandsPage() {
                     <PartnerProductCard
                       key={product.id}
                       product={product}
-                      partnerName={product.partnerName || ''}
+                      partnerName={partner?.name || ''}
                       countryName={config?.countryName}
                     />
                   );
