@@ -2,8 +2,8 @@
 
 import { ReactNode } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { User, Receipt, Settings, LogOut } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import { User, Receipt, Settings, LogOut, Palette, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useAppDispatch } from '@/stores/hooks';
@@ -15,6 +15,7 @@ import { apiSlice } from '@/lib/api/apiSlice';
 export default function ProfileLayout({ children }: { children: ReactNode }) {
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleLogout = () => {
     clearAxiosState();
@@ -39,30 +40,47 @@ export default function ProfileLayout({ children }: { children: ReactNode }) {
             <nav className="flex flex-col gap-2">
               <Link
                 href="/profile"
-                className="hover:bg-muted text-card-foreground flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors"
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${pathname === '/profile' ? 'bg-brand/10 text-brand' : 'hover:bg-muted text-card-foreground'}`}
               >
-                <User className="text-muted-foreground h-5 w-5" />
+                <User
+                  className={`h-5 w-5 ${pathname === '/profile' ? 'text-brand' : 'text-muted-foreground'}`}
+                />
                 Profile
               </Link>
               <Link
                 href="/orders"
-                className="hover:bg-muted text-card-foreground flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors"
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${pathname?.startsWith('/orders') ? 'bg-brand/10 text-brand' : 'hover:bg-muted text-card-foreground'}`}
               >
-                <Receipt className="text-muted-foreground h-5 w-5" />
+                <Receipt
+                  className={`h-5 w-5 ${pathname?.startsWith('/orders') ? 'text-brand' : 'text-muted-foreground'}`}
+                />
                 Order History
               </Link>
               <Link
-                href="/ticket-support"
-                className="hover:bg-muted text-card-foreground flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors"
+                href="/profile/custom-designs"
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${pathname?.startsWith('/profile/custom-designs') ? 'bg-brand/10 text-brand' : 'hover:bg-muted text-card-foreground'}`}
               >
-                <Receipt className="text-muted-foreground h-5 w-5" />
+                <Palette
+                  className={`h-5 w-5 ${pathname?.startsWith('/profile/custom-designs') ? 'text-brand' : 'text-muted-foreground'}`}
+                />
+                Custom Designs
+              </Link>
+              <Link
+                href="/ticket-support"
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${pathname?.startsWith('/ticket-support') ? 'bg-brand/10 text-brand' : 'hover:bg-muted text-card-foreground'}`}
+              >
+                <Receipt
+                  className={`h-5 w-5 ${pathname?.startsWith('/ticket-support') ? 'text-brand' : 'text-muted-foreground'}`}
+                />
                 Ticket Support
               </Link>
               <Link
                 href="/wallet"
-                className="hover:bg-muted text-card-foreground flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors"
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${pathname?.startsWith('/wallet') ? 'bg-brand/10 text-brand' : 'hover:bg-muted text-card-foreground'}`}
               >
-                <Receipt className="text-muted-foreground h-5 w-5" />
+                <Wallet
+                  className={`h-5 w-5 ${pathname?.startsWith('/wallet') ? 'text-brand' : 'text-muted-foreground'}`}
+                />
                 Wallet
               </Link>
               <Link

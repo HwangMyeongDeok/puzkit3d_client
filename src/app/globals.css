@@ -291,7 +291,7 @@
 @layer utilities {
   /* Text gradient */
   .text-gradient {
-    @apply from-brand to-brand-accent bg-gradient-to-r bg-clip-text text-transparent;
+    @apply from-brand to-brand-accent bg-linear-to-r bg-clip-text text-transparent;
   }
 
   /* Glassmorphism */

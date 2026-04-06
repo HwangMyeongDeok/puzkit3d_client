@@ -28,10 +28,10 @@ const NAV_LINKS = [
   { href: ROUTES.HOME, label: 'Home' },
   { href: ROUTES.PRODUCTS, label: 'Shop' },
   { href: ROUTES.BRANDS, label: 'Brands' },
-  { href: '/custom-service', label: 'Custom Service' },
+  { href: ROUTES.CUSTOM_SERVICE, label: 'Custom Service' },
 ];
 
-const MINI_CART_DISABLED_ROUTES = ['/cart', '/checkout'];
+const MINI_CART_DISABLED_ROUTES = [ROUTES.CART, ROUTES.CHECKOUT];
 
 export default function Header() {
   const dispatch = useAppDispatch();

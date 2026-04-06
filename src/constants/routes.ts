@@ -33,15 +33,18 @@ export const ROUTES = {
   FAQ: '/faq',
   PRIVACY_POLICY: '/privacy-policy',
   TERMS_OF_SERVICE: '/terms-of-service',
+
+  CUSTOM_SERVICE: '/custom-service',
+
+  CUSTOM_DESIGN_REQUESTS: '/profile/custom-designs',
+  CUSTOM_DESIGN_REQUEST_DETAIL: (id: string) => `/profile/custom-designs/${id}` as const,
 } as const;
 
 export const API_ROUTES = {
   AUTH: '/auth',
   PRODUCTS: '/products',
-  CATEGORIES: '/categories',
   CART: '/cart',
   ORDERS: '/orders',
-  IMPORT_REQUESTS: '/import-requests',
   USERS: '/users',
   ADDRESSES: '/addresses',
 } as const;
