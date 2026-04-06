@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ShoppingCart, Menu, X, Search, User, LogOut, Coins } from 'lucide-react';
 
-import { ROUTES, APP_CONFIG } from '@/constants';
+import { ROUTES } from '@/constants';
 import MiniCart from '@/components/custom/MiniCart';
 import { useGetCartQuery } from '@/lib/api/endpoints/cartApi';
 import { useGetWalletQuery } from '@/lib/api/endpoints/walletApi';
@@ -28,10 +28,10 @@ const NAV_LINKS = [
   { href: ROUTES.HOME, label: 'Home' },
   { href: ROUTES.PRODUCTS, label: 'Shop' },
   { href: ROUTES.BRANDS, label: 'Brands' },
-  { href: '/custom-service', label: 'Custom Service' },
+  { href: ROUTES.CUSTOM_SERVICE, label: 'Custom Service' },
 ];
 
-const MINI_CART_DISABLED_ROUTES = ['/cart', '/checkout'];
+const MINI_CART_DISABLED_ROUTES = [ROUTES.CART, ROUTES.CHECKOUT];
 
 export default function Header() {
   const dispatch = useAppDispatch();
@@ -60,10 +60,7 @@ export default function Header() {
     skip: !mounted || isAuthLoading || !isAuthenticated,
   });
 
-  // 👉 HIỆU ỨNG RADAR ĐÃ ĐƯỢC LÀM CHO THÔNG MINH HƠN
   useEffect(() => {
-    // Chỉ kích hoạt force logout nếu có lỗi thật sự VÀ lỗi đó là 401 (Unauthorized)
-    // Nếu dùng fetchBaseQuery, error.status là HTTP code.
     const isUnauthorized = (walletError as any)?.status === 401;
 
     if (isUnauthorized && isAuthenticated && !isAuthLoading) {
@@ -85,12 +82,9 @@ export default function Header() {
     }
   };
 
-  // 👉 HÀM LOGOUT CHUẨN: Dọn SẠCH SẼ từ trên xuống dưới
   const handleLogout = (isForced = false) => {
-    // 1. Dọn Queue và Cookie của Axios
     clearAxiosState();
 
-    // 2. Xóa TOÀN BỘ cache của RTK Query (để không bị lỗi chéo giữa các acc)
     dispatch(apiSlice.util.resetApiState());
 
     // 3. Xóa Redux State
