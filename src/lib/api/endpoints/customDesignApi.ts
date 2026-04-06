@@ -2,20 +2,30 @@ import apiSlice from '@/lib/api/apiSlice';
 import {
   CreateCustomDesignRequestDto,
   CustomDesignRequestDto,
+  PaginatedResponse,
   UpdateCustomDesignRequestDto,
 } from '@/types/api/customDesign.api.type';
 
+export interface GetCustomDesignRequestsParams {
+  pageNumber?: number;
+  pageSize?: number;
+  status?: string;
+}
+
 export const customDesignRequestApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getCustomDesignRequests: builder.query<CustomDesignRequestDto[], void>({
-      query: () => ({
+    getCustomDesignRequests: builder.query<
+      PaginatedResponse<CustomDesignRequestDto>,
+      GetCustomDesignRequestsParams | void
+    >({
+      query: (params) => ({
         url: `/custom-design-requests`,
         method: 'GET',
+        params: (params ?? {}) as Record<string, unknown>,
       }),
-      providesTags: ['CustomDesignRequest'], // Gắn tag để tự động invalidate cache
+      providesTags: ['CustomDesignRequest'],
     }),
 
-    // GET: Lấy chi tiết 1 Request
     getCustomDesignRequestById: builder.query<CustomDesignRequestDto, string>({
       query: (id) => ({
         url: `/custom-design-requests/${id}`,
@@ -24,17 +34,15 @@ export const customDesignRequestApi = apiSlice.injectEndpoints({
       providesTags: (result, error, id) => [{ type: 'CustomDesignRequest', id }],
     }),
 
-    // POST: Tạo mới
     createCustomDesignRequest: builder.mutation<string, CreateCustomDesignRequestDto>({
       query: (body) => ({
         url: `/custom-design-requests`,
         method: 'POST',
-        data: body, // Hoặc `body: body` tùy cách ông setup custom Axios adapter trong apiSlice
+        data: body,
       }),
-      invalidatesTags: ['CustomDesignRequest'], // Bấm tạo xong thì tự load lại GET list
+      invalidatesTags: ['CustomDesignRequest'],
     }),
 
-    // PUT: Cập nhật (Dùng khi MissingInformation hoặc khách chủ động Cancel)
     updateCustomDesignRequest: builder.mutation<
       void,
       { id: string; data: UpdateCustomDesignRequestDto }
@@ -42,7 +50,7 @@ export const customDesignRequestApi = apiSlice.injectEndpoints({
       query: ({ id, data }) => ({
         url: `/custom-design-requests/${id}`,
         method: 'PUT',
-        data: data, // Hoặc `body: data`
+        data: data,
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: 'CustomDesignRequest', id },
@@ -50,7 +58,6 @@ export const customDesignRequestApi = apiSlice.injectEndpoints({
       ],
     }),
 
-    // DELETE: Xóa (Nếu cần)
     deleteCustomDesignRequest: builder.mutation<void, string>({
       query: (id) => ({
         url: `/custom-design-requests/${id}`,

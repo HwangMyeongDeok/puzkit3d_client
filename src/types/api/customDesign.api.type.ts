@@ -23,9 +23,19 @@ export interface CreateCustomDesignRequestDto {
   targetBudget: number;
 }
 
-export interface UpdateCustomDesignRequestDto extends Partial<CreateCustomDesignRequestDto> {
+export interface UpdateCustomDesignRequestDto {
+  desiredLengthMm?: number;
+  desiredWidthMm?: number;
+  desiredHeightMm?: number;
+  sketches?: string[];
+  customerPrompt?: string;
+  desiredDeliveryDate?: string;
+  desiredQuantity?: number;
+  targetBudget?: number;
   status?: CustomDesignRequestStatus;
+  note?: string;
 }
+
 export interface CustomDesignRequestDto {
   id: string;
   code: string;
@@ -36,12 +46,23 @@ export interface CustomDesignRequestDto {
   desiredLengthMm: number;
   desiredWidthMm: number;
   desiredHeightMm: number;
-  sketches: string[];
+  sketchesUrls: string[];
   customerPrompt: string;
-  staffNote?: string | null;
   desiredDeliveryDate: string;
   desiredQuantity: number;
   targetBudget: number;
+  note?: string | null;
+  usedSupportConceptDesignTime: number;
   createdAt: string;
   updatedAt?: string | null;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
 }

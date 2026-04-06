@@ -146,7 +146,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             alt={product.name}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            className="transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-slate-100">
@@ -179,7 +179,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             <span className="max-w-[80px] truncate">{assemblyName}</span>
           </div>
 
-          {capabilityNames && capabilityNames.length > 0 && (
+          {/* {capabilityNames && capabilityNames.length > 0 && (
             <div
               className="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5"
               title="Capabilities"
@@ -192,7 +192,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 </span>
               )}
             </div>
-          )}
+          )} */}
         </div>
 
         <div className="mt-3 flex items-center gap-2 text-[11px] font-medium text-slate-600">
@@ -236,7 +236,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           <button
             onClick={handleQuickAdd}
             disabled={isAdding || isFetchingData}
-            className="group/btn flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#e51636] hover:shadow-lg hover:shadow-[#e51636]/30 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
+            className="group/btn flex h-10 w-10 items-center justify-center rounded-full bg-blue-900 text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-950 hover:shadow-lg hover:shadow-blue-950/30 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
             title="Add to cart"
           >
             {isAdding ? (

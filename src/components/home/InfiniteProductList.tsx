@@ -2,26 +2,51 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Loader2, Clock3, Puzzle, BarChart3, ArrowUpRight, ArrowRight } from 'lucide-react';
+import { Loader2, Puzzle, BarChart3, ArrowUpRight, ArrowRight, Clock3 } from 'lucide-react';
 import { useGetProductsQuery } from '@/lib/api/endpoints/productApi';
+import { useGetTopicsQuery } from '@/lib/api/endpoints/metaData';
+import { ProductDto } from '@/types/api';
+import { Topic } from '@/types';
+import { TopicDto } from '@/types/api/catalog.types';
 
-function formatBuildTime(value?: number) {
-  if (!value) return 'N/A';
-  if (value < 60) return `${value} min`;
-
-  const hours = Math.floor(value / 60);
-  const minutes = value % 60;
-
-  return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
-}
-
+// rest of file unchanged, chỉ swap badge trong card:
 export default function InfiniteProductList() {
   const { data, isFetching, isLoading, isError } = useGetProductsQuery({
     pageNumber: 1,
-    pageSize: 4,
+    pageSize: 8,
   });
 
   const products = data?.items ?? [];
+
+  const { data: topicsData } = useGetTopicsQuery({
+    pageNumber: 1,
+    pageSize: 50,
+  });
+  const allTopics = topicsData?.items ?? [];
+
+  function formatBuildTime(value?: number) {
+    if (!value) return 'N/A';
+    if (value < 60) return `${value} min`;
+
+    const hours = Math.floor(value / 60);
+    const minutes = value % 60;
+
+    return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
+  }
+
+  console.log('dsadsad', products, 'Dsadsadas', topicsData?.items);
+  const getDifficultyColor = (level?: string) => {
+    switch (level?.toLowerCase()) {
+      case 'advanced':
+        return 'text-red-600 border-red-200 bg-red-50/90';
+      case 'intermediate':
+        return 'text-amber-600 border-amber-200 bg-amber-50/90';
+      case 'basic':
+        return 'text-green-600 border-green-200 bg-green-50/90';
+      default:
+        return 'text-slate-600 border-[#d9e6fb] bg-white/90';
+    }
+  };
 
   if (isLoading || isFetching) {
     return (
@@ -63,17 +88,14 @@ export default function InfiniteProductList() {
               <div className="inline-flex rounded-full border border-[#dbe7ff] bg-[#f8fbff] px-4 py-2 text-[11px] font-semibold tracking-[0.24em] text-[#4b6797] uppercase">
                 Instock Product
               </div>
-
               <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-[#0f2347] md:text-4xl">
                 Ready-to-ship model kits
               </h2>
-
               <p className="mt-4 max-w-xl text-base leading-7 text-slate-600">
                 Available now, polished presentation, and faster purchase flow for products already
                 in stock.
               </p>
             </div>
-
             <Link
               href="/shop"
               className="inline-flex items-center gap-2 self-start rounded-full border border-[#dbe7ff] bg-white px-5 py-3 text-sm font-semibold text-[#163b78] shadow-[0_10px_30px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(15,23,42,0.08)]"
@@ -84,20 +106,20 @@ export default function InfiniteProductList() {
           </div>
 
           <div className="relative grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-            {products.map((product: any) => (
+            {products.map((product: ProductDto) => (
               <Link
                 key={product.id}
                 href={`/shop/${product.slug ?? product.id}`}
                 className="group overflow-hidden rounded-[30px] border border-[#e4ecf8] bg-white/95 shadow-[0_14px_40px_rgba(15,23,42,0.05)] transition-all duration-300 hover:-translate-y-1.5 hover:border-[#d3e4ff] hover:shadow-[0_22px_48px_rgba(15,23,42,0.09)]"
               >
                 <div className="relative aspect-[4/4.25] overflow-hidden bg-[linear-gradient(180deg,#fbfdff_0%,#f3f8ff_100%)] p-5">
-                  <div className="absolute top-4 left-4 z-10 rounded-full border border-[#d9e6fb] bg-white/90 px-3 py-1 text-[10px] font-semibold tracking-[0.18em] text-slate-600 uppercase shadow-sm backdrop-blur-sm">
-                    {product.code || 'Instock'}
+                  <div
+                    className={`absolute top-4 left-4 z-10 rounded-full px-3 py-1 text-[10px] font-semibold tracking-[0.18em] uppercase shadow-sm backdrop-blur-sm ${getDifficultyColor(product.difficultLevel)}`}
+                  >
+                    {product.difficultLevel || 'Instock'}
                   </div>
-
                   <div className="absolute inset-x-8 bottom-6 h-8 rounded-full bg-[#9bb7e7]/20 blur-2xl" />
                   <div className="absolute inset-x-5 inset-y-5 rounded-[24px] border border-white/60 bg-white/35" />
-
                   <Image
                     src={product.thumbnailUrl || '/images/placeholder-product.png'}
                     alt={product.name}
@@ -126,7 +148,7 @@ export default function InfiniteProductList() {
 
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-[#e5edf9] bg-[#f6f9fe] px-3 py-1.5 text-xs font-medium text-slate-600">
                       <BarChart3 className="h-3.5 w-3.5" />
-                      {product.difficultLevel || 'N/A'}
+                      {allTopics.find((t: TopicDto) => t.id === product.topicId)?.name || 'N/A'}
                     </span>
                   </div>
 

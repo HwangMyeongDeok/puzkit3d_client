@@ -48,11 +48,11 @@ export default function ProfileLayout({ children }: { children: ReactNode }) {
                 Profile
               </Link>
               <Link
-                href="/orders"
-                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${pathname?.startsWith('/orders') ? 'bg-brand/10 text-brand' : 'hover:bg-muted text-card-foreground'}`}
+                href="/profile/orders"
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${pathname?.startsWith('/profile/orders') ? 'bg-brand/10 text-brand' : 'hover:bg-muted text-card-foreground'}`}
               >
                 <Receipt
-                  className={`h-5 w-5 ${pathname?.startsWith('/orders') ? 'text-brand' : 'text-muted-foreground'}`}
+                  className={`h-5 w-5 ${pathname?.startsWith('/profile/orders') ? 'text-brand' : 'text-muted-foreground'}`}
                 />
                 Order History
               </Link>
@@ -66,20 +66,20 @@ export default function ProfileLayout({ children }: { children: ReactNode }) {
                 Custom Designs
               </Link>
               <Link
-                href="/ticket-support"
-                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${pathname?.startsWith('/ticket-support') ? 'bg-brand/10 text-brand' : 'hover:bg-muted text-card-foreground'}`}
+                href="/profile/ticket-support"
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${pathname?.startsWith('/profile/ticket-support') ? 'bg-brand/10 text-brand' : 'hover:bg-muted text-card-foreground'}`}
               >
                 <Receipt
-                  className={`h-5 w-5 ${pathname?.startsWith('/ticket-support') ? 'text-brand' : 'text-muted-foreground'}`}
+                  className={`h-5 w-5 ${pathname?.startsWith('/profile/ticket-support') ? 'text-brand' : 'text-muted-foreground'}`}
                 />
                 Ticket Support
               </Link>
               <Link
-                href="/wallet"
-                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${pathname?.startsWith('/wallet') ? 'bg-brand/10 text-brand' : 'hover:bg-muted text-card-foreground'}`}
+                href="/profile/wallet"
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${pathname?.startsWith('/profile/wallet') ? 'bg-brand/10 text-brand' : 'hover:bg-muted text-card-foreground'}`}
               >
                 <Wallet
-                  className={`h-5 w-5 ${pathname?.startsWith('/wallet') ? 'text-brand' : 'text-muted-foreground'}`}
+                  className={`h-5 w-5 ${pathname?.startsWith('/profile/wallet') ? 'text-brand' : 'text-muted-foreground'}`}
                 />
                 Wallet
               </Link>
@@ -102,8 +102,7 @@ export default function ProfileLayout({ children }: { children: ReactNode }) {
           </div>
         </aside>
 
-        {/* Main Content */}
-        <main className="flex-1">{children}</main>
+        <main className="min-w-0 flex-1">{children}</main>
       </div>
     </div>
   );

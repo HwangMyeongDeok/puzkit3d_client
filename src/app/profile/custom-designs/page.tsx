@@ -2,70 +2,85 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Loader2, PenTool, Sparkles, Search, SlidersHorizontal } from 'lucide-react';
+import {
+  Loader2,
+  PenTool,
+  Sparkles,
+  Search,
+  SlidersHorizontal,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 
 import { useGetCustomDesignRequestsQuery } from '@/lib/api/endpoints/customDesignApi';
 import CustomDesignStatusFilter from '@/components/customDesign/CustomDesignStatusFilter';
 import CustomDesignRequestCard from '@/components/customDesign/CustomDesignRequestCard';
 import type { CustomDesignRequestStatus } from '@/types/api/customDesign.api.type';
 
+const PAGE_SIZE = 10;
+
 export default function CustomDesignRequestsPage() {
   const [selectedStatus, setSelectedStatus] = useState<CustomDesignRequestStatus | ''>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [pageNumber, setPageNumber] = useState(1);
 
-  const { data, isLoading, isError, isFetching } = useGetCustomDesignRequestsQuery();
+  const { data, isLoading, isError, isFetching } = useGetCustomDesignRequestsQuery({
+    pageNumber,
+    pageSize: PAGE_SIZE,
+    status: selectedStatus || undefined,
+  });
+
   const requests = data?.items || [];
-  // ── Derived data ──
+  const totalCount = data?.totalCount || 0;
+  const totalPages = data?.totalPages || 1;
+  const hasPreviousPage = data?.hasPreviousPage ?? false;
+  const hasNextPage = data?.hasNextPage ?? false;
+
+  // ── Stats summary (từ toàn bộ data của page hiện tại) ──
   const statusCounts = useMemo(() => {
     const counts: Partial<Record<CustomDesignRequestStatus | 'all', number>> = {
-      all: requests.length,
+      all: totalCount,
     };
     for (const req of requests) {
       counts[req.status] = (counts[req.status] || 0) + 1;
     }
     return counts;
-  }, [requests]);
+  }, [requests, totalCount]);
 
+  // Search filter (client-side trên page hiện tại)
   const filteredRequests = useMemo(() => {
-    let result = requests;
+    if (!searchQuery.trim()) return requests;
+    const q = searchQuery.toLowerCase();
+    return requests.filter(
+      (r) =>
+        r.code?.toLowerCase().includes(q) ||
+        r.id.toLowerCase().includes(q) ||
+        r.customerPrompt?.toLowerCase().includes(q)
+    );
+  }, [requests, searchQuery]);
 
-    // Status filter
-    if (selectedStatus) {
-      result = result.filter((r) => r.status === selectedStatus);
-    }
-
-    // Search filter
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (r) =>
-          r.code?.toLowerCase().includes(q) ||
-          r.id.toLowerCase().includes(q) ||
-          r.customerPrompt?.toLowerCase().includes(q)
-      );
-    }
-
-    return result;
-  }, [requests, selectedStatus, searchQuery]);
-
-  // Sort: actionable first, then newest first
+  // Sort: MissingInformation lên đầu
   const sortedRequests = useMemo(() => {
     return [...filteredRequests].sort((a, b) => {
-      // MissingInformation always on top
       if (a.status === 'MissingInformation' && b.status !== 'MissingInformation') return -1;
       if (b.status === 'MissingInformation' && a.status !== 'MissingInformation') return 1;
-      // Then by date (newest first)
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
   }, [filteredRequests]);
 
   const handleStatusChange = (status: CustomDesignRequestStatus | '') => {
     setSelectedStatus(status);
+    setPageNumber(1); // reset về trang 1 khi đổi filter
   };
 
-  // ── Stats summary ──
+  const handleSearchChange = (q: string) => {
+    setSearchQuery(q);
+    setPageNumber(1);
+  };
+
+  // Stats
   const activeCount = requests.filter((r) =>
-    ['Submitted', 'Approved', 'Processing'].includes(r.status)
+    (['Submitted', 'Approved', 'Processing'] as CustomDesignRequestStatus[]).includes(r.status)
   ).length;
   const needsAttentionCount = requests.filter((r) => r.status === 'MissingInformation').length;
   const completedCount = requests.filter((r) => r.status === 'Completed').length;
@@ -82,7 +97,7 @@ export default function CustomDesignRequestsPage() {
         </div>
         <Link
           href="/custom-service"
-          className="bg-brand text-brand-foreground hover:bg-brand/90 inline-flex items-center justify-center gap-2 rounded-xl px-6 py-2.5 font-semibold shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg"
+          className="bg-brand text-brand-foreground hover:bg-brand/90 inline-flex shrink-0 items-center justify-center gap-2 rounded-xl px-6 py-2.5 font-semibold shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg"
         >
           <Sparkles className="h-4 w-4" />
           New Request
@@ -90,13 +105,13 @@ export default function CustomDesignRequestsPage() {
       </div>
 
       {/* ── Quick Stats ── */}
-      {!isLoading && requests.length > 0 && (
+      {!isLoading && totalCount > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="bg-card border-border rounded-xl border p-4 text-center shadow-sm">
             <p className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
               Total
             </p>
-            <p className="text-foreground text-2xl font-black">{requests.length}</p>
+            <p className="text-foreground text-2xl font-black">{totalCount}</p>
           </div>
           <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4 text-center shadow-sm dark:border-blue-500/20 dark:bg-blue-500/5">
             <p className="text-[10px] font-semibold tracking-wider text-blue-600 uppercase dark:text-blue-400">
@@ -133,11 +148,10 @@ export default function CustomDesignRequestsPage() {
             type="text"
             placeholder="Search by request code or description..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="bg-card border-border text-foreground placeholder:text-muted-foreground focus:border-brand focus:ring-brand/30 w-full rounded-lg border py-2.5 pr-4 pl-10 text-sm transition-colors outline-none focus:ring-1"
           />
         </div>
-
         <CustomDesignStatusFilter
           selectedStatus={selectedStatus}
           onChange={handleStatusChange}
@@ -196,13 +210,70 @@ export default function CustomDesignRequestsPage() {
             <SlidersHorizontal className="h-3.5 w-3.5" />
             <span>
               Showing <strong className="text-foreground">{sortedRequests.length}</strong> of{' '}
-              {requests.length} request{requests.length !== 1 ? 's' : ''}
+              <strong className="text-foreground">{totalCount}</strong> request
+              {totalCount !== 1 ? 's' : ''}
             </span>
           </div>
 
           {sortedRequests.map((request) => (
             <CustomDesignRequestCard key={request.id} request={request} />
           ))}
+
+          {/* ── Pagination ── */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-2">
+              <p className="text-muted-foreground text-sm">
+                Page <strong className="text-foreground">{pageNumber}</strong> of{' '}
+                <strong className="text-foreground">{totalPages}</strong>
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPageNumber((p) => p - 1)}
+                  disabled={!hasPreviousPage || isFetching}
+                  className="border-border hover:bg-muted disabled:text-muted-foreground inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+
+                {/* Page numbers */}
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((p) => p === 1 || p === totalPages || Math.abs(p - pageNumber) <= 1)
+                  .reduce<(number | '...')[]>((acc, p, i, arr) => {
+                    if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push('...');
+                    acc.push(p);
+                    return acc;
+                  }, [])
+                  .map((p, i) =>
+                    p === '...' ? (
+                      <span key={`ellipsis-${i}`} className="text-muted-foreground px-1 text-sm">
+                        …
+                      </span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => setPageNumber(p as number)}
+                        disabled={isFetching}
+                        className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-medium transition-colors disabled:cursor-not-allowed ${
+                          p === pageNumber
+                            ? 'bg-brand text-brand-foreground border-brand'
+                            : 'border-border hover:bg-muted'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
+
+                <button
+                  onClick={() => setPageNumber((p) => p + 1)}
+                  disabled={!hasNextPage || isFetching}
+                  className="border-border hover:bg-muted disabled:text-muted-foreground inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

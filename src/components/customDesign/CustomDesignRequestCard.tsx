@@ -135,7 +135,7 @@ export default function CustomDesignRequestCard({ request }: CustomDesignRequest
           <div className="mb-1 flex items-center gap-1.5">
             <MessageSquare className="text-muted-foreground h-3.5 w-3.5" />
             <span className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
-              Description
+              My Prompt
             </span>
           </div>
           <p className="text-foreground/80 line-clamp-2 text-sm leading-relaxed italic">
@@ -145,7 +145,7 @@ export default function CustomDesignRequestCard({ request }: CustomDesignRequest
       )}
 
       {/* ── STAFF NOTE (when MissingInformation) ── */}
-      {request.staffNote && (
+      {request.note && (
         <div className="rounded-lg border border-orange-200 bg-orange-50/50 p-3 dark:border-orange-500/20 dark:bg-orange-500/5">
           <div className="mb-1 flex items-center gap-1.5">
             <MessageSquare className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />
@@ -154,7 +154,7 @@ export default function CustomDesignRequestCard({ request }: CustomDesignRequest
             </span>
           </div>
           <p className="text-sm leading-relaxed text-orange-900 dark:text-orange-200">
-            {request.staffNote}
+            {request.note}
           </p>
         </div>
       )}
@@ -163,10 +163,11 @@ export default function CustomDesignRequestCard({ request }: CustomDesignRequest
       <div className="border-border flex flex-col justify-between gap-4 border-t pt-4 md:flex-row md:items-center">
         <div className="flex items-center gap-3">
           {/* Sketch count indicator */}
-          {request.sketches && request.sketches.length > 0 && (
+          {request.sketchesUrls && request.sketchesUrls.length > 0 && (
             <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
               <ImageIcon className="h-3.5 w-3.5" />
-              {request.sketches.length} file{request.sketches.length > 1 ? 's' : ''} attached
+              {request.sketchesUrls.length} file{request.sketchesUrls.length > 1 ? 's' : ''}{' '}
+              attached
             </span>
           )}
         </div>
