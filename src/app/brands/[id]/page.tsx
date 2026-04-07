@@ -11,6 +11,8 @@ import { formatPrice } from '@/lib/utils';
 import { useGetPartnerProductByIdQuery } from '@/lib/api/endpoints/partnerProductApi';
 import { useGetPartnersQuery } from '@/lib/api/endpoints/partnerApi';
 import { useAddItemToPartnerCartMutation } from '@/lib/api/endpoints/partnerCartApi';
+import { useCreatePartnerProductRequestMutation } from '@/lib/api/endpoints/partnerProductRequestApi';
+import PartnerQuoteConfirmModal from '@/components/custom/PartnerQuoteConfirmModal';
 
 export default function PartnerProductDetailPage() {
   const params = useParams();
@@ -38,6 +40,9 @@ export default function PartnerProductDetailPage() {
 
   const [addItemToPartnerCart, { isLoading: isAddingToCart }] = useAddItemToPartnerCartMutation();
 
+  const [createPartnerProductRequest, { isLoading: isRequestingQuote }] =
+    useCreatePartnerProductRequestMutation();
+
   const partnerName = useMemo(() => {
     if (!product?.partnerId) return '';
     const partners = partnerResponse?.items ?? [];
@@ -47,7 +52,6 @@ export default function PartnerProductDetailPage() {
   const gallery = useMemo<string[]>(() => {
     if (!product) return [];
 
-    // Ưu tiên previewImages, nếu backend của bạn trả previewAssets thì dùng previewAssets
     const previews =
       product.previewImages && product.previewImages.length > 0
         ? product.previewImages
@@ -60,6 +64,14 @@ export default function PartnerProductDetailPage() {
   }, [product]);
 
   const [selectedImage, setSelectedImage] = useState<number>(0);
+  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+  const [requestQuantity, setRequestQuantity] = useState(1);
+
+  function getMockDesiredDeliveryDate(days = 7) {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    return date.toISOString();
+  }
 
   async function handleAddToCart() {
     if (!product?.id) return;
@@ -75,6 +87,44 @@ export default function PartnerProductDetailPage() {
     } catch (error) {
       console.error('Add partner product to cart failed:', error);
       toast.error('Failed to add partner product to cart');
+    }
+  }
+
+  function handleOpenQuoteModal() {
+    if (!product?.id) return;
+    setRequestQuantity(1);
+    setIsQuoteModalOpen(true);
+  }
+
+  function handleCancelQuoteModal() {
+    if (product?.name) {
+      toast.info(`Quote request cancelled for "${product.name}"`);
+    }
+    setIsQuoteModalOpen(false);
+    setRequestQuantity(1);
+  }
+
+  async function handleConfirmQuoteRequest() {
+    if (!product?.id || !product.partnerId) return;
+
+    try {
+      await createPartnerProductRequest({
+        partnerId: product.partnerId,
+        desiredDeliveryDate: getMockDesiredDeliveryDate(7),
+        items: [
+          {
+            partnerProductId: product.id,
+            quantity: requestQuantity,
+          },
+        ],
+      }).unwrap();
+
+      toast.success(`Request confirmed for "${product.name}"`);
+      setIsQuoteModalOpen(false);
+      setRequestQuantity(1);
+    } catch (error: any) {
+      console.error('Create partner product request failed:', error);
+      toast.error(error?.data?.message || 'Failed to send quote request');
     }
   }
 
@@ -100,112 +150,127 @@ export default function PartnerProductDetailPage() {
   }
 
   const activeImage = gallery[selectedImage] || product.thumbnailUrl || '';
+  const estimatedPriceText =
+    product.referencePrice != null ? formatPrice(product.referencePrice) : 'Contact for pricing';
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
-        <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
-          <div className="space-y-4">
-            <nav className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-              <Link href="/" className="hover:text-slate-900">
-                Home
-              </Link>
-              <ChevronRight className="h-4 w-4" />
-              <Link href="/brands" className="hover:text-slate-900">
-                Partner Products
-              </Link>
-              <ChevronRight className="h-4 w-4" />
-              <span className="font-medium text-slate-900">{product.name}</span>
-            </nav>
+    <>
+      <div className="min-h-screen bg-slate-50">
+        <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
+          <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
+            <div className="space-y-4">
+              <nav className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                <Link href="/" className="hover:text-slate-900">
+                  Home
+                </Link>
+                <ChevronRight className="h-4 w-4" />
+                <Link href="/brands" className="hover:text-slate-900">
+                  Partner Products
+                </Link>
+                <ChevronRight className="h-4 w-4" />
+                <span className="font-medium text-slate-900">{product.name}</span>
+              </nav>
 
-            <div className="relative h-[420px] overflow-hidden rounded-3xl border bg-white shadow-sm md:h-[520px]">
-              <Image
-                src={activeImage}
-                alt={product.name}
-                fill
-                priority
-                className="object-contain p-4"
-              />
-            </div>
-
-            {gallery.length > 1 && (
-              <div className="grid grid-cols-4 gap-3">
-                {gallery.map((image: string, index: number) => (
-                  <button
-                    key={`${image}-${index}`}
-                    type="button"
-                    onClick={() => setSelectedImage(index)}
-                    className={`relative h-24 overflow-hidden rounded-2xl border bg-white ${
-                      selectedImage === index ? 'ring-2 ring-amber-500' : ''
-                    }`}
-                  >
-                    <Image
-                      src={image}
-                      alt={`${product.name} preview ${index + 1}`}
-                      fill
-                      className="object-cover"
-                    />
-                  </button>
-                ))}
+              <div className="relative h-[420px] overflow-hidden rounded-3xl border bg-white shadow-sm md:h-[520px]">
+                <Image
+                  src={activeImage}
+                  alt={product.name}
+                  fill
+                  priority
+                  className="object-contain p-4"
+                />
               </div>
-            )}
-          </div>
 
-          <div className="rounded-3xl border bg-white p-6 shadow-sm">
-            <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
-              Partner Product
-            </span>
-
-            <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900">
-              {product.name}
-            </h1>
-
-            {partnerName ? (
-              <p className="mt-2 text-sm font-semibold tracking-wide text-slate-500 uppercase">
-                {partnerName}
-              </p>
-            ) : null}
-
-            <div className="mt-5 text-3xl font-extrabold text-rose-600">
-              {product.referencePrice != null
-                ? formatPrice(product.referencePrice)
-                : 'Contact for pricing'}
+              {gallery.length > 1 && (
+                <div className="grid grid-cols-4 gap-3">
+                  {gallery.map((image: string, index: number) => (
+                    <button
+                      key={`${image}-${index}`}
+                      type="button"
+                      onClick={() => setSelectedImage(index)}
+                      className={`relative h-24 overflow-hidden rounded-2xl border bg-white ${
+                        selectedImage === index ? 'ring-2 ring-amber-500' : ''
+                      }`}
+                    >
+                      <Image
+                        src={image}
+                        alt={`${product.name} preview ${index + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <p className="mt-2 text-sm text-slate-500">Estimated partner product price</p>
+            <div className="rounded-3xl border bg-white p-6 shadow-sm">
+              <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
+                Partner Product
+              </span>
 
-            <div className="mt-6 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                disabled={isAddingToCart}
-                className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <ShoppingCart className="h-4 w-4" />
-                {isAddingToCart ? 'Adding...' : 'Add to Cart'}
-              </button>
+              <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900">
+                {product.name}
+              </h1>
 
-              <button
-                type="button"
-                onClick={() => toast.success(`Requested quote for "${product.name}"`)}
-                className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-              >
-                <FileText className="h-4 w-4" />
-                Request Quote
-              </button>
-            </div>
+              {partnerName ? (
+                <p className="mt-2 text-sm font-semibold tracking-wide text-slate-500 uppercase">
+                  {partnerName}
+                </p>
+              ) : null}
 
-            <div className="mt-8">
-              <h2 className="mb-2 text-sm font-bold tracking-wide text-slate-500 uppercase">
-                Product Description
-              </h2>
-              <p className="text-sm leading-7 whitespace-pre-line text-slate-600">
-                {product.description || 'No description available'}
-              </p>
+              <div className="mt-5 text-3xl font-extrabold text-rose-600">{estimatedPriceText}</div>
+
+              <p className="mt-2 text-sm text-slate-500">Estimated partner product price</p>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  disabled={isAddingToCart}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  {isAddingToCart ? 'Adding...' : 'Add to Cart'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleOpenQuoteModal}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                >
+                  <FileText className="h-4 w-4" />
+                  Request Quote
+                </button>
+              </div>
+
+              <div className="mt-8">
+                <h2 className="mb-2 text-sm font-bold tracking-wide text-slate-500 uppercase">
+                  Product Description
+                </h2>
+                <p className="text-sm leading-7 whitespace-pre-line text-slate-600">
+                  {product.description || 'No description available'}
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+
+      <PartnerQuoteConfirmModal
+        open={isQuoteModalOpen}
+        productName={product.name}
+        partnerName={partnerName}
+        description={product.description}
+        thumbnailUrl={product.thumbnailUrl}
+        estimatedPriceText={estimatedPriceText}
+        quantity={requestQuantity}
+        submitting={isRequestingQuote}
+        onDecrease={() => setRequestQuantity((prev) => Math.max(1, prev - 1))}
+        onIncrease={() => setRequestQuantity((prev) => prev + 1)}
+        onCancel={handleCancelQuoteModal}
+        onConfirm={handleConfirmQuoteRequest}
+      />
+    </>
   );
 }
