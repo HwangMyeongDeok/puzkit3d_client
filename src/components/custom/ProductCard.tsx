@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { Puzzle, Timer, ShoppingCart, Loader2, Layers, Wrench, Zap } from 'lucide-react';
+import { Puzzle, ShoppingCart, Loader2, BarChart3, Clock3 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import type { ProductDto } from '@/types/api/product.api.types';
@@ -15,9 +15,7 @@ import { selectIsAuthenticated } from '@/stores/slices/authSlice';
 import { useAddToCartMutation } from '@/lib/api/endpoints/cartApi';
 import { useGetPriceDetailByVariantIdQuery } from '@/lib/api/endpoints/priceApi';
 import { useGetProductVariantsQuery } from '@/lib/api/endpoints/productApi';
-import { useGetCapabilitiesQuery } from '@/lib/api/endpoints/metaData';
-import { useGetMaterialsQuery } from '@/lib/api/endpoints/metaData';
-import { useGetAssemblyMethodsQuery } from '@/lib/api/endpoints/metaData';
+import { useGetTopicsQuery } from '@/lib/api/endpoints/metaData';
 
 import { handleErrorToast } from '@/lib/utils/error-handler';
 import { skipToken } from '@reduxjs/toolkit/query';
@@ -28,17 +26,27 @@ type ProductCardProps = {
 
 const getDifficultyStyles = (level: string) => {
   const normalizedLevel = level.toLowerCase();
-  if (normalizedLevel.includes('basic') || normalizedLevel.includes('easy')) {
-    return 'border-emerald-200 bg-emerald-100 text-emerald-700';
+  if (normalizedLevel.includes('basic')) {
+    return 'text-green-600';
   }
-  if (normalizedLevel.includes('intermediate') || normalizedLevel.includes('medium')) {
-    return 'border-amber-200 bg-amber-100 text-amber-700';
+  if (normalizedLevel.includes('intermediate')) {
+    return 'text-amber-600';
   }
-  if (normalizedLevel.includes('advanced') || normalizedLevel.includes('hard')) {
-    return 'border-rose-200 bg-rose-100 text-rose-700';
+  if (normalizedLevel.includes('advanced')) {
+    return 'text-red-600';
   }
-  return 'border-slate-200 bg-slate-100 text-slate-700';
+  return 'text-slate-600';
 };
+
+function formatBuildTime(value?: number) {
+  if (!value) return 'N/A';
+  if (value < 60) return `${value} min`;
+
+  const hours = Math.floor(value / 60);
+  const minutes = value % 60;
+
+  return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
+}
 
 export default function ProductCard({ product }: ProductCardProps) {
   const router = useRouter();
@@ -47,18 +55,9 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   const [addToCartMutate, { isLoading: isAdding }] = useAddToCartMutation();
 
-  // 1. Fetch Danh Mục
-  const { data: capsData } = useGetCapabilitiesQuery({ pageNumber: 1, pageSize: 100 });
-  const { data: materialsData } = useGetMaterialsQuery({ pageNumber: 1, pageSize: 100 });
-  const { data: assemblyData } = useGetAssemblyMethodsQuery({ pageNumber: 1, pageSize: 100 });
-
-  const materialName =
-    materialsData?.items?.find((m) => m.id === product.materialId)?.name || '...';
-  const assemblyName =
-    assemblyData?.items?.find((a) => a.id === product.assemblyMethodId)?.name || '...';
-  const capabilityNames = product.capabilityIds
-    ?.map((id) => capsData?.items?.find((c) => c.id === id)?.name)
-    .filter(Boolean);
+  // 1. Fetch Topics
+  const { data: topicsData } = useGetTopicsQuery({ pageNumber: 1, pageSize: 100 });
+  const topicName = topicsData?.items?.find((t: any) => t.id === product.topicId)?.name || 'N/A';
 
   // 2. Fetch Variant & Price Array
   const { data: variantsData, isLoading: isVariantsLoading } = useGetProductVariantsQuery(
@@ -82,7 +81,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   // Ưu tiên hiển thị và thêm vào giỏ hàng cái giá Sale (nếu có)
   const activePriceObj = salePriceObj || standardPriceObj;
-  const isSale = !!salePriceObj && !!standardPriceObj; // Chỉ show gạch ngang nếu có đủ cả 2
+  const isSale = !!salePriceObj && !!standardPriceObj;
 
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
@@ -111,7 +110,6 @@ export default function ProductCard({ product }: ProductCardProps) {
     }
 
     try {
-      // Lấy ID của cái giá đang được áp dụng (Sale hoặc Standard)
       const priceDetailId = activePriceObj.id.replace(/"/g, '').trim();
 
       await addToCartMutate({
@@ -134,9 +132,9 @@ export default function ProductCard({ product }: ProductCardProps) {
   return (
     <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-slate-300 hover:shadow-xl">
       <div
-        className={`absolute top-3 left-3 z-10 rounded-full border px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase shadow-sm backdrop-blur-md transition-colors ${getDifficultyStyles(product.difficultLevel)}`}
+        className={`absolute top-3 left-3 z-10 rounded-full border px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase shadow-sm backdrop-blur-md transition-colors ${getDifficultyStyles(product.difficultLevel || '')}`}
       >
-        {product.difficultLevel}
+        {product.difficultLevel || 'Instock'}
       </div>
 
       <Link href={productUrl} className="relative aspect-square w-full overflow-hidden bg-slate-50">
@@ -162,48 +160,22 @@ export default function ProductCard({ product }: ProductCardProps) {
           </h3>
         </Link>
 
-        {/* THÔNG TIN VẬT LIỆU, CÁCH LẮP... */}
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] font-medium text-slate-600">
-          <div
-            className="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5"
-            title="Material"
-          >
-            <Layers className="h-3 w-3 text-slate-400" />
-            <span className="max-w-[80px] truncate">{materialName}</span>
-          </div>
-          <div
-            className="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5"
-            title="Assembly Method"
-          >
-            <Wrench className="h-3 w-3 text-slate-400" />
-            <span className="max-w-[80px] truncate">{assemblyName}</span>
-          </div>
+        {/* CỤM BADGE MỚI (Pcs, Time, Topic) TRÊN 1 HÀNG */}
+        <div className="mt-4 flex w-full flex-nowrap items-center gap-1.5">
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-600">
+            <Puzzle className="h-3 w-3" />
+            {product.totalPieceCount ?? '—'}
+          </span>
 
-          {/* {capabilityNames && capabilityNames.length > 0 && (
-            <div
-              className="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5"
-              title="Capabilities"
-            >
-              <Zap className="h-3 w-3 text-amber-500" />
-              <span className="max-w-[80px] truncate">{capabilityNames[0]}</span>
-              {capabilityNames.length > 1 && (
-                <span className="text-[9px] font-bold text-slate-400">
-                  +{capabilityNames.length - 1}
-                </span>
-              )}
-            </div>
-          )} */}
-        </div>
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-600">
+            <Clock3 className="h-3 w-3" />
+            {formatBuildTime(product.estimatedBuildTime)}
+          </span>
 
-        <div className="mt-3 flex items-center gap-2 text-[11px] font-medium text-slate-600">
-          <div className="flex items-center gap-1.5 rounded-full border border-slate-200/60 px-2.5 py-1">
-            <Puzzle className="h-3.5 w-3.5 text-slate-500" />
-            <span>{product.totalPieceCount} Pcs</span>
-          </div>
-          <div className="flex items-center gap-1.5 rounded-full border border-slate-200/60 px-2.5 py-1">
-            <Timer className="h-3.5 w-3.5 text-slate-500" />
-            <span>{product.estimatedBuildTime} Min</span>
-          </div>
+          <span className="inline-flex min-w-0 shrink items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-600">
+            <BarChart3 className="h-3 w-3 shrink-0" />
+            <span className="truncate">{topicName}</span>
+          </span>
         </div>
 
         <div className="flex-1" />
@@ -218,12 +190,10 @@ export default function ProductCard({ product }: ProductCardProps) {
               <div className="h-6 w-24 animate-pulse rounded bg-slate-200"></div>
             ) : (
               <div className="flex items-end gap-2">
-                {/* Giá Đang Bán (Sale hoặc Standard) */}
                 <span className="text-lg font-extrabold tracking-tight text-[#e51636]">
                   {formattedActivePrice}
                 </span>
 
-                {/* Nếu đang Sale thì gạch ngang giá Standard */}
                 {isSale && (
                   <span className="mb-0.5 text-xs font-medium text-slate-400 line-through decoration-slate-300">
                     {formattedStandardPrice}

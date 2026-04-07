@@ -78,12 +78,10 @@ export default function CustomDesignRequestsPage() {
     setPageNumber(1);
   };
 
-  // Stats
-  const activeCount = requests.filter((r) =>
-    (['Submitted', 'Approved', 'Processing'] as CustomDesignRequestStatus[]).includes(r.status)
-  ).length;
-  const needsAttentionCount = requests.filter((r) => r.status === 'MissingInformation').length;
-  const completedCount = requests.filter((r) => r.status === 'Completed').length;
+  // ── Thống kê theo yêu cầu mới ──
+  const submittedCount = requests.filter((r) => r.status === 'Submitted').length;
+  const missingInfoCount = requests.filter((r) => r.status === 'MissingInformation').length;
+  const approvedCount = requests.filter((r) => r.status === 'Approved').length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -97,7 +95,7 @@ export default function CustomDesignRequestsPage() {
         </div>
         <Link
           href="/custom-service"
-          className="bg-brand text-brand-foreground hover:bg-brand/90 inline-flex shrink-0 items-center justify-center gap-2 rounded-xl px-6 py-2.5 font-semibold shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg"
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-900 px-6 py-2.5 font-semibold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-lg"
         >
           <Sparkles className="h-4 w-4" />
           New Request
@@ -107,34 +105,39 @@ export default function CustomDesignRequestsPage() {
       {/* ── Quick Stats ── */}
       {!isLoading && totalCount > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {/* Card Total (Trung tính) */}
           <div className="bg-card border-border rounded-xl border p-4 text-center shadow-sm">
             <p className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
               Total
             </p>
             <p className="text-foreground text-2xl font-black">{totalCount}</p>
           </div>
+
+          {/* Card Submitted (Xanh lam) */}
           <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4 text-center shadow-sm dark:border-blue-500/20 dark:bg-blue-500/5">
             <p className="text-[10px] font-semibold tracking-wider text-blue-600 uppercase dark:text-blue-400">
-              Active
+              Submitted
             </p>
-            <p className="text-2xl font-black text-blue-700 dark:text-blue-300">{activeCount}</p>
+            <p className="text-2xl font-black text-blue-700 dark:text-blue-300">{submittedCount}</p>
           </div>
-          {needsAttentionCount > 0 && (
-            <div className="rounded-xl border border-orange-200 bg-orange-50/50 p-4 text-center shadow-sm dark:border-orange-500/20 dark:bg-orange-500/5">
-              <p className="text-[10px] font-semibold tracking-wider text-orange-600 uppercase dark:text-orange-400">
-                Needs Attention
-              </p>
-              <p className="text-2xl font-black text-orange-700 dark:text-orange-300">
-                {needsAttentionCount}
-              </p>
-            </div>
-          )}
+
+          {/* Card Missing Information (Cam) */}
+          <div className="rounded-xl border border-orange-200 bg-orange-50/50 p-4 text-center shadow-sm dark:border-orange-500/20 dark:bg-orange-500/5">
+            <p className="text-[10px] font-semibold tracking-wider text-orange-600 uppercase dark:text-orange-400">
+              Missing Info
+            </p>
+            <p className="text-2xl font-black text-orange-700 dark:text-orange-300">
+              {missingInfoCount}
+            </p>
+          </div>
+
+          {/* Card Completed (Xanh lá) */}
           <div className="rounded-xl border border-green-200 bg-green-50/50 p-4 text-center shadow-sm dark:border-green-500/20 dark:bg-green-500/5">
             <p className="text-[10px] font-semibold tracking-wider text-green-600 uppercase dark:text-green-400">
-              Completed
+              Approved
             </p>
             <p className="text-2xl font-black text-green-700 dark:text-green-300">
-              {completedCount}
+              {approvedCount}
             </p>
           </div>
         </div>
@@ -149,7 +152,7 @@ export default function CustomDesignRequestsPage() {
             placeholder="Search by request code or description..."
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="bg-card border-border text-foreground placeholder:text-muted-foreground focus:border-brand focus:ring-brand/30 w-full rounded-lg border py-2.5 pr-4 pl-10 text-sm transition-colors outline-none focus:ring-1"
+            className="bg-card border-border text-foreground placeholder:text-muted-foreground w-full rounded-lg border py-2.5 pr-4 pl-10 text-sm transition-colors outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900/30"
           />
         </div>
         <CustomDesignStatusFilter
@@ -163,7 +166,7 @@ export default function CustomDesignRequestsPage() {
       {isLoading ? (
         <div className="flex min-h-[40vh] items-center justify-center">
           <div className="flex flex-col items-center gap-3">
-            <Loader2 className="text-brand h-8 w-8 animate-spin" />
+            <Loader2 className="h-8 w-8 animate-spin text-blue-900" />
             <p className="text-muted-foreground text-sm">Loading your requests...</p>
           </div>
         </div>
@@ -190,7 +193,7 @@ export default function CustomDesignRequestsPage() {
           {!selectedStatus && !searchQuery && (
             <Link
               href="/custom-service"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-xl px-8 py-3 font-semibold shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg"
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-8 py-3 font-semibold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-lg"
             >
               <Sparkles className="h-5 w-5" />
               Create Your First Request
@@ -201,7 +204,7 @@ export default function CustomDesignRequestsPage() {
         <div className="relative flex flex-col gap-5">
           {isFetching && !isLoading && (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/50 backdrop-blur-[1px] dark:bg-black/20">
-              <Loader2 className="text-brand h-8 w-8 animate-spin" />
+              <Loader2 className="h-8 w-8 animate-spin text-blue-900" />
             </div>
           )}
 
@@ -255,7 +258,7 @@ export default function CustomDesignRequestsPage() {
                         disabled={isFetching}
                         className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-medium transition-colors disabled:cursor-not-allowed ${
                           p === pageNumber
-                            ? 'bg-brand text-brand-foreground border-brand'
+                            ? 'border-blue-900 bg-blue-900 text-white'
                             : 'border-border hover:bg-muted'
                         }`}
                       >

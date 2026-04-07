@@ -26,7 +26,7 @@ export default function StepInputMethod({ config, updateConfig }: StepInputMetho
   return (
     <div className="animate-in fade-in mx-auto max-w-3xl space-y-8 duration-500">
       <div className="mb-10 space-y-3 text-center">
-        <h2 className="text-3xl font-extrabold text-blue-950 md:text-4xl">Start your build</h2>
+        <h2 className="text-3xl font-extrabold text-[#032a63] md:text-4xl">Start your build</h2>
         <p className="text-lg text-slate-600">
           Choose your preferred method to bring your vision to life.
         </p>
@@ -51,27 +51,27 @@ export default function StepInputMethod({ config, updateConfig }: StepInputMetho
               className={cn(
                 'group relative transform rounded-2xl border-2 p-8 text-left transition-all duration-300',
                 isSelected
-                  ? 'border-red-600 bg-red-50 shadow-md shadow-red-100'
-                  : 'border-slate-200 bg-white hover:border-red-600'
+                  ? 'border-[#032a63] bg-blue-50 shadow-md shadow-blue-100'
+                  : 'border-slate-200 bg-white hover:border-[#032a63]'
               )}
             >
               <div
                 className={cn(
                   'mb-5 flex h-16 w-16 items-center justify-center rounded-xl transition-all',
-                  isSelected ? 'bg-red-100' : 'bg-slate-50 group-hover:bg-blue-50'
+                  isSelected ? 'bg-blue-100' : 'bg-slate-50 group-hover:bg-blue-50'
                 )}
               >
                 <Icon
                   className={cn(
                     'h-8 w-8',
-                    isSelected ? 'text-red-600' : 'text-slate-400 group-hover:text-blue-950'
+                    isSelected ? 'text-[#032a63]' : 'text-slate-400 group-hover:text-[#032a63]'
                   )}
                 />
               </div>
-              <h3 className="mb-2 text-xl font-bold text-blue-950">{option.title}</h3>
+              <h3 className="mb-2 text-xl font-bold text-[#032a63]">{option.title}</h3>
               <p className="text-sm text-slate-500">{option.desc}</p>
               {isSelected && (
-                <CheckCircle2 className="absolute top-6 right-6 h-6 w-6 text-red-600" />
+                <CheckCircle2 className="absolute top-6 right-6 h-6 w-6 text-[#032a63]" />
               )}
             </button>
           );
@@ -82,7 +82,7 @@ export default function StepInputMethod({ config, updateConfig }: StepInputMetho
         <button
           onClick={() => updateConfig({ step: 2 })}
           disabled={!config.Type}
-          className="flex items-center justify-center gap-2 rounded-xl bg-blue-950 px-8 py-3.5 text-base font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-blue-900 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-md"
+          className="flex items-center justify-center gap-2 rounded-xl bg-[#032a63] px-8 py-3.5 text-base font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-[#021744] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-md"
         >
           Next: Core Specifications
         </button>

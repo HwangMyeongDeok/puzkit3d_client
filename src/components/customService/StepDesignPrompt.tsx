@@ -1,6 +1,6 @@
 import { Upload, Sparkles, CheckCircle2, Lightbulb, Trash2, FileText } from 'lucide-react';
 import type { ConfiguratorState } from './types';
-import { cn } from '@/lib/utils'; // Bác nhớ import cn nếu chưa có, dùng để handle classname
+import { cn } from '@/lib/utils';
 
 interface StepDesignPromptProps {
   config: ConfiguratorState;
@@ -8,7 +8,7 @@ interface StepDesignPromptProps {
   onGenerate: () => void;
 }
 
-const MAX_IMAGE_COUNT = 4; // Giới hạn tối đa 4 ảnh
+const MAX_IMAGE_COUNT = 4;
 
 export default function StepDesignPrompt({
   config,
@@ -17,23 +17,20 @@ export default function StepDesignPrompt({
 }: StepDesignPromptProps) {
   const currentFiles = config.uploadedFiles || [];
 
-  // Logic đếm số lượng hình ảnh thực sự đã chọn
   const imageFiles = currentFiles.filter((file) => file.type.startsWith('image/'));
   const otherFiles = currentFiles.filter((file) => !file.type.startsWith('image/'));
   const isMaxImagesReached = imageFiles.length >= MAX_IMAGE_COUNT;
 
-  // Hàm xử lý khi khách chọn/kéo thả file
   const handleFilesAdded = (newFiles: File[]) => {
     const acceptedImages = newFiles
       .filter((file) => file.type.startsWith('image/'))
-      .slice(0, MAX_IMAGE_COUNT - imageFiles.length); // Chặn chỉ lấy đủ 4 tấm
+      .slice(0, MAX_IMAGE_COUNT - imageFiles.length);
 
     const otherAcceptedFiles = newFiles.filter((file) => !file.type.startsWith('image/'));
 
     updateConfig({ uploadedFiles: [...currentFiles, ...acceptedImages, ...otherAcceptedFiles] });
   };
 
-  // Hàm xoá file lỡ chọn nhầm
   const handleRemoveFile = (indexToRemove: number) => {
     const updatedFiles = currentFiles.filter((_, idx) => idx !== indexToRemove);
     updateConfig({ uploadedFiles: updatedFiles });
@@ -42,7 +39,7 @@ export default function StepDesignPrompt({
   return (
     <div className="animate-in fade-in mx-auto max-w-5xl space-y-8 duration-500">
       <div className="mb-8 space-y-3">
-        <h2 className="text-3xl font-extrabold text-blue-950 md:text-4xl">
+        <h2 className="text-3xl font-extrabold text-[#032a63] md:text-4xl">
           {config.Type === 'Sketch' ? 'Upload Schematics & References' : 'Generative Design Prompt'}
         </h2>
         <p className="text-lg text-slate-600">
@@ -55,20 +52,19 @@ export default function StepDesignPrompt({
         <div className="space-y-5 lg:col-span-2">
           {config.Type === 'Sketch' ? (
             <div className="space-y-6">
-              {/* O Placeholder "Drag & Drop" (Chỉ hiện khi chưa chọn đủ 4 ảnh) */}
               {!isMaxImagesReached && (
                 <div
-                  className="group cursor-pointer rounded-3xl border-2 border-dashed border-slate-300 bg-white p-12 text-center transition-colors hover:border-blue-950 hover:bg-blue-50"
+                  className="group cursor-pointer rounded-3xl border-2 border-dashed border-slate-300 bg-white p-12 text-center transition-colors hover:border-[#032a63] hover:bg-blue-50"
                   onDragOver={(e) => {
                     e.preventDefault();
-                    e.currentTarget.classList.add('border-blue-950', 'bg-blue-50');
+                    e.currentTarget.classList.add('border-[#032a63]', 'bg-blue-50');
                   }}
                   onDragLeave={(e) => {
-                    e.currentTarget.classList.remove('border-blue-950', 'bg-blue-50');
+                    e.currentTarget.classList.remove('border-[#032a63]', 'bg-blue-50');
                   }}
                   onDrop={(e) => {
                     e.preventDefault();
-                    e.currentTarget.classList.remove('border-blue-950', 'bg-blue-50');
+                    e.currentTarget.classList.remove('border-[#032a63]', 'bg-blue-50');
                     const files = Array.from(e.dataTransfer.files);
                     if (files.length > 0) {
                       handleFilesAdded(files);
@@ -82,7 +78,7 @@ export default function StepDesignPrompt({
                     onChange={(e) => {
                       if (e.target.files && e.target.files.length > 0) {
                         handleFilesAdded(Array.from(e.target.files));
-                        e.target.value = ''; // Reset input để có thể chọn lại file cùng tên
+                        e.target.value = '';
                       }
                     }}
                     className="hidden"
@@ -93,10 +89,12 @@ export default function StepDesignPrompt({
                     className="flex cursor-pointer flex-col items-center gap-4"
                   >
                     <div className="flex h-16 w-16 items-center justify-center rounded-full border border-slate-200 bg-slate-50 transition-colors group-hover:border-blue-200 group-hover:bg-blue-100">
-                      <Upload size={30} className="text-slate-400 group-hover:text-blue-950" />
+                      <Upload size={30} className="text-slate-400 group-hover:text-[#032a63]" />
                     </div>
                     <div>
-                      <p className="mb-1 text-lg font-bold text-blue-950">Drag & Drop Files Here</p>
+                      <p className="mb-1 text-lg font-bold text-[#032a63]">
+                        Drag & Drop Files Here
+                      </p>
                       <p className="text-sm font-medium text-slate-500">
                         Supported: .STEP, .STL, Images (Max 4)
                       </p>
@@ -105,7 +103,6 @@ export default function StepDesignPrompt({
                 </div>
               )}
 
-              {/* Grid Hiển Thị Thumbnail Xem Trước */}
               {imageFiles.length > 0 && (
                 <div className="animate-in fade-in space-y-4">
                   <div className="flex items-center justify-between">
@@ -124,7 +121,6 @@ export default function StepDesignPrompt({
 
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                     {imageFiles.map((file, idx) => {
-                      // Tạo URL tạm thời để preview
                       const imageUrl = URL.createObjectURL(file);
                       return (
                         <div
@@ -135,7 +131,7 @@ export default function StepDesignPrompt({
                             src={imageUrl}
                             alt={`Preview ${file.name}`}
                             className="h-2/3 w-full rounded-md object-contain"
-                            onLoad={() => URL.revokeObjectURL(imageUrl)} // Giải phóng bộ nhớ
+                            onLoad={() => URL.revokeObjectURL(imageUrl)}
                           />
                           <div className="mt-2 w-full overflow-hidden px-1 text-center">
                             <p
@@ -149,10 +145,8 @@ export default function StepDesignPrompt({
                             </span>
                           </div>
 
-                          {/* Nút xoá trên từng ảnh */}
                           <button
                             onClick={() => {
-                              // Cần tìm đúng index trong mảng config.uploadedFiles tổng
                               const originalIdx = currentFiles.indexOf(file);
                               handleRemoveFile(originalIdx);
                             }}
@@ -168,7 +162,6 @@ export default function StepDesignPrompt({
                 </div>
               )}
 
-              {/* Hiển thị PDF/STEP dưới dạng list text (nếu có) */}
               {otherFiles.length > 0 && (
                 <div className="mt-4 space-y-2">
                   <h5 className="text-sm font-semibold text-slate-600">Other Files:</h5>
@@ -204,12 +197,12 @@ export default function StepDesignPrompt({
                 value={config.aiPrompt}
                 onChange={(e) => updateConfig({ aiPrompt: e.target.value })}
                 placeholder="E.g., Design a drone landing gear structure. The part must fit within a 15x15x10cm bounding box..."
-                className="h-64 w-full resize-none rounded-2xl border-2 border-slate-200 bg-white px-5 py-5 text-lg leading-relaxed font-medium text-slate-700 shadow-inner transition-all placeholder:text-slate-400 focus:border-red-600 focus:ring-1 focus:ring-red-600 focus:outline-none"
+                className="h-64 w-full resize-none rounded-2xl border-2 border-slate-200 bg-white px-5 py-5 text-lg leading-relaxed font-medium text-slate-700 shadow-inner transition-all placeholder:text-slate-400 focus:border-[#032a63] focus:ring-1 focus:ring-[#032a63] focus:outline-none"
               />
               <button
                 onClick={onGenerate}
                 disabled={!config.aiPrompt.trim() || config.isGenerating}
-                className="flex w-full items-center justify-center gap-3 rounded-xl bg-blue-950 px-6 py-4 font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-blue-900 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-md"
+                className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#032a63] px-6 py-4 font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-[#021744] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-md"
               >
                 {config.isGenerating ? (
                   <>
@@ -226,10 +219,9 @@ export default function StepDesignPrompt({
           )}
         </div>
 
-        {/* Pro Guidelines Panel (Giữ nguyên) */}
         <div className="h-fit rounded-2xl border border-blue-100 bg-blue-50 p-6 shadow-sm">
-          <div className="mb-4 flex items-center gap-2 text-blue-950">
-            <Lightbulb size={24} className="text-red-500" />
+          <div className="mb-4 flex items-center gap-2 text-[#032a63]">
+            <Lightbulb size={24} className="text-[#032a63]" />
             <h3 className="text-lg font-bold">Pro Guidelines</h3>
           </div>
           {config.Type === 'Sketch' ? (
@@ -250,19 +242,19 @@ export default function StepDesignPrompt({
           ) : (
             <ul className="space-y-4 text-sm text-slate-700">
               <li>
-                <strong className="mb-1 block text-blue-950">1. Purpose</strong> What is this part
+                <strong className="mb-1 block text-[#032a63]">1. Purpose</strong> What is this part
                 doing?
               </li>
               <li>
-                <strong className="mb-1 block text-blue-950">2. Dimensions Constraints</strong>{' '}
+                <strong className="mb-1 block text-[#032a63]">2. Dimensions Constraints</strong>{' '}
                 Mention max width/height limits if any.
               </li>
               <li>
-                <strong className="mb-1 block text-blue-950">3. Stress</strong> Describe what forces
-                act upon it.
+                <strong className="mb-1 block text-[#032a63]">3. Stress</strong> Describe what
+                forces act upon it.
               </li>
               <li>
-                <strong className="mb-1 block text-blue-950">4. Interfaces</strong> How does it
+                <strong className="mb-1 block text-[#032a63]">4. Interfaces</strong> How does it
                 attach to other parts?
               </li>
             </ul>
@@ -270,17 +262,16 @@ export default function StepDesignPrompt({
         </div>
       </div>
 
-      {/* Navigation */}
       <div className="mt-12 flex justify-between border-t border-slate-200 pt-8">
         <button
           onClick={() => updateConfig({ step: 2 })}
-          className="flex items-center justify-center rounded-xl px-6 py-3.5 text-base font-bold text-slate-500 transition-all hover:bg-slate-100 hover:text-blue-950 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center justify-center rounded-xl px-6 py-3.5 text-base font-bold text-slate-500 transition-all hover:bg-slate-100 hover:text-[#032a63] disabled:cursor-not-allowed disabled:opacity-50"
         >
           Back
         </button>
         <button
           onClick={() => updateConfig({ step: 4 })}
-          className="flex items-center justify-center gap-2 rounded-xl bg-blue-950 px-8 py-3.5 text-base font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-blue-900 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-md"
+          className="flex items-center justify-center gap-2 rounded-xl bg-[#032a63] px-8 py-3.5 text-base font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-[#021744] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-md"
         >
           Next: Target Logistics
         </button>

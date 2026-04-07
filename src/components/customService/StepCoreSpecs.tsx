@@ -3,7 +3,6 @@
 import { CheckCircle2, Maximize } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ConfiguratorState, DifficultyLevel } from './types';
-// BỎ PART_COLORS đi, chỉ giữ lại DIFFICULTY_LEVELS
 import { DIFFICULTY_LEVELS } from './types';
 
 import {
@@ -58,17 +57,14 @@ export default function StepCoreSpecs({
   // ✨ LOGIC LỌC (FUNNEL) DỰA TRÊN DANH SÁCH REQUIREMENTS CÓ SẴN
   // ----------------------------------------------------------------------
 
-  // 1. Chỉ hiện những Topic nằm trong Requirement đang Active
   const validTopicIds = Array.from(new Set(requirements.map((r) => r.topicId)));
   const filteredTopics = topics.filter((t: any) => validTopicIds.includes(t.id));
 
-  // 2. Chỉ hiện Material có trong Topic đã chọn
   const validMaterialIds = Array.from(
     new Set(requirements.filter((r) => r.topicId === config.topic).map((r) => r.materialId))
   );
   const filteredMaterials = availableMaterials.filter((m: any) => validMaterialIds.includes(m.id));
 
-  // 3. Chỉ hiện Assembly có trong cụm (Topic + Material) đã chọn
   const validAssemblyIds = Array.from(
     new Set(
       requirements
@@ -78,7 +74,6 @@ export default function StepCoreSpecs({
   );
   const filteredAssemblies = assemblies.filter((a: any) => validAssemblyIds.includes(a.id));
 
-  // 4. Chỉ hiện Capabilities nằm trong các Requirement hợp lệ (Topic + Material + Assembly)
   const validCapabilityIds = Array.from(
     new Set(
       requirements
@@ -88,14 +83,13 @@ export default function StepCoreSpecs({
             r.materialId === config.material &&
             r.assemblyMethodId === config.assembly
         )
-        .flatMap((r) => r.capabilityIds || []) // Gom tất cả capabilityIds từ các gói khả dụng
+        .flatMap((r) => r.capabilityIds || [])
     )
   );
   const filteredCapabilities = capabilitiesList.filter((c: any) =>
     validCapabilityIds.includes(c.id)
   );
 
-  // 5. Tìm chính xác cái Requirement khách đã ráp thành công (Sau khi chọn Difficulty)
   const matchedRequirement = requirements.find(
     (r) =>
       r.topicId === config.topic &&
@@ -110,7 +104,6 @@ export default function StepCoreSpecs({
     });
   };
 
-  // Nếu đang load Requirements thì xoay vòng chờ tí
   if (isLoadingRequirements) {
     return (
       <div className="animate-pulse py-20 text-center font-semibold text-slate-500">
@@ -122,7 +115,7 @@ export default function StepCoreSpecs({
   return (
     <div className="animate-in fade-in mx-auto max-w-3xl space-y-10 duration-500">
       <div className="space-y-3">
-        <h2 className="text-3xl font-extrabold text-blue-950 md:text-4xl">Core Specifications</h2>
+        <h2 className="text-3xl font-extrabold text-[#032a63] md:text-4xl">Core Specifications</h2>
         <p className="text-lg text-slate-600">Define the physical engineering properties.</p>
       </div>
 
@@ -150,8 +143,8 @@ export default function StepCoreSpecs({
                 className={cn(
                   'flex flex-col items-center gap-3 rounded-xl border-2 p-5 transition-all',
                   config.topic === topic.id
-                    ? 'border-red-600 bg-red-50 text-red-700'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-blue-950'
+                    ? 'border-[#032a63] bg-blue-50 text-[#032a63]'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-[#032a63]'
                 )}
               >
                 <span className="text-center text-sm font-bold">{topic.name}</span>
@@ -189,8 +182,8 @@ export default function StepCoreSpecs({
                   className={cn(
                     'rounded-xl border-2 p-4 text-center transition-all',
                     config.material === material.id
-                      ? 'border-blue-950 bg-blue-950 text-white shadow-md'
-                      : 'border-slate-200 bg-white hover:border-blue-300'
+                      ? 'border-[#032a63] bg-[#032a63] text-white shadow-md'
+                      : 'border-slate-200 bg-white hover:border-[#032a63]'
                   )}
                 >
                   <span
@@ -208,7 +201,7 @@ export default function StepCoreSpecs({
         </div>
       )}
 
-      {/* 3. Assembly Method (Giờ phụ thuộc vào Material, bỏ Color) */}
+      {/* 3. Assembly Method */}
       {config.material && (
         <div className="animate-in fade-in slide-in-from-top-4 space-y-4 duration-500">
           <label className="block text-sm font-bold tracking-wider text-slate-400 uppercase">
@@ -231,8 +224,8 @@ export default function StepCoreSpecs({
                   className={cn(
                     'rounded-xl border-2 p-4 text-left transition-all',
                     config.assembly === method.id
-                      ? 'border-red-600 bg-red-50 font-bold text-red-600'
-                      : 'border-slate-200 bg-white font-semibold text-slate-700 hover:border-slate-300'
+                      ? 'border-[#032a63] bg-blue-50 font-bold text-[#032a63]'
+                      : 'border-slate-200 bg-white font-semibold text-slate-700 hover:border-[#032a63]'
                   )}
                 >
                   {method.name}
@@ -243,12 +236,9 @@ export default function StepCoreSpecs({
         </div>
       )}
 
-      {/* 4. Capabilities (Bắt buộc & Lọc theo Requirement) */}
+      {/* 4. Capabilities */}
       {config.assembly && (
         <div className="animate-in fade-in slide-in-from-top-4 space-y-4 duration-500">
-          <label className="block text-sm font-bold tracking-wider text-slate-400 uppercase">
-            4. Special Capabilities <span className="ml-1 text-xs text-red-500">(Required)</span>
-          </label>
           {isLoadingCaps ? (
             <div className="text-sm text-slate-500">Loading capabilities...</div>
           ) : filteredCapabilities.length === 0 ? (
@@ -266,14 +256,16 @@ export default function StepCoreSpecs({
                     className={cn(
                       'flex items-center gap-3 rounded-xl border-2 p-4 text-left transition-all',
                       isSelected
-                        ? 'border-red-600 bg-red-50'
-                        : 'border-slate-200 bg-white hover:border-slate-300'
+                        ? 'border-[#032a63] bg-blue-50'
+                        : 'border-slate-200 bg-white hover:border-[#032a63]'
                     )}
                   >
                     <div
                       className={cn(
                         'flex h-5 w-5 shrink-0 items-center justify-center rounded border',
-                        isSelected ? 'border-red-600 bg-red-600' : 'border-slate-300 bg-slate-50'
+                        isSelected
+                          ? 'border-[#032a63] bg-[#032a63]'
+                          : 'border-slate-300 bg-slate-50'
                       )}
                     >
                       {isSelected && <CheckCircle2 size={14} className="text-white" />}
@@ -281,7 +273,7 @@ export default function StepCoreSpecs({
                     <span
                       className={cn(
                         'text-sm',
-                        isSelected ? 'font-bold text-red-700' : 'font-semibold text-slate-600'
+                        isSelected ? 'font-bold text-[#032a63]' : 'font-semibold text-slate-600'
                       )}
                     >
                       {cap.name}
@@ -303,7 +295,6 @@ export default function StepCoreSpecs({
 
           <div className="grid grid-cols-2 gap-4">
             {DIFFICULTY_LEVELS.map((level) => {
-              // Tìm chính xác Gói Requirement ứng với cái Difficulty này
               const reqForLevel = requirements.find(
                 (r) =>
                   r.topicId === config.topic &&
@@ -323,25 +314,24 @@ export default function StepCoreSpecs({
                     'flex flex-col items-start rounded-xl border-2 p-4 text-left transition-all',
                     !isAvailable && 'cursor-not-allowed border-slate-200 bg-slate-50 opacity-40',
                     config.difficulty === level.id
-                      ? 'border-blue-950 bg-blue-50 shadow-sm'
+                      ? 'border-[#032a63] bg-blue-50 shadow-sm'
                       : isAvailable &&
-                          'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                          'border-slate-200 bg-white hover:border-[#032a63] hover:bg-slate-50'
                   )}
                 >
                   <div className="mb-1 flex w-full items-center justify-between">
                     <span
                       className={cn(
                         'font-bold',
-                        config.difficulty === level.id ? 'text-blue-950' : 'text-slate-700'
+                        config.difficulty === level.id ? 'text-[#032a63]' : 'text-slate-700'
                       )}
                     >
                       {level.id}
                     </span>
-                    {/* Hiển thị min/max parts lấy thẳng từ Backend Requirement ra */}
                     <span
                       className={cn(
                         'rounded-full px-2 py-0.5 text-xs font-bold',
-                        isAvailable ? 'bg-red-100 text-red-600' : 'bg-slate-200 text-slate-500'
+                        isAvailable ? 'bg-blue-100 text-[#032a63]' : 'bg-slate-200 text-slate-500'
                       )}
                     >
                       {isAvailable
@@ -382,7 +372,7 @@ export default function StepCoreSpecs({
                   'w-full rounded-xl border-2 bg-white px-4 py-3 text-sm font-bold transition-colors focus:outline-none',
                   config.dimensions.length && Number(config.dimensions.length) < 10
                     ? 'border-red-400 focus:border-red-600'
-                    : 'border-slate-200 focus:border-blue-950'
+                    : 'border-slate-200 focus:border-[#032a63]'
                 )}
               />
             </div>
@@ -398,7 +388,7 @@ export default function StepCoreSpecs({
                   'w-full rounded-xl border-2 bg-white px-4 py-3 text-sm font-bold transition-colors focus:outline-none',
                   config.dimensions.width && Number(config.dimensions.width) < 10
                     ? 'border-red-400 focus:border-red-600'
-                    : 'border-slate-200 focus:border-blue-950'
+                    : 'border-slate-200 focus:border-[#032a63]'
                 )}
               />
             </div>
@@ -414,7 +404,7 @@ export default function StepCoreSpecs({
                   'w-full rounded-xl border-2 bg-white px-4 py-3 text-sm font-bold transition-colors focus:outline-none',
                   config.dimensions.height && Number(config.dimensions.height) < 10
                     ? 'border-red-400 focus:border-red-600'
-                    : 'border-slate-200 focus:border-blue-950'
+                    : 'border-slate-200 focus:border-[#032a63]'
                 )}
               />
             </div>
@@ -434,7 +424,7 @@ export default function StepCoreSpecs({
       <div className="mt-12 flex justify-between border-t border-slate-200 pt-8">
         <button
           onClick={() => updateConfig({ step: 1 })}
-          className="flex items-center justify-center rounded-xl px-6 py-3.5 text-base font-bold text-slate-500 transition-all hover:bg-slate-100 hover:text-blue-950 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center justify-center rounded-xl px-6 py-3.5 text-base font-bold text-slate-500 transition-all hover:bg-slate-100 hover:text-[#032a63] disabled:cursor-not-allowed disabled:opacity-50"
         >
           Back
         </button>
@@ -454,7 +444,7 @@ export default function StepCoreSpecs({
             !config.dimensions.height ||
             Number(config.dimensions.height) < 10
           }
-          className="flex items-center justify-center gap-2 rounded-xl bg-blue-950 px-8 py-3.5 text-base font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-blue-900 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-md"
+          className="flex items-center justify-center gap-2 rounded-xl bg-[#032a63] px-8 py-3.5 text-base font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-[#021744] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-md"
         >
           Next: Design & Prompt
         </button>

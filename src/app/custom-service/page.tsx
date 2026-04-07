@@ -86,16 +86,13 @@ export default function CustomDesignPage() {
       let finalSketchPaths: string[] = [];
 
       if (config.uploadedFiles && config.uploadedFiles.length > 0) {
-        // Chạy vòng lặp upload tất cả file đang có trong config
         const uploadPromises = config.uploadedFiles.map(async (file) => {
-          // A. Lấy presigned URL cho từng file
           const { path, presignedUrl } = await getPresignedUrl({
             fileName: file.name,
             contentType: file.type,
             folder: 'custom-designs',
           }).unwrap();
 
-          // B. Thực hiện PUT file lên Storage (S3/GCS...)
           const uploadResponse = await fetch(presignedUrl, {
             method: 'PUT',
             body: file,
@@ -104,7 +101,7 @@ export default function CustomDesignPage() {
 
           if (!uploadResponse.ok) throw new Error(`Failed to upload: ${file.name}`);
 
-          return path; // Trả về path để tí nữa gửi vào DB
+          return path;
         });
 
         finalSketchPaths = await Promise.all(uploadPromises);
@@ -154,7 +151,7 @@ export default function CustomDesignPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-slate-50 pb-12 font-sans text-slate-900">
+    <div className="min-h-screen w-full bg-[#f4f8ff] pb-12 font-sans text-[#032a63]">
       <StepHeader currentStep={config.step} onExit={() => setView('landing')} />
 
       <div className="mx-auto max-w-4xl px-6 pt-12">
