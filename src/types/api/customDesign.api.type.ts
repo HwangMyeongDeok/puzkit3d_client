@@ -4,7 +4,6 @@ export type CustomDesignRequestStatus =
   | 'Submitted'
   | 'MissingInformation'
   | 'Approved'
-  | 'Processing'
   | 'Completed'
   | 'Rejected'
   | 'Cancelled'

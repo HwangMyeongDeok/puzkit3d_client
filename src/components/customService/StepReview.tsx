@@ -27,7 +27,6 @@ export default function StepReview({
   onSubmit,
   requirements,
 }: StepReviewProps) {
-  // Fetch tên cho các ID đã chọn
   const { data: topicData } = useGetTopicByIdQuery(config.topic, { skip: !config.topic });
   const { data: materialData } = useGetMaterialByIdQuery(config.material, {
     skip: !config.material,
@@ -37,12 +36,10 @@ export default function StepReview({
   });
   const { data: capabilitiesData } = useGetCapabilitiesQuery({ pageNumber: 1, pageSize: 50 });
 
-  // Map capability IDs sang tên
   const selectedCapNames = (capabilitiesData?.items || [])
     .filter((c: any) => config.capabilities.includes(c.id))
     .map((c: any) => c.name);
 
-  // Tìm matched requirement để lấy min/max part count
   const matchedRequirement = requirements.find(
     (r) =>
       r.topicId === config.topic &&
@@ -55,7 +52,7 @@ export default function StepReview({
     <div className="animate-in fade-in slide-in-from-bottom-4 mx-auto max-w-3xl space-y-8 pb-20 duration-700">
       {/* Title */}
       <div className="space-y-2 text-center">
-        <h2 className="text-4xl font-black tracking-tight text-blue-950">Review Your Request</h2>
+        <h2 className="text-4xl font-black tracking-tight text-[#032a63]">Review Your Request</h2>
         <p className="text-slate-500">
           Please double-check everything before submitting to our engineers.
         </p>
@@ -65,8 +62,8 @@ export default function StepReview({
       <div className="overflow-hidden rounded-3xl border-2 border-slate-100 bg-white shadow-sm">
         {/* ─── SECTION: Core Specifications ─── */}
         <div className="px-8 pt-8 pb-6">
-          <div className="mb-6 flex items-center gap-2 text-xs font-bold tracking-widest text-blue-950 uppercase">
-            <Layers size={16} className="text-blue-600" />
+          <div className="mb-6 flex items-center gap-2 text-xs font-bold tracking-widest text-[#032a63] uppercase">
+            <Layers size={16} className="text-[#032a63]" />
             Core Specifications
           </div>
 
@@ -86,7 +83,7 @@ export default function StepReview({
                   {config.Type === 'Sketch' ? 'Sketch' : 'Idea'}
                 </span>
               ) : (
-                <span className="text-sm font-bold text-blue-950">—</span>
+                <span className="text-sm font-bold text-[#032a63]">—</span>
               )}
             </div>
 
@@ -111,7 +108,7 @@ export default function StepReview({
                     {selectedCapNames.map((name: string, i: number) => (
                       <span
                         key={i}
-                        className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700"
+                        className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-[#032a63]"
                       >
                         <Check size={10} />
                         {name}
@@ -119,7 +116,7 @@ export default function StepReview({
                     ))}
                   </div>
                 ) : (
-                  <span className="text-sm font-bold text-blue-950">—</span>
+                  <span className="text-sm font-bold text-[#032a63]">—</span>
                 )}
               </div>
             </div>
@@ -127,22 +124,22 @@ export default function StepReview({
             {/* Difficulty */}
             <ReviewRow label="Complexity" value={config.difficulty || '—'} />
 
-            {/* Part Count (min-max) */}
+            {/* Part Count (min-max) - Đã đổi sang tone xanh */}
             <div className="flex items-center justify-between border-b border-slate-50 pb-3">
               <span className="text-sm text-slate-500">Part Count</span>
               {matchedRequirement ? (
-                <span className="inline-flex items-center rounded-full border border-red-100 bg-red-50 px-3 py-0.5 text-xs font-bold text-red-600">
+                <span className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-0.5 text-xs font-bold text-[#032a63]">
                   {matchedRequirement.minPartQuantity} – {matchedRequirement.maxPartQuantity} parts
                 </span>
               ) : (
-                <span className="text-sm font-bold text-blue-950">—</span>
+                <span className="text-sm font-bold text-[#032a63]">—</span>
               )}
             </div>
 
             {/* Dimensions */}
             <div className="flex items-center justify-between border-b border-slate-50 pb-3">
               <span className="text-sm text-slate-500">Dimensions</span>
-              <div className="flex items-center gap-1.5 text-sm font-bold text-blue-950">
+              <div className="flex items-center gap-1.5 text-sm font-bold text-[#032a63]">
                 <span>{config.dimensions.length}</span>
                 <span className="text-slate-300">×</span>
                 <span>{config.dimensions.width}</span>
@@ -159,13 +156,12 @@ export default function StepReview({
 
         {/* ─── SECTION: Design Concept ─── */}
         <div className="px-8 py-6">
-          <div className="mb-6 flex items-center gap-2 text-xs font-bold tracking-widest text-blue-950 uppercase">
-            <FileText size={16} className="text-blue-600" />
+          <div className="mb-6 flex items-center gap-2 text-xs font-bold tracking-widest text-[#032a63] uppercase">
+            <FileText size={16} className="text-[#032a63]" />
             Design Concept
           </div>
 
           <div className="space-y-5">
-            {/* Requirement Description — chỉ hiện nếu Type là Idea */}
             {config.Type === 'Idea' && config.aiPrompt && (
               <div className="space-y-2">
                 <span className="text-[10px] font-bold tracking-tight text-slate-400 uppercase">
@@ -202,7 +198,7 @@ export default function StepReview({
                           />
                         ) : (
                           <div className="flex h-full flex-col items-center justify-center gap-2 p-2 text-center">
-                            <div className="rounded-full bg-blue-100 p-2 text-blue-600">
+                            <div className="rounded-full bg-blue-100 p-2 text-[#032a63]">
                               <Layers size={16} />
                             </div>
                             <span className="w-full truncate text-[10px] font-medium text-slate-500">
@@ -230,8 +226,8 @@ export default function StepReview({
 
         {/* ─── SECTION: Order Details & Timeline ─── */}
         <div className="px-8 py-6 pb-8">
-          <div className="mb-6 flex items-center gap-2 text-xs font-bold tracking-widest text-blue-950 uppercase">
-            <Package size={16} className="text-blue-600" />
+          <div className="mb-6 flex items-center gap-2 text-xs font-bold tracking-widest text-[#032a63] uppercase">
+            <Package size={16} className="text-[#032a63]" />
             Order Details & Timeline
           </div>
 
@@ -259,7 +255,7 @@ export default function StepReview({
 
       {/* FINAL CALL TO ACTION */}
       <div className="flex flex-col items-center gap-6 pt-4">
-        <div className="flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-xs font-medium text-blue-700">
+        <div className="flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-xs font-medium text-[#032a63]">
           <Info size={14} />
           Check your details carefully. You can still go back to change them.
         </div>
@@ -268,14 +264,14 @@ export default function StepReview({
           <button
             onClick={() => updateConfig({ step: 4 })}
             disabled={isSubmitting}
-            className="flex items-center justify-center rounded-xl px-6 py-3.5 text-base font-bold text-slate-500 transition-all hover:bg-slate-100 hover:text-blue-950 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center justify-center rounded-xl px-6 py-3.5 text-base font-bold text-slate-500 transition-all hover:bg-slate-100 hover:text-[#032a63] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Back
           </button>
           <button
             onClick={onSubmit}
             disabled={isSubmitting}
-            className="flex items-center justify-center gap-2 rounded-xl bg-blue-950 px-10 py-3.5 text-base font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-blue-900 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-md"
+            className="flex items-center justify-center gap-2 rounded-xl bg-[#032a63] px-10 py-3.5 text-base font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-[#021744] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-md"
           >
             {isSubmitting ? (
               <>
@@ -312,7 +308,7 @@ function ReviewRow({
     <div className="flex items-center justify-between border-b border-slate-50 pb-3">
       <span className="text-sm text-slate-500">{label}</span>
       <span
-        className={`text-sm font-bold ${highlight === 'green' ? 'text-green-600' : 'text-blue-950'}`}
+        className={`text-sm font-bold ${highlight === 'green' ? 'text-green-600' : 'text-[#032a63]'}`}
       >
         {value}
       </span>

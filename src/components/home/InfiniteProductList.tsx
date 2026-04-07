@@ -34,17 +34,16 @@ export default function InfiniteProductList() {
     return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
   }
 
-  console.log('dsadsad', products, 'Dsadsadas', topicsData?.items);
   const getDifficultyColor = (level?: string) => {
     switch (level?.toLowerCase()) {
       case 'advanced':
-        return 'text-red-600 border-red-200 bg-red-50/90';
+        return 'text-red-600';
       case 'intermediate':
-        return 'text-amber-600 border-amber-200 bg-amber-50/90';
+        return 'text-amber-600';
       case 'basic':
-        return 'text-green-600 border-green-200 bg-green-50/90';
+        return 'text-green-600';
       default:
-        return 'text-slate-600 border-[#d9e6fb] bg-white/90';
+        return 'text-slate-600';
     }
   };
 
@@ -135,20 +134,22 @@ export default function InfiniteProductList() {
                     {product.name}
                   </h3>
 
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#e5edf9] bg-[#f6f9fe] px-3 py-1.5 text-xs font-medium text-slate-600">
-                      <Puzzle className="h-3.5 w-3.5" />
-                      {product.totalPieceCount ?? '—'} pcs
+                  <div className="mt-4 flex w-full flex-nowrap items-center gap-1.5">
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#e5edf9] bg-[#f6f9fe] px-2 py-1 text-[11px] font-medium text-slate-600">
+                      <Puzzle className="h-3 w-3" />
+                      {product.totalPieceCount ?? '—'}
                     </span>
 
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#e5edf9] bg-[#f6f9fe] px-3 py-1.5 text-xs font-medium text-slate-600">
-                      <Clock3 className="h-3.5 w-3.5" />
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#e5edf9] bg-[#f6f9fe] px-2 py-1 text-[11px] font-medium text-slate-600">
+                      <Clock3 className="h-3 w-3" />
                       {formatBuildTime(product.estimatedBuildTime)}
                     </span>
 
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#e5edf9] bg-[#f6f9fe] px-3 py-1.5 text-xs font-medium text-slate-600">
-                      <BarChart3 className="h-3.5 w-3.5" />
-                      {allTopics.find((t: TopicDto) => t.id === product.topicId)?.name || 'N/A'}
+                    <span className="inline-flex min-w-0 shrink items-center gap-1 rounded-full border border-[#e5edf9] bg-[#f6f9fe] px-2 py-1 text-[11px] font-medium text-slate-600">
+                      <BarChart3 className="h-3 w-3 shrink-0" />
+                      <span className="truncate">
+                        {allTopics.find((t: TopicDto) => t.id === product.topicId)?.name || 'N/A'}
+                      </span>
                     </span>
                   </div>
 

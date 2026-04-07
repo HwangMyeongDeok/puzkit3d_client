@@ -10,7 +10,16 @@ export const requirementApi = apiSlice.injectEndpoints({
       }),
       providesTags: ['CustomDesignRequirement'],
     }),
+
+    getCustomDesignRequirementById: builder.query<CustomDesignRequirement, string>({
+      query: (id) => ({
+        url: `/custom-design-requirements/${id}`,
+        method: 'GET',
+      }),
+      providesTags: (result, error, id) => [{ type: 'CustomDesignRequirement', id }],
+    }),
   }),
 });
 
-export const { useGetCustomDesignRequirementsQuery } = requirementApi;
+export const { useGetCustomDesignRequirementsQuery, useGetCustomDesignRequirementByIdQuery } =
+  requirementApi;
