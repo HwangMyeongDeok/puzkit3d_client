@@ -117,12 +117,8 @@ export default function CustomDesignPage() {
         desiredLengthMm: config.dimensions.length,
         desiredWidthMm: config.dimensions.width,
         desiredHeightMm: config.dimensions.height,
-        sketches: finalSketchPaths, // Sử dụng mảng path vừa upload xong ở trên
-        customerPrompt:
-          config.Type === 'Sketch'
-            ? `Topic: ${config.topic}, Material: ${config.material}, Assembly: ${config.assembly}, Difficulty: ${config.difficulty}`
-            : config.aiPrompt,
-
+        sketches: finalSketchPaths,
+        customerPrompt: config.aiPrompt,
         desiredDeliveryDate: config.deliveryDate
           ? new Date(config.deliveryDate).toISOString()
           : new Date().toISOString(),
@@ -137,10 +133,9 @@ export default function CustomDesignPage() {
         position: 'top-right',
       });
 
-      // Thành công thì quay về trang đầu và reset
       setView('landing');
       setConfig(INITIAL_CONFIG);
-      setUploadedFileUrls([]); // Clear các state tạm
+      setUploadedFileUrls([]);
     } catch (error) {
       handleErrorToast(error, 'Failed to submit request');
       const backendErrorMsg =

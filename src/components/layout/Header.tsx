@@ -144,7 +144,7 @@ export default function Header() {
         <div className="flex items-center gap-2">
           {isAuthenticated && !isAuthLoading && (
             <Link
-              href="/wallet"
+              href="/profile/wallet"
               title="My PuzCoins"
               className="inline-flex h-11 min-w-[60px] items-center justify-center gap-1.5 rounded-full border border-amber-200/80 bg-[linear-gradient(180deg,#fff8e7_0%,#fff2c7_100%)] px-3 text-amber-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-amber-100"
             >
