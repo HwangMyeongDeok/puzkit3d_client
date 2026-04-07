@@ -1,4 +1,4 @@
-import { DollarSign, Calendar } from 'lucide-react';
+import { DollarSign, Calendar, Info } from 'lucide-react';
 import type { ConfiguratorState } from './types';
 
 interface StepLogisticsProps {
@@ -7,6 +7,22 @@ interface StepLogisticsProps {
 }
 
 export default function StepLogistics({ config, updateConfig }: StepLogisticsProps) {
+  // ── LOGIC TÍNH NGÀY TỐI THIỂU (HÔM NAY + 7 NGÀY) ──
+  const getMinDate = () => {
+    const minDateObj = new Date();
+    minDateObj.setDate(minDateObj.getDate() + 7);
+
+    // Format theo chuẩn YYYY-MM-DD của input type="date"
+    // Dùng getLocal để tránh bị lệch múi giờ (timezone)
+    const year = minDateObj.getFullYear();
+    const month = String(minDateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(minDateObj.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  };
+
+  const minAllowedDate = getMinDate();
+
   return (
     <div className="animate-in fade-in mx-auto max-w-3xl space-y-10 duration-500">
       <div className="space-y-3">
@@ -86,10 +102,19 @@ export default function StepLogistics({ config, updateConfig }: StepLogisticsPro
             />
             <input
               type="date"
+              min={minAllowedDate} // <--- Chặn không cho chọn ngày trước (Hôm nay + 7 ngày)
               value={config.deliveryDate || ''}
               onChange={(e) => updateConfig({ deliveryDate: e.target.value })}
               className="w-full rounded-xl border-2 border-slate-200 bg-white py-4 pr-4 pl-12 font-bold text-blue-950 shadow-sm transition-all focus:border-red-600 focus:ring-1 focus:ring-red-600 focus:outline-none"
             />
+          </div>
+          {/* Note giải thích cho user */}
+          <div className="flex items-start gap-2 text-sm text-slate-500">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
+            <p>
+              Please allow at least <strong>7 days</strong> from today for standard manufacturing
+              and quality assurance processing.
+            </p>
           </div>
         </div>
       </div>

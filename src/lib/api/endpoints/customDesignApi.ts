@@ -4,6 +4,9 @@ import {
   CustomDesignRequestDto,
   PaginatedResponse,
   UpdateCustomDesignRequestDto,
+  // Bác nhớ thêm 2 cái Type này vào file customDesign.api.type.ts nhé
+  CustomDesignAsset,
+  CreateAssetPayload,
 } from '@/types/api/customDesign.api.type';
 
 export interface GetCustomDesignRequestsParams {
@@ -65,6 +68,26 @@ export const customDesignRequestApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ['CustomDesignRequest'],
     }),
+
+    getCustomDesignAssetsByRequestId: builder.query<CustomDesignAsset[], string>({
+      query: (requestId) => ({
+        url: `/custom-design-requests/${requestId}/custom-design-assets`,
+        method: 'GET',
+      }),
+      providesTags: (result, error, id) => [{ type: 'CustomDesignAsset', id }],
+    }),
+
+    createCustomDesignAsset: builder.mutation<CustomDesignAsset, CreateAssetPayload>({
+      query: (body) => ({
+        url: `/custom-design-assets`,
+        method: 'POST',
+        data: body,
+      }),
+      invalidatesTags: (result, error, arg) => [
+        { type: 'CustomDesignAsset', id: arg.requestId },
+        { type: 'CustomDesignRequest', id: arg.requestId },
+      ],
+    }),
   }),
 });
 
@@ -74,4 +97,6 @@ export const {
   useCreateCustomDesignRequestMutation,
   useUpdateCustomDesignRequestMutation,
   useDeleteCustomDesignRequestMutation,
+  useGetCustomDesignAssetsByRequestIdQuery,
+  useCreateCustomDesignAssetMutation,
 } = customDesignRequestApi;

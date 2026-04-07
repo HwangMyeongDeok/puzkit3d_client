@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Loader2,
@@ -9,7 +9,6 @@ import {
   Package,
   DollarSign,
   Ruler,
-  FileText,
   ImageIcon,
   Clock,
   Hash,
@@ -23,6 +22,8 @@ import {
   Trash2,
   Pencil,
   X,
+  MessageSquare,
+  UploadCloud,
 } from 'lucide-react';
 
 import {
@@ -30,6 +31,10 @@ import {
   useUpdateCustomDesignRequestMutation,
   useDeleteCustomDesignRequestMutation,
 } from '@/lib/api/endpoints/customDesignApi';
+
+// ⚠️ CHÚ Ý: Bác chỉnh lại đường dẫn import hook xin Presigned URL cho đúng với dự án nhé
+import { useGetPresignedUrlMutation } from '@/lib/api/endpoints/uploadApi';
+
 import type { CustomDesignRequestStatus } from '@/types/api/customDesign.api.type';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -186,7 +191,10 @@ function EditForm({
   request: NonNullable<ReturnType<typeof useGetCustomDesignRequestByIdQuery>['data']>;
   onClose: () => void;
 }) {
-  const [updateRequest, { isLoading }] = useUpdateCustomDesignRequestMutation();
+  const [updateRequest, { isLoading: isUpdating }] = useUpdateCustomDesignRequestMutation();
+  const [getPresignedUrl] = useGetPresignedUrlMutation();
+
+  const [isProcessingFiles, setIsProcessingFiles] = useState(false);
 
   const [form, setForm] = useState({
     desiredLengthMm: request.desiredLengthMm,
@@ -196,16 +204,108 @@ function EditForm({
     targetBudget: request.targetBudget,
     customerPrompt: request.customerPrompt ?? '',
     desiredDeliveryDate: request.desiredDeliveryDate?.slice(0, 10) ?? '',
-    note: request.note ?? '',
   });
+
+  // Quản lý ảnh cũ (đã có link trên S3) và ảnh mới (File upload từ máy)
+  const [existingSketches, setExistingSketches] = useState<string[]>(request.sketchesUrls ?? []);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [newFilePreviews, setNewFilePreviews] = useState<string[]>([]);
+
+  const totalImagesCount = existingSketches.length + newFiles.length;
+
+  // Cleanup object URLs khi unmount
+  useEffect(() => {
+    return () => {
+      newFilePreviews.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [newFilePreviews]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const filesArray = Array.from(e.target.files);
+
+    if (totalImagesCount + filesArray.length > 4) {
+      toast.error('You can only upload up to 4 images in total.');
+      return;
+    }
+
+    setNewFiles((prev) => [...prev, ...filesArray]);
+    setNewFilePreviews((prev) => [...prev, ...filesArray.map((f) => URL.createObjectURL(f))]);
+
+    // Reset input value để cho phép chọn lại cùng 1 file nếu cần
+    e.target.value = '';
+  };
+
+  const handleRemoveExisting = (indexToRemove: number) => {
+    setExistingSketches((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleRemoveNew = (indexToRemove: number) => {
+    setNewFiles((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+    setNewFilePreviews((prev) => {
+      const newPreviews = [...prev];
+      URL.revokeObjectURL(newPreviews[indexToRemove]); // Dọn dẹp RAM
+      newPreviews.splice(indexToRemove, 1);
+      return newPreviews;
+    });
+  };
 
   const handleSubmit = async () => {
     try {
-      await updateRequest({ id: request.id, data: form }).unwrap();
+      setIsProcessingFiles(true);
+      let uploadedS3Paths: string[] = [];
+
+      // ── BƯỚC 1 & 2: XỬ LÝ UPLOAD S3 (PRESIGNED URL) ──
+      if (newFiles.length > 0) {
+        toast.loading('Uploading images to S3...', { id: 'upload-toast' });
+
+        // Tạo array các promises để upload song song nhiều ảnh
+        const uploadPromises = newFiles.map(async (file) => {
+          // 1. Xin Presigned URL từ Backend
+          const { presignedUrl, path } = await getPresignedUrl({
+            contentType: file.type,
+            folder: 'custom-designs',
+            path: `custom-designs/${request.id}/${Date.now()}_${file.name}`,
+            fileName: file.name,
+          }).unwrap();
+
+          // 2. Dùng fetch PUT trực tiếp file binary lên S3
+          await fetch(presignedUrl, {
+            method: 'PUT',
+            body: file,
+            headers: {
+              'Content-Type': file.type,
+            },
+          });
+
+          return path; // Trả về path từ S3
+        });
+
+        // Chờ tất cả file upload xong
+        uploadedS3Paths = await Promise.all(uploadPromises);
+        toast.success('Images uploaded successfully.', { id: 'upload-toast' });
+      }
+
+      // ── BƯỚC 3: FINAL PUT (UPDATE DATABASE) ──
+      // Gộp list ảnh cũ còn giữ lại và list path mới upload
+      const finalSketchesUrls = [...existingSketches, ...uploadedS3Paths];
+
+      const dataToSubmit = {
+        ...form,
+        sketchesUrls: request.type === 'Sketch' ? finalSketchesUrls : undefined,
+      };
+
+      await updateRequest({ id: request.id, data: dataToSubmit }).unwrap();
       toast.success('Request updated successfully!');
+
+      setIsProcessingFiles(false);
       onClose();
-    } catch {
-      toast.error('Failed to update request. Please try again.');
+    } catch (error) {
+      console.error('Update error:', error);
+      setIsProcessingFiles(false);
+      toast.error('Failed to update request. Please check connection or try again.', {
+        id: 'upload-toast',
+      });
     }
   };
 
@@ -216,7 +316,7 @@ function EditForm({
       </label>
       <input
         type={type}
-        value={form[key]}
+        value={form[key] as string | number}
         onChange={(e) =>
           setForm((f) => ({
             ...f,
@@ -227,6 +327,8 @@ function EditForm({
       />
     </div>
   );
+
+  const isWorking = isUpdating || isProcessingFiles;
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 pt-16 backdrop-blur-sm">
@@ -253,52 +355,138 @@ function EditForm({
           {field('Budget (₫)', 'targetBudget', 'number')}
           {field('Desired Delivery Date', 'desiredDeliveryDate', 'date')}
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-              My Prompt
-            </label>
-            <textarea
-              rows={4}
-              value={form.customerPrompt}
-              onChange={(e) => setForm((f) => ({ ...f, customerPrompt: e.target.value }))}
-              className="bg-muted/50 border-border text-foreground focus:border-brand focus:ring-brand/30 resize-none rounded-lg border px-3 py-2 text-sm outline-none focus:ring-1"
-            />
-          </div>
+          {/* Conditional Rendering: My Prompt */}
+          {request.type === 'Idea' && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                My Prompt
+              </label>
+              <textarea
+                rows={4}
+                value={form.customerPrompt}
+                onChange={(e) => setForm((f) => ({ ...f, customerPrompt: e.target.value }))}
+                placeholder="Describe your idea..."
+                className="bg-muted/50 border-border text-foreground focus:border-brand focus:ring-brand/30 resize-none rounded-lg border px-3 py-2 text-sm outline-none focus:ring-1"
+              />
+            </div>
+          )}
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-              Note to Staff
-            </label>
-            <textarea
-              rows={2}
-              placeholder="Add any additional notes for our team..."
-              value={form.note}
-              onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
-              className="bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus:border-brand focus:ring-brand/30 resize-none rounded-lg border px-3 py-2 text-sm outline-none focus:ring-1"
-            />
-          </div>
+          {/* Conditional Rendering: File Upload Sketch (Chuẩn Presigned URL) */}
+          {request.type === 'Sketch' && (
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <label className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                  Sketches ({totalImagesCount}/4)
+                </label>
+              </div>
+
+              {/* Lưới hiển thị ảnh (Cũ trên S3 + Mới Blob Preview) */}
+              {totalImagesCount > 0 && (
+                <div className="grid grid-cols-4 gap-2">
+                  {/* Ảnh S3 cũ còn giữ lại */}
+                  {existingSketches.map((url, idx) => (
+                    <div
+                      key={`old-${idx}`}
+                      className="group border-border bg-muted relative aspect-square overflow-hidden rounded-lg border"
+                    >
+                      <img src={url} alt="Existing Sketch" className="h-full w-full object-cover" />
+                      <button
+                        onClick={() => handleRemoveExisting(idx)}
+                        disabled={isWorking}
+                        className="absolute top-1 right-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        title="Remove Image"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* Ảnh mới vừa chọn từ máy (Preview bằng blob) */}
+                  {newFilePreviews.map((url, idx) => (
+                    <div
+                      key={`new-${idx}`}
+                      className="group border-brand/50 bg-muted relative aspect-square overflow-hidden rounded-lg border-2"
+                    >
+                      <img
+                        src={url}
+                        alt="New Sketch Preview"
+                        className="h-full w-full object-cover opacity-80"
+                      />
+                      <div className="bg-brand text-brand-foreground absolute inset-x-0 bottom-0 py-0.5 text-center text-[9px] font-bold tracking-wider">
+                        NEW
+                      </div>
+                      <button
+                        onClick={() => handleRemoveNew(idx)}
+                        disabled={isWorking}
+                        className="absolute top-1 right-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        title="Remove Image"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Bảng Dropzone/Nút Upload File (ẩn nếu đủ 4 ảnh hoặc đang xử lý) */}
+              {totalImagesCount < 4 && !isWorking && (
+                <label className="border-border hover:bg-muted/50 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 transition-colors">
+                  <div className="bg-brand/10 text-brand rounded-full p-2">
+                    <UploadCloud className="h-5 w-5" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium">Click to upload files</p>
+                    <p className="text-muted-foreground mt-0.5 text-xs">JPG, PNG, WebP (Max 4)</p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleFileChange}
+                    disabled={isWorking}
+                  />
+                </label>
+              )}
+
+              {/* Hiển thị Loading khi đang upload S3 */}
+              {isProcessingFiles && !isUpdating && (
+                <div className="border-border bg-muted flex flex-col items-center justify-center gap-2 rounded-xl border p-6 text-center">
+                  <Loader2 className="text-brand h-6 w-6 animate-spin" />
+                  <p className="text-sm font-medium">Uploading images directly to S3...</p>
+                  <p className="text-muted-foreground text-xs">
+                    Please wait, do not close the window.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
         <div className="border-border flex gap-3 border-t px-6 py-4">
           <button
             onClick={onClose}
-            disabled={isLoading}
+            disabled={isWorking}
             className="border-border hover:bg-muted flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
-            disabled={isLoading}
+            disabled={isWorking}
             className="bg-brand text-brand-foreground hover:bg-brand/90 flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:opacity-50"
           >
-            {isLoading ? (
+            {isWorking ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Pencil className="h-4 w-4" />
             )}
-            Save Changes
+            {isProcessingFiles && !isUpdating
+              ? 'Uploading...'
+              : isUpdating
+                ? 'Saving...'
+                : 'Save Changes'}
           </button>
         </div>
       </div>
@@ -357,6 +545,11 @@ export default function CustomDesignDetailPage({ params }: { params: Promise<{ i
 
   const isMissingInfo = request.status === 'MissingInformation';
   const isSubmitted = request.status === 'Submitted';
+  // Check nếu đơn đang nằm trong luồng AI
+  const isAIFlow =
+    request.status === 'Approved' ||
+    request.status === 'Processing' ||
+    request.status === 'Completed';
 
   return (
     <>
@@ -417,16 +610,59 @@ export default function CustomDesignDetailPage({ params }: { params: Promise<{ i
           </div>
         </div>
 
-        {/* Missing info alert */}
+        {/* ── AI GENERATION WORKSPACE BANNER ── */}
+        {isAIFlow && (
+          <div className="border-brand/20 bg-brand/5 dark:bg-brand/10 relative overflow-hidden rounded-xl border p-6">
+            {/* Hiệu ứng background */}
+            <div className="bg-brand/20 absolute -top-10 -right-10 h-32 w-32 rounded-full blur-3xl" />
+
+            <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-4">
+                <div className="bg-brand/10 text-brand flex h-12 w-12 shrink-0 items-center justify-center rounded-full">
+                  {request.status === 'Completed' ? (
+                    <CheckCircle2 className="h-6 w-6" />
+                  ) : (
+                    // Dùng spin chuẩn của Tailwind, 3s cho nó chậm mượt
+                    <Cog className="h-6 w-6 animate-[spin_3s_linear_infinite]" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-foreground font-bold">AI 3D Model Generation</h3>
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    {request.status === 'Completed'
+                      ? 'Your 3D rough models have been successfully generated by Tripo AI.'
+                      : 'The system is actively generating your 3D rough model in the background. Check your workspace for progress.'}
+                  </p>
+                </div>
+              </div>
+
+              <Link
+                href={`/profile/custom-designs/${request.id}/workspace`}
+                className="bg-brand text-brand-foreground shadow-brand/20 inline-flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-bold shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl sm:w-auto"
+              >
+                ✨ Enter AI Workspace
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Missing info alert with Staff Note */}
         {isMissingInfo && (
           <div className="flex items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 dark:border-orange-500/20 dark:bg-orange-500/5">
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-orange-600 dark:text-orange-400" />
-            <div>
+            <div className="w-full">
               <p className="font-semibold text-orange-700 dark:text-orange-300">Action Required</p>
               <p className="mt-0.5 text-sm text-orange-600 dark:text-orange-400">
                 Our team needs more information to proceed with your request. Please update the
                 details.
               </p>
+
+              {request.note && (
+                <div className="mt-3 rounded-lg border border-orange-200 bg-orange-100/50 p-3 text-sm text-orange-900 dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-200">
+                  <span className="mb-1 block font-semibold">Staff Note:</span>
+                  <span className="whitespace-pre-wrap">{request.note}</span>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -461,16 +697,18 @@ export default function CustomDesignDetailPage({ params }: { params: Promise<{ i
               </div>
             </div>
 
-            {/* Description */}
-            <div className="bg-card border-border rounded-xl border p-5 shadow-sm">
-              <h2 className="mb-3 flex items-center gap-2 font-semibold">
-                <FileText className="text-brand h-4 w-4" />
-                Description
-              </h2>
-              <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-wrap">
-                {request.customerPrompt || '—'}
-              </p>
-            </div>
+            {/* My Prompt (Hiển thị nếu có) */}
+            {request.customerPrompt && (
+              <div className="bg-card border-border rounded-xl border p-5 shadow-sm">
+                <h2 className="mb-3 flex items-center gap-2 font-semibold">
+                  <MessageSquare className="text-brand h-4 w-4" />
+                  My Prompt
+                </h2>
+                <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-wrap italic">
+                  "{request.customerPrompt}"
+                </p>
+              </div>
+            )}
 
             {/* Sketches */}
             {request.sketchesUrls && request.sketchesUrls.length > 0 && (

@@ -66,3 +66,31 @@ export interface PaginatedResponse<T> {
   hasPreviousPage: boolean;
   hasNextPage: boolean;
 }
+
+export type CustomDesignAssetStatus =
+  | 'ImageProcessing'
+  | 'RoughModelGenerating'
+  | 'Completed'
+  | 'Failed';
+
+export interface CustomDesignAsset {
+  id: string;
+  code: string;
+  version: number;
+  status: CustomDesignAssetStatus | string;
+  multiviewImages: string[];
+  compositeMultiviewImage?: string;
+  rough3DModel?: string;
+  rough3DModelTaskId?: string;
+  customerPrompt?: string;
+  normalizePrompt?: string;
+  isNeedSupport: boolean;
+  isFinalDesign: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateAssetPayload {
+  requestId: string;
+  customerPrompt: string;
+}

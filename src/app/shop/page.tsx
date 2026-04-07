@@ -1,7 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Search, X, Loader2, PackageX, SlidersHorizontal, ChevronDown } from 'lucide-react';
+import { useState } from 'react';
+import {
+  Search,
+  X,
+  Loader2,
+  PackageX,
+  SlidersHorizontal,
+  ArrowUp,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { useGetProductsQuery } from '@/lib/api/endpoints/productApi';
@@ -12,9 +21,9 @@ import {
 } from '@/lib/api/endpoints/metaData';
 import ProductCard from '@/components/custom/ProductCard';
 import { AssemblyMethodDto, MaterialDto, TopicDto } from '@/types/api/catalog.types';
-import { ProductDto } from '@/types/api';
 
-const PAGE_SIZE = 8;
+// Set cứng 15 sản phẩm 1 trang (3 cột x 5 hàng)
+const PAGE_SIZE = 15;
 
 const DIFFICULTY_OPTIONS = [
   { label: 'Basic', value: 'Basic' },
@@ -153,7 +162,6 @@ export default function ShopPage() {
   const [pageNumber, setPageNumber] = useState(1);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [showFilters, setShowFilters] = useState(false);
-  const [accumulatedProducts, setAccumulatedProducts] = useState<ProductDto[]>([]);
 
   const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -181,43 +189,50 @@ export default function ShopPage() {
   const topics = topicsData?.items ?? [];
   const materials = materialsData?.items ?? [];
   const assemblyMethods = assemblyMethodsData?.items ?? [];
+
+  // Lấy data hiện tại cho trang này
+  const currentProducts = data?.items ?? [];
   const totalCount = data?.totalCount ?? 0;
-  const hasNextPage = data?.hasNextPage ?? false;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
-  // Accumulate products for Load More
-  useEffect(() => {
-    if (data?.items) {
-      if (pageNumber === 1) {
-        setAccumulatedProducts(data.items);
-      } else {
-        setAccumulatedProducts((prev) => {
-          const newItems = data.items.filter(
-            (newItem: ProductDto) => !prev.some((p) => p.id === newItem.id)
-          );
-          return [...prev, ...newItems];
-        });
-      }
-    }
-  }, [data, pageNumber]);
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const setFilter = (key: keyof Filters, value: string) => {
     setFilters((f) => ({ ...f, [key]: f[key] === value ? '' : value }));
-    setPageNumber(1);
-    setAccumulatedProducts([]);
+    setPageNumber(1); // Reset về trang 1 khi đổi filter
   };
 
   const clearFilters = () => {
     setFilters(EMPTY_FILTERS);
     setPageNumber(1);
-    setAccumulatedProducts([]);
   };
 
   const handleSearch = (val: string) => {
     setSearchQuery(val);
     setPageNumber(1);
-    setAccumulatedProducts([]);
+  };
+
+  // Helper để sinh mảng trang (có chứa "..." nếu quá nhiều trang)
+  const getPaginationItems = () => {
+    const delta = 1;
+    const range = [];
+    for (
+      let i = Math.max(2, pageNumber - delta);
+      i <= Math.min(totalPages - 1, pageNumber + delta);
+      i++
+    ) {
+      range.push(i);
+    }
+    if (pageNumber - delta > 2) range.unshift('...');
+    if (pageNumber + delta < totalPages - 1) range.push('...');
+
+    range.unshift(1);
+    if (totalPages !== 1) range.push(totalPages);
+    return range;
   };
 
   const getFilterLabel = (key: keyof Filters, val: string) => {
@@ -241,7 +256,7 @@ export default function ShopPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f7f9] pb-20">
+    <div className="relative min-h-screen bg-[#f4f7f9] pb-20">
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
         {/* ── HEADER & SEARCH ── */}
         <div className="relative mb-6 overflow-hidden rounded-[2.5rem] bg-white p-8 shadow-sm md:p-12 lg:p-14">
@@ -280,7 +295,7 @@ export default function ShopPage() {
           </div>
         </div>
 
-        {/* ── ACTIVE FILTER CHIPS — always visible ── */}
+        {/* ── ACTIVE FILTER CHIPS ── */}
         {activeFilterCount > 0 && (
           <div className="mb-5 flex flex-wrap items-center gap-2 px-1">
             {(Object.keys(filters) as Array<keyof Filters>).map((key) => {
@@ -310,10 +325,10 @@ export default function ShopPage() {
         )}
 
         {/* ── LAYOUT: Sidebar + Main ── */}
-        <div className="flex items-start gap-8">
-          {/* ── STICKY SIDEBAR (Desktop only) ── */}
-          <aside className="hidden w-56 flex-shrink-0 lg:block">
-            <div className="sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex gap-8">
+          {/* ── SIDEBAR (Desktop only) ── */}
+          <aside className="hidden w-56 flex-shrink-0 self-start lg:block">
+            <div>
               <p className="mb-4 text-xs font-bold tracking-widest text-slate-400 uppercase">
                 Filter by
               </p>
@@ -351,12 +366,12 @@ export default function ShopPage() {
             {/* Result count */}
             <div className="mb-5 flex items-center justify-between px-1">
               <span className="text-sm text-slate-500">
-                {isLoading && pageNumber === 1 ? (
+                {isLoading ? (
                   'Loading models...'
                 ) : (
                   <>
-                    Showing <strong className="text-blue-800">{accumulatedProducts.length}</strong>{' '}
-                    of <strong className="text-blue-800">{totalCount}</strong> products
+                    Showing <strong className="text-blue-800">{currentProducts.length}</strong> of{' '}
+                    <strong className="text-blue-800">{totalCount}</strong> products
                   </>
                 )}
               </span>
@@ -366,7 +381,7 @@ export default function ShopPage() {
             </div>
 
             {/* ── Content states ── */}
-            {isLoading && pageNumber === 1 ? (
+            {isLoading ? (
               <div className="flex flex-col items-center justify-center py-32 text-center">
                 <Loader2 className="mb-4 h-10 w-10 animate-spin text-blue-500" />
                 <p className="text-slate-500">Loading collections...</p>
@@ -378,7 +393,7 @@ export default function ShopPage() {
                   A connection error occurred. Please try again later.
                 </p>
               </div>
-            ) : accumulatedProducts.length === 0 ? (
+            ) : currentProducts.length === 0 ? (
               <div className="flex flex-col items-center justify-center rounded-3xl border border-slate-100 bg-white py-32 text-center shadow-sm">
                 <PackageX className="mb-5 h-16 w-16 text-slate-300" />
                 <p className="mb-2 text-xl font-bold text-slate-800">No products found</p>
@@ -399,31 +414,66 @@ export default function ShopPage() {
             ) : (
               <>
                 {/* Product grid */}
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {accumulatedProducts.map((product) => (
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+                  {currentProducts.map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}
                 </div>
 
-                {/* Load More */}
-                {hasNextPage && (
-                  <div className="mt-14 flex items-center justify-center">
+                {/* ── PAGINATION CONTROLS ── */}
+                {totalPages > 1 && (
+                  <div className="mt-14 flex items-center justify-center gap-2">
                     <button
-                      onClick={() => setPageNumber((p) => p + 1)}
-                      disabled={isFetching}
-                      className="group flex h-14 items-center gap-2 rounded-full border-2 border-blue-950 bg-white px-10 text-base font-bold text-blue-950 transition-all hover:bg-blue-950 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-blue-950"
+                      onClick={() => {
+                        setPageNumber((p) => p - 1);
+                        scrollToTop();
+                      }}
+                      disabled={pageNumber === 1 || isFetching}
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 hover:text-blue-600 disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-slate-600"
                     >
-                      {isFetching ? (
-                        <>
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                          Loading...
-                        </>
-                      ) : (
-                        <>
-                          Load More
-                          <ChevronDown className="h-5 w-5 transition group-hover:translate-y-1" />
-                        </>
-                      )}
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+
+                    {getPaginationItems().map((item, index) => {
+                      if (item === '...') {
+                        return (
+                          <span key={`ellipsis-${index}`} className="px-2 text-slate-400">
+                            ...
+                          </span>
+                        );
+                      }
+
+                      const pageNum = item as number;
+                      const isActive = pageNumber === pageNum;
+
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => {
+                            setPageNumber(pageNum);
+                            scrollToTop();
+                          }}
+                          disabled={isFetching}
+                          className={`flex h-10 min-w-[2.5rem] items-center justify-center rounded-full text-sm font-semibold transition ${
+                            isActive
+                              ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                              : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-blue-600'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      onClick={() => {
+                        setPageNumber((p) => p + 1);
+                        scrollToTop();
+                      }}
+                      disabled={pageNumber === totalPages || isFetching}
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 hover:text-blue-600 disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-slate-600"
+                    >
+                      <ChevronRight className="h-5 w-5" />
                     </button>
                   </div>
                 )}

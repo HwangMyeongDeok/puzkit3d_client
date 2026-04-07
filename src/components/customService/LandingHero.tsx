@@ -17,10 +17,8 @@ interface LandingHeroProps {
 
 export default function LandingHero({ onStart }: LandingHeroProps) {
   return (
-    <div className="w-full overflow-hidden bg-slate-50 font-sans text-slate-900">
-      {/* --- SECTION 1: HERO (Chiếm trọn 1 màn hình đầu tiên) --- */}
+    <div className="w-full overflow-hidden border-t border-slate-500 bg-slate-50 font-sans text-slate-900">
       <section className="relative flex min-h-screen flex-col items-center justify-center px-6 py-20 lg:px-8">
-        {/* Decorative Background Elements */}
         <div
           className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80"
           aria-hidden="true"

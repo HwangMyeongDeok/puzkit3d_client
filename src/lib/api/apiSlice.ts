@@ -22,6 +22,7 @@ export const tagTypes = [
   'Feedback',
   'CustomDesignRequest',
   'CustomDesignRequirement',
+  'CustomDesignAsset',
 ] as const;
 
 export const apiSlice = createApi({

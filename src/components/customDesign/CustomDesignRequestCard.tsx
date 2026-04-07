@@ -31,14 +31,6 @@ export default function CustomDesignRequestCard({ request }: CustomDesignRequest
     <div
       className={`bg-card border-border group relative flex flex-col gap-4 rounded-xl border p-5 shadow-sm transition-all duration-300 hover:shadow-md ${isActionable ? 'border-orange-300 ring-1 ring-orange-200/50' : 'hover:border-brand/30'} ${isTerminal ? 'opacity-80 hover:opacity-100' : ''} `}
     >
-      {/* Subtle action-needed indicator */}
-      {isActionable && (
-        <div className="absolute -top-2 right-4 flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-0.5 text-[10px] font-bold tracking-wide text-orange-700 uppercase shadow-sm dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-400">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-orange-500" />
-          Action Required
-        </div>
-      )}
-
       {/* ── CARD HEADER ── */}
       <div className="border-border flex flex-col justify-between gap-4 border-b pb-4 md:flex-row md:items-start">
         <div className="flex items-start gap-3">
@@ -50,9 +42,20 @@ export default function CustomDesignRequestCard({ request }: CustomDesignRequest
               <h3 className="text-lg leading-none font-bold">
                 Request #{request.code || request.id.split('-')[0].toUpperCase()}
               </h3>
-              <span className="bg-muted text-muted-foreground rounded-md border px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase">
-                {request.type}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="bg-muted text-muted-foreground rounded-md border px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase">
+                  {request.type}
+                </span>
+                {/* Dấu chấm than cảnh báo gọn gàng bên cạnh Type */}
+                {isActionable && (
+                  <span
+                    className="flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[11px] font-bold text-white shadow-sm"
+                    title="Action Required"
+                  >
+                    !
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-3 text-sm">
@@ -173,16 +176,6 @@ export default function CustomDesignRequestCard({ request }: CustomDesignRequest
         </div>
 
         <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row">
-          {isActionable && (
-            <Link
-              href={`/profile/custom-designs/${request.id}`}
-              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-6 py-2.5 font-semibold text-orange-700 shadow-sm transition-colors hover:bg-orange-100 md:w-auto dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-400 dark:hover:bg-orange-500/20"
-            >
-              <MessageSquare className="h-4 w-4" />
-              Update Info
-            </Link>
-          )}
-
           <Link
             href={`/profile/custom-designs/${request.id}`}
             className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg px-6 py-2.5 font-semibold shadow-sm transition-colors md:w-auto"
