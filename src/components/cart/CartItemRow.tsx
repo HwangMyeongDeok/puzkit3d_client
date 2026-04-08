@@ -27,6 +27,11 @@ export default function CartItemRow({
 }: CartItemRowProps) {
   // Xử lý logic hiển thị tên biến thể (variant) cho gọn
   const variantDisplay = item.variantName || item.color;
+  const currentQty = Number(item.quantity) || 0;
+  const maxInventory = Number(item.availableInventory) || 0;
+
+  // Nếu maxInventory = 0 (tức là hết hàng hoặc lỗi API), hoặc currentQty chạm mốc -> Khóa!
+  const isMaxReached = maxInventory > 0 && currentQty >= maxInventory;
 
   return (
     <div
@@ -94,6 +99,7 @@ export default function CartItemRow({
             quantity={item.quantity}
             onIncrement={onIncrement}
             onDecrement={onDecrement}
+            disableIncrement={isMaxReached}
           />
 
           {/* Tổng tiền của Item (Price * Quantity) */}

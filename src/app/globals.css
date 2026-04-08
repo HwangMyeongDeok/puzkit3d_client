@@ -92,7 +92,7 @@
   /* Brand Colors - Navy Blue + Red Accent (Gundam RX-78 inspired) */
   --brand: oklch(0.35 0.12 250);
   --brand-foreground: oklch(0.98 0.005 250);
-  --brand-accent: oklch(0.55 0.22 25);
+  --brand-accent: oklch(0.35 0.12 250);
 
   /* Primary - Deep Navy */
   --primary: oklch(0.25 0.08 255);
@@ -103,7 +103,7 @@
   --secondary-foreground: oklch(0.25 0.08 255);
 
   /* Accent - Vibrant Red */
-  --accent: oklch(0.55 0.22 25);
+  --accent: oklch(0.35 0.12 250);
   --accent-foreground: oklch(0.98 0.005 250);
 
   /* Muted */
@@ -117,7 +117,7 @@
   --popover-foreground: oklch(0.145 0.035 265);
 
   /* Destructive */
-  --destructive: oklch(0.55 0.22 25);
+  --destructive: oklch(0.25 0.08 255);
 
   /* Borders & Inputs */
   --border: oklch(0.9 0.01 250);

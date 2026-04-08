@@ -21,10 +21,11 @@ import ProductVariants from '@/components/custom/ProductVariants';
 import { useAppSelector } from '@/stores/hooks';
 import { selectIsAuthenticated } from '@/stores/slices/authSlice';
 
-// ===== IMPORT COMPONENTS VỪA TÁCH =====
 import ProductImageGallery from '@/components/productDetail/ProductImageGallery';
 import ProductSpecifications from '@/components/productDetail/ProductSpecifications';
-// ======================================
+
+import { useAppDispatch } from '@/stores/hooks';
+import { setSelectedItems } from '@/stores/slices/checkoutSlice';
 
 export default function ProductDetailPage() {
   const params = useParams<{ slug: string }>();
@@ -80,6 +81,7 @@ export default function ProductDetailPage() {
     if (type === 'increase') setQuantity((q) => q + 1);
   };
 
+  const dispatch = useAppDispatch();
   const handleAddToCart = async (showToast = true) => {
     if (!isAuthenticated) {
       toast.info('Please log in to add products to cart!');
@@ -96,11 +98,13 @@ export default function ProductDetailPage() {
     }
     try {
       const priceDetailId = currentPriceObj.id.replace(/"/g, '').trim();
-      await addToCartMutate({
+
+      const response = await addToCartMutate({
         itemId: selectedVariant.id,
         inStockProductPriceDetailId: priceDetailId,
         quantity: Number(quantity),
       }).unwrap();
+
       if (showToast) toast.success('Added to cart successfully!');
       return true;
     } catch (error: any) {
@@ -111,8 +115,11 @@ export default function ProductDetailPage() {
   };
 
   const handleBuyNow = async () => {
-    const success = await handleAddToCart(false);
-    if (success) router.push(ROUTES.CHECKOUT);
+    const isSuccess = await handleAddToCart(false);
+
+    if (isSuccess) {
+      router.push(`/cart?buyNowVariant=${selectedVariant?.id}`);
+    }
   };
 
   const images = useMemo(() => {
@@ -163,8 +170,8 @@ export default function ProductDetailPage() {
           Home
         </Link>
         <span>/</span>
-        <Link href={ROUTES.PRODUCTS} className="transition-colors hover:text-[#e51636]">
-          Products
+        <Link href={ROUTES.SHOP} className="transition-colors hover:text-[#e51636]">
+          Shop
         </Link>
         <span>/</span>
         <span className="truncate font-medium text-slate-900">{product.name}</span>

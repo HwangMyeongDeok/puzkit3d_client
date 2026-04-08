@@ -3,7 +3,7 @@ import { ROUTES } from '@/constants';
 
 const QUICK_LINKS = [
   { href: ROUTES.HOME, label: 'Home' },
-  { href: ROUTES.PRODUCTS, label: 'Shop All' },
+  { href: ROUTES.SHOP, label: 'Shop All' },
   { href: ROUTES.BRANDS, label: 'Brands' },
   { href: '/custom-service', label: 'Custom Service' },
   { href: '/contact', label: 'Contact' },

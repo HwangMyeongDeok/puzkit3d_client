@@ -24,6 +24,7 @@ import {
   useGetPaymentByOrderIdQuery,
   useGetPaymentTransactionsQuery,
 } from '@/lib/api/endpoints/paymentApi';
+import { getEffectiveOrderStatus } from '@/lib/utils/getEffectiveOrderStatus';
 
 export default function OrderDetailsPage() {
   const params = useParams<{ id: string }>();
@@ -90,17 +91,18 @@ export default function OrderDetailsPage() {
     );
   }
 
-  let effectiveStatus = order.status;
-  if (
-    order.status &&
-    ['HandedOverToDelivery', 'Delivering'].includes(order.status as string) &&
-    originalTrackingData.length > 0
-  ) {
-    const trackingStatusLower = originalTrackingData[0].status?.toLowerCase() || '';
-    if (trackingStatusLower.includes('return')) effectiveStatus = 'Returned';
-    else if (trackingStatusLower.includes('delivered')) effectiveStatus = 'Delivered';
-    else if (trackingStatusLower.includes('delivering')) effectiveStatus = 'Delivering';
-  }
+  // let effectiveStatus = order.status;
+  // if (
+  //   order.status &&
+  //   ['HandedOverToDelivery', 'Delivering'].includes(order.status as string) &&
+  //   originalTrackingData.length > 0
+  // ) {
+  //   const trackingStatusLower = originalTrackingData[0].status?.toLowerCase() || '';
+  //   if (trackingStatusLower.includes('return')) effectiveStatus = 'Returned';
+  //   else if (trackingStatusLower.includes('delivered')) effectiveStatus = 'Delivered';
+  //   else if (trackingStatusLower.includes('delivering')) effectiveStatus = 'Delivering';
+  // }
+  const effectiveStatus = getEffectiveOrderStatus(order.status, originalTrackingData);
 
   const isCOD = order.paymentMethod === 'COD';
   const isDelivered = effectiveStatus === 'Delivered';

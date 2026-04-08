@@ -7,7 +7,7 @@ export const ROUTES = {
   VERIFY_EMAIL: '/verify-email',
   RESET_PASSWORD: '/reset-password',
 
-  PRODUCTS: '/shop',
+  SHOP: '/shop',
   PRODUCT_DETAIL: (slug: string) => `/shop/${slug}` as const,
 
   CART: '/cart',
@@ -17,8 +17,8 @@ export const ROUTES = {
 
   BRANDS: '/brands',
 
-  ORDERS: '/orders',
-  ORDER_DETAIL: (id: string) => `/orders/${id}` as const,
+  ORDERS: '/profile/orders',
+  ORDER_DETAIL: (id: string) => `/profile/orders/${id}` as const,
 
   IMPORT_REQUESTS: '/import-requests',
   IMPORT_REQUEST_NEW: '/import-requests/new',
@@ -42,9 +42,8 @@ export const ROUTES = {
 
 export const API_ROUTES = {
   AUTH: '/auth',
-  PRODUCTS: '/products',
+  SHOP: '/shop',
   CART: '/cart',
-  ORDERS: '/orders',
+  ORDERS: '/profile/orders',
   USERS: '/users',
-  ADDRESSES: '/addresses',
 } as const;

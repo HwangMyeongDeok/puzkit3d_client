@@ -10,14 +10,13 @@ import {
 import { handleErrorToast } from '@/lib/utils/error-handler';
 import { toast } from 'sonner';
 import { useAppDispatch } from '@/stores/hooks';
-import type { CartDto } from '@/types/api/cart.api.types'; // <-- Import type Cart vào đây
+import type { CartDto } from '@/types/api/cart.api.types';
 
 export function useCartSync() {
   const dispatch = useAppDispatch();
   const [updateItemMutate] = useUpdateCartItemMutation();
   const [removeItemMutate] = useRemoveCartItemMutation();
 
-  // Dùng Record cho chuẩn TS thay vì {[key: string]: type}
   const pendingQuantities = useRef<Record<string, number>>({});
   const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
@@ -30,7 +29,6 @@ export function useCartSync() {
 
   const handleRemove = useCallback(
     async (itemId: string): Promise<void> => {
-      // Khai báo return type
       if (debounceTimers.current[itemId]) {
         clearTimeout(debounceTimers.current[itemId]);
       }
@@ -40,7 +38,6 @@ export function useCartSync() {
         await removeItemMutate(itemId).unwrap();
         toast.success('Item removed from cart');
       } catch (error: unknown) {
-        // Đổi thành unknown
         handleErrorToast(error, 'Failed to remove item');
       }
     },
@@ -49,7 +46,6 @@ export function useCartSync() {
 
   const handleUpdateQuantity = useCallback(
     (itemId: string, newQuantity: number): void => {
-      // Khai báo return type
       if (debounceTimers.current[itemId]) {
         clearTimeout(debounceTimers.current[itemId]);
       }
@@ -57,7 +53,7 @@ export function useCartSync() {
       const safeQuantity = newQuantity < 1 ? 1 : newQuantity;
       pendingQuantities.current[itemId] = safeQuantity;
 
-      // Ép kiểu (draft: Cart) để TS gợi ý code (IntelliSense) chuẩn 100%
+      // Optimistic update
       dispatch(
         cartApi.util.updateQueryData('getCart', undefined, (draft: CartDto) => {
           if (draft?.items) {
@@ -80,12 +76,20 @@ export function useCartSync() {
           }
           delete pendingQuantities.current[itemId];
         } catch (error: unknown) {
-          // Đổi thành unknown
           handleErrorToast(error, 'Failed to update quantity!');
+          delete pendingQuantities.current[itemId];
+
+          // ÉP RESET UI VỀ CHUẨN DATABASE
+          dispatch(
+            cartApi.endpoints.getCart.initiate(undefined, {
+              subscribe: false,
+              forceRefetch: true,
+            })
+          );
         }
       }, 300);
     },
-    [updateItemMutate, dispatch]
+    [dispatch, updateItemMutate] // <--- Nãy bác thiếu nguyên cụm đóng ngoặc này
   );
 
   const handleIncrement = useCallback(

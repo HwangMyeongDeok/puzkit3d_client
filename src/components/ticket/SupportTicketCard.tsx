@@ -110,7 +110,7 @@ export default function SupportTicketCard({ ticket }: SupportTicketCardProps) {
 
         {/* 👉 Nút View Details bay sang trang /support/[id] */}
         <Button className="gap-2 font-semibold shadow-none" asChild>
-          <Link href={`/ticket-support/${ticket.id}`}>
+          <Link href={`/profile/ticket-support/${ticket.id}`}>
             View Details{' '}
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>

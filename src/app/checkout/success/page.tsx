@@ -69,7 +69,7 @@ function SuccessContent() {
             Manage Orders
           </Button>
         </Link>
-        <Link href={ROUTES.PRODUCTS}>
+        <Link href={ROUTES.SHOP}>
           <Button variant="outline" size="lg" className="gap-2 rounded-xl px-8">
             Continue Shopping
             <ArrowRight className="h-4 w-4" />

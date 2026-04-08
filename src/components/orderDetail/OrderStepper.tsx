@@ -18,56 +18,64 @@ export default function OrderStepper({
   return (
     <div className="flex items-center gap-1 overflow-x-auto py-2">
       {steps.map((step, idx) => {
-        // Step "Đã thanh toán" chỉ completed/active khi isPaid = true
         const blocked = step === 'Paid' && !isPaid;
 
         const isCompleted = !blocked && idx <= activeStep;
         const isActive = !blocked && idx === activeStep;
 
-        // Bắt điều kiện: Đơn bị hủy VÀ step hiện tại đang là bước Cancelled
         const isCancelledStep = isCancelled && step.toLowerCase().includes('cancel');
-
         const isReturnedStep = isReturned && step.toLowerCase().includes('return');
+
+        // Step sau Returned (Delivered, Completed) không được highlight
+        const isBlockedAfterReturn = isReturned && !isReturnedStep && idx > activeStep;
+
+        const dotClass =
+          isCancelledStep || isReturnedStep
+            ? 'bg-red-500 text-white'
+            : isBlockedAfterReturn
+              ? 'bg-secondary text-muted-foreground'
+              : isCompleted
+                ? 'bg-success text-success-foreground'
+                : isActive
+                  ? 'bg-brand text-brand-foreground'
+                  : 'bg-secondary text-muted-foreground';
+
+        const labelClass =
+          isCancelledStep || isReturnedStep
+            ? 'font-bold text-red-500'
+            : isBlockedAfterReturn
+              ? 'text-muted-foreground'
+              : isCompleted
+                ? 'text-success'
+                : isActive
+                  ? 'text-brand'
+                  : 'text-muted-foreground';
+
+        const icon = isCancelledStep ? '✕' : isReturnedStep ? '✕' : isCompleted ? '✓' : idx + 1;
+
+        // Connector line sau step này
+        const lineClass =
+          isCompleted && !isCancelledStep && !isReturnedStep && !isBlockedAfterReturn
+            ? 'bg-success'
+            : 'bg-border';
+
         return (
           <div key={step} className="flex items-center">
             <div className="flex flex-col items-center gap-1">
               <div
-                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors ${
-                  isCancelledStep
-                    ? 'bg-red-500 text-white'
-                    : isReturnedStep
-                      ? 'bg-amber-500 text-white'
-                      : isCompleted
-                        ? 'bg-success text-success-foreground'
-                        : isActive
-                          ? 'bg-brand text-brand-foreground'
-                          : 'bg-secondary text-muted-foreground'
-                }`}
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors ${dotClass}`}
               >
-                {/* RENDER DẤU X NẾU LÀ CANCELLED, NGƯỢC LẠI CHẠY LOGIC CŨ */}
-                {isCancelledStep ? '✕' : isReturnedStep ? '⟲' : isCompleted ? '✓' : idx + 1}
+                {icon}
               </div>
               <span
-                className={`max-w-20 text-center text-[10px] leading-tight font-medium ${
-                  isCancelledStep
-                    ? 'font-bold text-red-500'
-                    : isReturnedStep
-                      ? 'font-bold text-amber-500'
-                      : isCompleted
-                        ? 'text-success'
-                        : isActive
-                          ? 'text-brand'
-                          : 'text-muted-foreground'
-                }`}
+                className={`max-w-20 text-center text-[10px] leading-tight font-medium ${labelClass}`}
               >
                 {step}
               </span>
             </div>
 
             {idx < steps.length - 1 && (
-              <div
-                className={`mx-1 h-0.5 w-6 shrink-0 rounded-full lg:w-10 ${isCompleted && !isCancelledStep && !isReturnedStep ? 'bg-success' : 'bg-border'}`}
-              />
+              <div className={`mx-1 h-0.5 w-6 shrink-0 rounded-full lg:w-10 ${lineClass}`} />
             )}
           </div>
         );

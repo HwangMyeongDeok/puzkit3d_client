@@ -82,7 +82,7 @@ export default function CheckoutPage() {
   const [isRedirecting, setIsRedirecting] = useState<boolean>(false);
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState<boolean>(false);
-
+  const { data: orderConfigData } = useGetOrderConfigQuery();
   // Coin State
   const [usedCoinInput, setUsedCoinInput] = useState<number>(0);
   const [isUsingMaxCoin, setIsUsingMaxCoin] = useState<boolean>(false);
@@ -124,12 +124,21 @@ export default function CheckoutPage() {
       selectedItems.length === 0 &&
       !isSubmitting &&
       !isRedirecting &&
-      !showPaymentDialog
+      !showPaymentDialog &&
+      !createdOrderId
     ) {
       toast.warning('No items selected!');
       router.replace(ROUTES.CART);
     }
-  }, [isCartLoading, selectedItems.length, isSubmitting, isRedirecting, showPaymentDialog, router]);
+  }, [
+    isCartLoading,
+    selectedItems.length,
+    isSubmitting,
+    isRedirecting,
+    showPaymentDialog,
+    createdOrderId,
+    router,
+  ]);
 
   const subtotal = selectedItems.reduce(
     (sum, item) => sum + (item.unitPrice ?? 0) * (item.quantity ?? 1),
@@ -384,14 +393,14 @@ export default function CheckoutPage() {
         } catch (updateErr) {}
       }
 
-      if (finalTotal === 0 || data.paymentMethod === 'COD') {
+      if (isPayFullByCoin || data.paymentMethod === 'COD') {
         dispatch(clearSelection());
         localStorage.removeItem(APP_CONFIG.DRAFT_KEY);
         sessionStorage.removeItem('checkout_active_ids');
         setIsRedirecting(true);
         toast.success('Order placed successfully!');
         router.push(`${ROUTES.CHECKOUT_SUCCESS}?orderId=${orderId}`);
-      } else if (data.paymentMethod === 'Online') {
+      } else {
         setCreatedOrderId(orderId);
         setShowPaymentDialog(true);
       }
@@ -426,8 +435,13 @@ export default function CheckoutPage() {
     );
   }
 
-  // 2. Màn hình Trống (Empty State) đề phòng useEffect redirect bị delay
-  if (selectedItems.length === 0) {
+  if (
+    selectedItems.length === 0 &&
+    !createdOrderId &&
+    !showPaymentDialog &&
+    !isRedirecting &&
+    !isSubmitting
+  ) {
     return (
       <div className="container-custom flex min-h-[60vh] flex-col items-center justify-center py-12">
         <h2 className="mb-2 text-2xl font-bold text-slate-800">No items selected</h2>
@@ -509,15 +523,19 @@ export default function CheckoutPage() {
       <PaymentActionDialog
         open={showPaymentDialog}
         orderId={createdOrderId}
-        onClose={() => {
+        onSuccess={() => {
           setShowPaymentDialog(false);
-
           dispatch(clearSelection());
           localStorage.removeItem(APP_CONFIG.DRAFT_KEY);
           sessionStorage.removeItem('checkout_active_ids');
-          toast.info('Order saved! You can complete the payment later in your profile.');
-
-          router.push('/orders');
+        }}
+        onClose={() => {
+          setShowPaymentDialog(false);
+          dispatch(clearSelection());
+          localStorage.removeItem(APP_CONFIG.DRAFT_KEY);
+          sessionStorage.removeItem('checkout_active_ids');
+          toast.info('Order saved! You can complete the payment later in your order history.');
+          router.push(`${ROUTES.ORDERS}`);
         }}
       />
     </>

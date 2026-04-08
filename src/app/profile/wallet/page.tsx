@@ -1,7 +1,10 @@
 'use client';
 
-import { useGetWalletQuery, useGetWalletTransactionsQuery } from '@/lib/api/endpoints/walletApi';
-import { useGetCustomerOrderByIdQuery } from '@/lib/api/endpoints/orderApi'; // IMPORT HOOK LẤY ORDER
+import {
+  useGetWalletQuery,
+  useGetWalletTransactionsQuery, // IMPORT HOOK MỚI
+} from '@/lib/api/endpoints/walletApi';
+import { useGetCustomerOrderByIdQuery } from '@/lib/api/endpoints/orderApi';
 import type { WalletTransactionDto } from '@/types/api/wallet.api.types';
 import {
   Coins,
@@ -12,10 +15,14 @@ import {
   RefreshCcw,
   ShoppingBag,
   Loader2,
+  Sparkles,
+  CreditCard,
+  Truck,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import OrderBadge from '@/components/orderDetail/OrderBadge'; // Tận dụng lại OrderBadge cho đẹp
+import OrderBadge from '@/components/orderDetail/OrderBadge';
+import { useGetWalletConfigQuery } from '@/lib/api/endpoints/configApi';
 
 // ----------------------------------------------------------------------
 // COMPONENT CON: Hiển thị từng dòng giao dịch và fetch data Order
@@ -126,6 +133,9 @@ function TransactionItem({ transaction }: { transaction: WalletTransactionDto })
 export default function MyWalletPage() {
   const { data: wallet, isLoading: isLoadingWallet } = useGetWalletQuery();
 
+  // GỌI API LẤY CONFIG CASHBACK
+  const { data: walletConfig, isLoading: isLoadingConfig } = useGetWalletConfigQuery();
+
   const { data: transactions, isLoading: isLoadingHistory } = useGetWalletTransactionsQuery(
     wallet?.id ?? '',
     { skip: !wallet?.id }
@@ -135,7 +145,9 @@ export default function MyWalletPage() {
 
   return (
     <div className="container-custom mx-auto max-w-4xl py-8">
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-6">
+        {' '}
+        {/* Đổi gap-8 thành gap-6 để UI gắn kết hơn */}
         {/* ================= PHẦN 1: BANNER SỐ DƯ ================= */}
         <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-amber-400 via-orange-500 to-orange-600 p-8 text-white shadow-lg">
           <div className="absolute -top-10 -right-10 opacity-20">
@@ -161,9 +173,42 @@ export default function MyWalletPage() {
             <p className="mt-1 text-sm text-orange-100">
               Use PuzCoins to get discounts on your next orders.
             </p>
+
+            {/* PHẦN GIẢI THÍCH CASHBACK NẰM TRONG BANNER CAM */}
+            <div className="mt-4 border-t border-orange-300/30 pt-4">
+              <div className="mb-6 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-orange-100" />
+                <span className="text-sm font-semibold text-orange-50">
+                  Earn Cashback on Completed Orders:
+                </span>
+              </div>
+
+              {isLoadingConfig ? (
+                <div className="flex gap-3">
+                  <Skeleton className="h-8 w-32 rounded-full bg-white/20" />
+                  <Skeleton className="h-8 w-32 rounded-full bg-white/20" />
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-3">
+                  <div className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-medium backdrop-blur-md transition-colors hover:bg-white/25">
+                    <CreditCard className="h-4 w-4" />
+                    Online Payment:{' '}
+                    <span className="font-bold">
+                      {walletConfig?.onlineOrderCompletedRewardPercentage}%
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-medium backdrop-blur-md transition-colors hover:bg-white/25">
+                    <Truck className="h-4 w-4" />
+                    Cash on Delivery:{' '}
+                    <span className="font-bold">
+                      {walletConfig?.codOrderCompletedRewardPercentage}%
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-
         {/* ================= PHẦN 2: LỊCH SỬ GIAO DỊCH ================= */}
         <Card className="border-border shadow-sm">
           <CardHeader className="border-b bg-slate-50/50">

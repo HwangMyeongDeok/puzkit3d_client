@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import { UseFormReturn } from 'react-hook-form';
 import { Banknote, Wallet } from 'lucide-react';
 import { FormField, FormItem, FormControl, FormMessage } from '@/components/ui/form';

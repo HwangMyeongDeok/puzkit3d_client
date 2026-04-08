@@ -24,12 +24,14 @@ interface CartItemQuantityControlsProps {
   quantity: number;
   onIncrement: () => void;
   onDecrement: () => void;
+  disableIncrement?: boolean;
 }
 
 export function CartItemQuantityControls({
   quantity,
   onIncrement,
   onDecrement,
+  disableIncrement = false,
 }: CartItemQuantityControlsProps) {
   return (
     <div className="border-border bg-background flex h-9 items-center overflow-hidden rounded-md border shadow-sm">
@@ -48,7 +50,8 @@ export function CartItemQuantityControls({
 
       <button
         onClick={onIncrement}
-        className="text-foreground/70 hover:bg-muted flex h-full w-9 cursor-pointer items-center justify-center transition-colors"
+        disabled={disableIncrement}
+        className="text-foreground/70 hover:bg-muted flex h-full w-9 cursor-pointer items-center justify-center transition-colors disabled:cursor-not-allowed disabled:opacity-40"
         aria-label="Increase quantity"
       >
         <Plus className="h-3.5 w-3.5" />

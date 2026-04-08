@@ -25,7 +25,7 @@ import {
 
 const NAV_LINKS = [
   { href: ROUTES.HOME, label: 'Home' },
-  { href: ROUTES.PRODUCTS, label: 'Shop' },
+  { href: ROUTES.SHOP, label: 'Shop' },
   { href: ROUTES.BRANDS, label: 'Brands' },
   { href: ROUTES.CUSTOM_SERVICE, label: 'Custom Service' },
 ];
