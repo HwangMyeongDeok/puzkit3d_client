@@ -1,5 +1,4 @@
 'use client';
-import { useRouter } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +9,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { ROUTES } from '@/constants';
 import {
   useLazyGetPaymentByOrderIdQuery,
   useCreateTransactionMutation,
@@ -20,10 +18,15 @@ interface PaymentDialogProps {
   open: boolean;
   orderId: string | null;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export default function PaymentActionDialog({ open, orderId, onClose }: PaymentDialogProps) {
-  const router = useRouter();
+export default function PaymentActionDialog({
+  open,
+  orderId,
+  onClose,
+  onSuccess,
+}: PaymentDialogProps) {
   const [getPayment, { isLoading: isGettingPayment }] = useLazyGetPaymentByOrderIdQuery();
   const [createTransaction, { isLoading: isCreatingTx }] = useCreateTransactionMutation();
 
@@ -35,20 +38,25 @@ export default function PaymentActionDialog({ open, orderId, onClose }: PaymentD
         paymentId: paymentRes.paymentId,
         provider: 'VnPay',
       }).unwrap();
+
+      if (onSuccess) {
+        onSuccess();
+      }
       toast.info('Redirecting to VNPAY...');
+
+      sessionStorage.removeItem('checkout_active_ids');
+
+      // Chuyển hướng thẳng sang cổng VNPay
       window.location.href = paymentUrl;
     } catch (error) {
       toast.error('Error creating payment. You can pay later in your order history.');
-      handlePayLater();
+      // Nếu lỗi API cổng thanh toán, coi như Pay Later, đá về trang Orders
+      onClose();
     }
   };
 
   const handlePayLater = () => {
     onClose();
-    toast.info('Order saved. You can pay later in your order history.', {
-      duration: 5000,
-    });
-    router.push(ROUTES.ORDERS);
   };
 
   const isProcessing = isGettingPayment || isCreatingTx;

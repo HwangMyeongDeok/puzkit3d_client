@@ -117,7 +117,7 @@ function PartSelector({ productId, value, onChange, hasError }: PartSelectorProp
 
   if (isError || !parts) {
     return (
-      <div className="border-destructive/40 bg-destructive/5 text-destructive flex h-9 items-center gap-2 rounded-md border px-3 text-sm">
+      <div className="flex h-9 items-center gap-2 rounded-md border border-blue-900/40 bg-blue-50 px-3 text-sm text-blue-900">
         <AlertTriangle className="h-3.5 w-3.5" />
         Failed to load parts. Try again later.
       </div>
@@ -134,7 +134,7 @@ function PartSelector({ productId, value, onChange, hasError }: PartSelectorProp
 
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className={hasError ? 'border-destructive' : ''}>
+      <SelectTrigger className={hasError ? 'border-blue-900' : ''}>
         <SelectValue placeholder="Select part to replace..." />
       </SelectTrigger>
       <SelectContent>
@@ -189,7 +189,6 @@ export default function ReportIssueDialog({
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // [MỚI THÊM] State để lưu URL preview local của ảnh/video
   const [mediaPreviews, setMediaPreviews] = useState<{ url: string; type: 'image' | 'video' }[]>(
     []
   );
@@ -216,7 +215,6 @@ export default function ReportIssueDialog({
     setItems(Object.fromEntries(orderDetails.map((d) => [d.id, defaultItemState()])));
     setErrors({});
 
-    // [MỚI THÊM] Xoá bộ nhớ đệm preview để chống leak RAM và reset mảng preview
     mediaPreviews.forEach((media) => URL.revokeObjectURL(media.url));
     setMediaPreviews([]);
   };
@@ -227,7 +225,6 @@ export default function ReportIssueDialog({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // [MỚI THÊM] Tạo preview ngay lập tức lúc chọn file xong
     const localUrl = URL.createObjectURL(file);
     const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
     setMediaPreviews((prev) => [...prev, { url: localUrl, type: mediaType }]);
@@ -235,7 +232,6 @@ export default function ReportIssueDialog({
     try {
       setIsUploading(true);
 
-      // 1. Gọi API lấy Presigned URL
       const { presignedUrl, path } = await getPresignedUrl({
         contentType: file.type,
         folder: 'support-tickets',
@@ -243,7 +239,6 @@ export default function ReportIssueDialog({
         fileName: file.name,
       }).unwrap();
 
-      // 2. Upload file trực tiếp lên Storage
       await fetch(presignedUrl, {
         method: 'PUT',
         body: file,
@@ -252,7 +247,6 @@ export default function ReportIssueDialog({
         },
       });
 
-      // 3. Nối cái path mới vào state proof hiện tại
       const currentProof = proof.trim();
       const newProof = currentProof ? `${currentProof}, ${path}` : path;
 
@@ -266,7 +260,6 @@ export default function ReportIssueDialog({
       });
     } finally {
       setIsUploading(false);
-      // Reset input file
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -370,7 +363,7 @@ export default function ReportIssueDialog({
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
-            <AlertTriangle className="h-5 w-5 text-orange-500" />
+            <AlertTriangle className="h-5 w-5 text-blue-900" />
             Report Order Issue
           </DialogTitle>
           <DialogDescription>
@@ -382,7 +375,7 @@ export default function ReportIssueDialog({
           {/* ── Ticket type ── */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="ticket-type" className="font-semibold">
-              Request Type <span className="text-destructive">*</span>
+              Request Type <span className="text-blue-900">*</span>
             </Label>
             <Select
               value={type}
@@ -399,7 +392,7 @@ export default function ReportIssueDialog({
                 );
               }}
             >
-              <SelectTrigger id="ticket-type" className={errors.type ? 'border-destructive' : ''}>
+              <SelectTrigger id="ticket-type" className={errors.type ? 'border-blue-900' : ''}>
                 <SelectValue placeholder="Select request type..." />
               </SelectTrigger>
               <SelectContent>
@@ -407,19 +400,19 @@ export default function ReportIssueDialog({
                   <SelectItem key={t.value} value={t.value}>
                     <div className="flex flex-col gap-0.5">
                       <span className="font-medium">{t.label}</span>
-                      <span className="text-muted-foreground text-xs">{t.description}</span>
+                      <span className="text-xs text-slate-500">{t.description}</span>
                     </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {errors.type && <p className="text-destructive text-xs">{errors.type}</p>}
+            {errors.type && <p className="text-xs text-blue-900">{errors.type}</p>}
           </div>
 
           {/* ── Reason ── */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="reason" className="font-semibold">
-              Reason <span className="text-destructive">*</span>
+              Reason <span className="text-blue-900">*</span>
             </Label>
             <Textarea
               id="reason"
@@ -429,14 +422,10 @@ export default function ReportIssueDialog({
                 setReason(e.target.value);
                 clearError('reason');
               }}
-              className={`min-h-25 resize-none ${errors.reason ? 'border-destructive' : ''}`}
+              className={`min-h-25 resize-none ${errors.reason ? 'border-blue-900' : ''}`}
             />
             <div className="flex items-center justify-between">
-              {errors.reason ? (
-                <p className="text-destructive text-xs">{errors.reason}</p>
-              ) : (
-                <span />
-              )}
+              {errors.reason ? <p className="text-xs text-blue-900">{errors.reason}</p> : <span />}
               <span
                 className={`text-xs ${reason.length < 10 ? 'text-muted-foreground' : 'text-emerald-600'}`}
               >
@@ -448,8 +437,7 @@ export default function ReportIssueDialog({
           {/* ── Proof URL & Upload ── */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="proof" className="font-semibold">
-              Evidence (YouTube Link or Upload Photo/Video){' '}
-              <span className="text-destructive">*</span>
+              Evidence (YouTube Link or Upload Photo/Video) <span className="text-blue-900">*</span>
             </Label>
 
             <div className="flex items-center gap-2">
@@ -463,7 +451,7 @@ export default function ReportIssueDialog({
                     setProof(e.target.value);
                     clearError('proof');
                   }}
-                  className={`pl-9 ${errors.proof ? 'border-destructive' : ''}`}
+                  className={`pl-9 ${errors.proof ? 'border-blue-900' : ''}`}
                 />
               </div>
 
@@ -491,14 +479,13 @@ export default function ReportIssueDialog({
             </div>
 
             {errors.proof ? (
-              <p className="text-destructive text-xs">{errors.proof}</p>
+              <p className="text-xs text-blue-900">{errors.proof}</p>
             ) : (
               <p className="text-muted-foreground text-xs">
                 You can enter multiple links separated by commas.
               </p>
             )}
 
-            {/* [MỚI THÊM] UI hiển thị mảng Preview Ảnh/Video */}
             {mediaPreviews.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-3">
                 {mediaPreviews.map((media, idx) => (
@@ -529,10 +516,10 @@ export default function ReportIssueDialog({
             <div className="flex items-center gap-2">
               <Package className="text-brand h-4 w-4" />
               <Label className="font-semibold">
-                Select Related Products <span className="text-destructive">*</span>
+                Select Related Products <span className="text-blue-900">*</span>
               </Label>
             </div>
-            {errors.items && <p className="text-destructive text-xs">{errors.items}</p>}
+            {errors.items && <p className="text-xs text-blue-900">{errors.items}</p>}
 
             <div className="flex flex-col gap-3">
               {orderDetails.map((detail) => {
@@ -597,7 +584,7 @@ export default function ReportIssueDialog({
                         {isExchange && (
                           <div className="flex flex-col gap-1">
                             <Label className="text-xs font-medium">
-                              Exchange Quantity <span className="text-destructive">*</span>
+                              Exchange Quantity <span className="text-blue-900">*</span>
                             </Label>
                             <Input
                               type="number"
@@ -609,14 +596,12 @@ export default function ReportIssueDialog({
                                 clearError(`qty_${detail.id}`);
                               }}
                               className={`h-8 w-24 text-sm ${
-                                errors[`qty_${detail.id}`] ? 'border-destructive' : ''
+                                errors[`qty_${detail.id}`] ? 'border-blue-900' : ''
                               }`}
                             />
                             <p className="text-muted-foreground text-xs">Max: {detail.quantity}</p>
                             {errors[`qty_${detail.id}`] && (
-                              <p className="text-destructive text-xs">
-                                {errors[`qty_${detail.id}`]}
-                              </p>
+                              <p className="text-xs text-blue-900">{errors[`qty_${detail.id}`]}</p>
                             )}
                           </div>
                         )}
@@ -627,7 +612,7 @@ export default function ReportIssueDialog({
                             <div className="flex flex-col gap-1.5">
                               <Label className="text-xs font-medium">
                                 <Wrench className="mr-1 inline h-3 w-3" />
-                                Part to Replace <span className="text-destructive">*</span>
+                                Part to Replace <span className="text-blue-900">*</span>
                               </Label>
 
                               {productId ? (
@@ -641,13 +626,13 @@ export default function ReportIssueDialog({
                                   hasError={!!errors[`partId_${detail.id}`]}
                                 />
                               ) : (
-                                <div className="flex h-9 items-center gap-2 rounded-md border border-yellow-400/40 bg-yellow-50 px-3 text-xs text-yellow-700">
+                                <div className="flex h-9 items-center gap-2 rounded-md border border-blue-900/40 bg-blue-50 px-3 text-xs text-blue-900">
                                   <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
                                   Product information not found to load parts.
                                 </div>
                               )}
                               {errors[`partId_${detail.id}`] && (
-                                <p className="text-destructive text-xs">
+                                <p className="text-xs text-blue-900">
                                   {errors[`partId_${detail.id}`]}
                                 </p>
                               )}
@@ -655,7 +640,7 @@ export default function ReportIssueDialog({
 
                             <div className="flex flex-col gap-1">
                               <Label className="text-xs font-medium">
-                                Replacement Quantity <span className="text-destructive">*</span>
+                                Replacement Quantity <span className="text-blue-900">*</span>
                               </Label>
                               <Input
                                 type="number"
@@ -667,11 +652,11 @@ export default function ReportIssueDialog({
                                   clearError(`qty_${detail.id}`);
                                 }}
                                 className={`h-8 w-24 text-sm ${
-                                  errors[`qty_${detail.id}`] ? 'border-destructive' : ''
+                                  errors[`qty_${detail.id}`] ? 'border-blue-900' : ''
                                 }`}
                               />
                               {errors[`qty_${detail.id}`] && (
-                                <p className="text-destructive text-xs">
+                                <p className="text-xs text-blue-900">
                                   {errors[`qty_${detail.id}`]}
                                 </p>
                               )}

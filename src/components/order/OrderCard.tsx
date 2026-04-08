@@ -20,6 +20,7 @@ import type {
   InstockOrderStatus,
   OrderPreviewDto,
 } from '@/types/api/order.api.types';
+import { useEffectiveOrderStatus } from '@/lib/hooks/useEffectiveOrderStatus';
 
 const TERMINAL_STATUSES: InstockOrderStatus[] = ['Cancelled', 'Rejected', 'Returned', 'Completed'];
 
@@ -33,6 +34,7 @@ interface OrderCardProps {
 export default function OrderCard({ order, onPayNow, hasComplaint, ticketId }: OrderCardProps) {
   const isOnlinePayment = order.paymentMethod === 'Online';
   const PaymentIcon = isOnlinePayment ? Wallet : Banknote;
+  const effectiveStatus = useEffectiveOrderStatus(order.id, order.status as InstockOrderStatus);
 
   return (
     <div className="bg-card border-border hover:border-brand/30 flex flex-col gap-4 rounded-xl border p-5 shadow-sm transition-all duration-300 hover:shadow-md">
@@ -69,7 +71,7 @@ export default function OrderCard({ order, onPayNow, hasComplaint, ticketId }: O
               Complaint
             </span>
           ) : (
-            <OrderBadge status={order.status} />
+            <OrderBadge status={effectiveStatus as InstockOrderStatus | undefined} />
           )}
         </div>
       </div>
@@ -132,7 +134,7 @@ export default function OrderCard({ order, onPayNow, hasComplaint, ticketId }: O
           {!order.isPaid &&
             isOnlinePayment &&
             order.status &&
-            !TERMINAL_STATUSES.includes(order.status) && (
+            !TERMINAL_STATUSES.includes(effectiveStatus as InstockOrderStatus) && (
               <OrderCardPayButton orderId={order.id} onPayNow={onPayNow} />
             )}
 
@@ -146,7 +148,7 @@ export default function OrderCard({ order, onPayNow, hasComplaint, ticketId }: O
           )}
 
           <Link
-            href={`/orders/${order.id}`}
+            href={`/profile/orders/${order.id}`}
             className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg px-6 py-2.5 font-semibold shadow-sm transition-colors md:w-auto"
           >
             <Eye className="h-4 w-4" /> View Details

@@ -133,7 +133,7 @@ function PaymentSuccessContent() {
             {isSuccess ? (
               <>
                 <Button asChild className="h-12 w-full rounded-xl text-base font-medium">
-                  <Link href="/orders">
+                  <Link href="/profile/orders">
                     View Order Details <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>

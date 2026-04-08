@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Loader2,
   Package,
@@ -83,6 +83,8 @@ function partnerKey(itemId: string) {
 export default function CartPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const buyNowVariantId = searchParams.get('buyNowVariant');
   const { isAuthenticated, isLoading: isAuthLoading } = useAppSelector((state) => state.auth);
 
   const {
@@ -119,6 +121,25 @@ export default function CartPage() {
   const [checkedKeys, setCheckedKeys] = useState<Set<string>>(new Set());
   const [isNavigating, setIsNavigating] = useState<boolean>(false);
 
+  useEffect(() => {
+    if (buyNowVariantId && instockItems.length > 0) {
+      // 1. Tìm cái item vừa được thêm vào.
+      // ⚠️ QUAN TRỌNG: Bác check lại xem CartItemDto của bác lưu ID variant ở field nào nhé (productVariantId, variantId, hay là chính itemId).
+      // Ở đây tui đang ví dụ là nó lưu ở field `productVariantId`.
+      const targetItem = instockItems.find((item: CartItemDto) => item.itemId === buyNowVariantId);
+
+      if (targetItem) {
+        // 2. Tự động thêm nó vào danh sách được Tick trên UI
+        setCheckedKeys((prev) => {
+          const next = new Set(prev);
+          next.add(instockKey(targetItem.itemId));
+          return next;
+        }); // 3. Xóa cái param trên URL đi để nếu khách có F5 trang thì nó không bị tự tick lại lung tung
+
+        router.replace(ROUTES.CART, { scroll: false });
+      }
+    }
+  }, [buyNowVariantId, instockItems, router]);
   useEffect(() => {
     router.prefetch(ROUTES.CHECKOUT);
   }, [router]);
@@ -361,7 +382,7 @@ export default function CartPage() {
                   <div
                     key={`instock-${item.itemId}`}
                     className={`flex flex-col gap-2 rounded-lg p-2 transition-colors ${
-                      isOutOfStock ? 'bg-secondary/40 opacity-60 grayscale-[40%]' : ''
+                      isOutOfStock ? 'bg-secondary/40 opacity-60 grayscale-40' : ''
                     }`}
                   >
                     <CartItemRow
@@ -371,9 +392,9 @@ export default function CartPage() {
                         if (!isSelectable) return;
                         toggleChecked(instockKey(item.itemId));
                       }}
-                      onIncrement={() =>
-                        !isOutOfStock && handleIncrement(item.itemId, item.quantity)
-                      }
+                      onIncrement={() => {
+                        handleIncrement(item.itemId, item.quantity);
+                      }}
                       onDecrement={() =>
                         !isOutOfStock && handleDecrement(item.itemId, item.quantity)
                       }

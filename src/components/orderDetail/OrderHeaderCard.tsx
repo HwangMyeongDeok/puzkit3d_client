@@ -70,20 +70,30 @@ export default function OrderHeaderCard({
     const insertIndex = isCOD ? 1 : 2;
     stepperSteps.splice(insertIndex, 0, ORDER_STATUS_MAP['Cancelled']?.label || 'Cancelled');
   }
+  const returnedLabel = ORDER_STATUS_MAP['Returned']?.label || 'Returned';
   if (isReturned) {
-    const deliveringIndex = stepperSteps.indexOf(ORDER_STATUS_MAP['Delivering']?.label);
-    if (deliveringIndex !== -1)
-      stepperSteps.splice(deliveringIndex + 1, 0, ORDER_STATUS_MAP['Returned']?.label);
+    const deliveringLabel = ORDER_STATUS_MAP['Delivering']?.label;
+    const deliveringIndex = stepperSteps.indexOf(deliveringLabel);
+    if (deliveringIndex !== -1) {
+      stepperSteps.splice(deliveringIndex + 1, 0, returnedLabel);
+    }
   }
 
   const statusInfo = effectiveStatus
     ? ORDER_STATUS_MAP[effectiveStatus as InstockOrderStatus] || { label: effectiveStatus }
     : undefined;
-  const activeStep = isReturned
-    ? stepperSteps.indexOf(ORDER_STATUS_MAP['Returned']?.label || 'Returned')
-    : statusInfo
-      ? Math.max(0, stepperSteps.indexOf(statusInfo.label))
-      : 0;
+
+  const activeStep = (() => {
+    if (isReturned) {
+      const idx = stepperSteps.indexOf(returnedLabel);
+      return idx !== -1 ? idx : 0;
+    }
+    const statusInfo = effectiveStatus
+      ? ORDER_STATUS_MAP[effectiveStatus as InstockOrderStatus] || { label: effectiveStatus }
+      : undefined;
+    if (!statusInfo) return 0;
+    return Math.max(0, stepperSteps.indexOf(statusInfo.label));
+  })();
 
   // 👉 ĐÃ FIX: Cho phép hiển thị ở trạng thái Completed và Returned
   const showTracking =
@@ -96,7 +106,6 @@ export default function OrderHeaderCard({
 
   // 👉 Lấy data tracking mới nhất của lần giao đầu
   const latestTracking = trackingData?.[0] as DeliveryTracking | undefined;
-  console.log(trackingData);
   // 👉 Hàm Copy Mã vận đơn
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -155,7 +164,7 @@ export default function OrderHeaderCard({
             {/* Nút View Ticket */}
             {ticketData && (
               <Link
-                href={`/ticket-support/${ticketData.id}`}
+                href={`/profile/ticket-support/${ticketData.id}`}
                 className={`inline-flex h-9 items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold shadow-sm transition-colors ${
                   isTicketResolved
                     ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400'

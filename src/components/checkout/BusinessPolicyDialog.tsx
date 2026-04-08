@@ -58,7 +58,7 @@ export default function BusinessPolicyDialog({
               <CheckCircle2 className="h-5 w-5 shrink-0 text-green-500" />
               <span>
                 <strong>Payment Timeout:</strong> Online payments will expire if not settled in{' '}
-                <strong>{paymentConfig?.onlinePaymentExpiredInDays ?? 2} days</strong>. Active
+                <strong>{paymentConfig?.onlinePaymentExpiredInDays ?? 2} minutes</strong>. Active
                 transactions time out after{' '}
                 <strong>{paymentConfig?.onlineTransactionExpiredInMinutes ?? 10} minutes</strong>.
               </span>

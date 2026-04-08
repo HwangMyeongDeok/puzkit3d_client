@@ -67,7 +67,7 @@ export default function ProductDetailContent({
           The product you are looking for does not exist or has been removed.
         </p>
         <Link
-          href={ROUTES.PRODUCTS}
+          href={ROUTES.SHOP}
           className="bg-primary text-primary-foreground rounded-xl px-6 py-3 text-sm font-semibold"
         >
           Back to Shop
@@ -137,7 +137,7 @@ export default function ProductDetailContent({
         </Link>
         <ChevronRight className="h-3.5 w-3.5" />
         <Link
-          href={isPartner ? ROUTES.BRANDS : ROUTES.PRODUCTS}
+          href={isPartner ? ROUTES.BRANDS : ROUTES.SHOP}
           className="hover:text-foreground transition-colors"
         >
           {isPartner ? 'Brands' : 'Shop'}

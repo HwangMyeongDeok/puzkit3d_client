@@ -8,7 +8,7 @@ const colorMap: Record<string, string> = {
   violet: 'border-violet-500/20  bg-violet-500/10  text-violet-600',
   emerald: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600',
   green: 'border-green-500/20   bg-green-500/10   text-green-600',
-  red: 'bg-destructive/10     text-destructive   border-destructive/20',
+  red: 'border-red-500/20 bg-red-500/10 text-red-600',
   orange: 'border-orange-500/20  bg-orange-500/10  text-orange-600',
   rose: 'border-rose-500/20    bg-rose-500/10    text-rose-600',
 };

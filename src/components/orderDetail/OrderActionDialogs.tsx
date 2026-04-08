@@ -85,7 +85,10 @@ export default function OrderActionDialogs({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-6">
-            <AlertDialogCancel disabled={isCanceling} className="hover:bg-slate-100">
+            <AlertDialogCancel
+              disabled={isCanceling}
+              className="hover:bg-slate-300 hover:text-slate-900"
+            >
               Keep Order
             </AlertDialogCancel>
             <AlertDialogAction

@@ -14,7 +14,7 @@ export const checkoutSchema = z.object({
   districtName: z.string().min(1, { message: 'District name is required' }),
   wardName: z.string().min(1, { message: 'Ward/Commune name is required' }),
   address: z.string().min(5, { message: 'Detailed address must be at least 5 characters long' }),
-  paymentMethod: z.enum(['COD', 'Online'], {
+  paymentMethod: z.enum(['COD', 'Online', 'COIN'], {
     message: 'Please select a payment method',
   }),
   saveProfile: z.boolean(),

@@ -9,7 +9,7 @@ export default function CartEmpty() {
       <h1 className="mb-2 text-2xl font-bold">Your cart is empty</h1>
       <p className="text-muted-foreground mb-6">You don't have any products in your cart yet.</p>
       <Link
-        href={ROUTES.PRODUCTS}
+        href={ROUTES.SHOP}
         className="bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold"
       >
         Continue Shopping
