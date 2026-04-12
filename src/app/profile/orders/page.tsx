@@ -43,8 +43,9 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="container-custom min-h-screen bg-slate-50/30 py-8 lg:py-12">
-      <div className="flex flex-col gap-6">
+    <>
+      {/* Đã xóa thẻ div chứa class "container-custom py-8 lg:py-12" ở đây để tránh Double Padding */}
+      <div className="flex w-full flex-col gap-6">
         <h1 className="text-2xl font-bold text-slate-800 md:text-3xl">Order History</h1>
 
         {/* 1. Thanh Filter */}
@@ -136,7 +137,8 @@ export default function OrdersPage() {
         open={!!paymentOrderId}
         orderId={paymentOrderId}
         onClose={() => setPaymentOrderId(null)}
+        mode="history"
       />
-    </div>
+    </>
   );
 }

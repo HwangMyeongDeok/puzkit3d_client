@@ -11,6 +11,7 @@ const colorMap: Record<string, string> = {
   red: 'border-red-500/20 bg-red-500/10 text-red-600',
   orange: 'border-orange-500/20  bg-orange-500/10  text-orange-600',
   rose: 'border-rose-500/20    bg-rose-500/10    text-rose-600',
+  slate: 'border-slate-300 bg-slate-100 text-slate-700',
 };
 
 const badgeBase =

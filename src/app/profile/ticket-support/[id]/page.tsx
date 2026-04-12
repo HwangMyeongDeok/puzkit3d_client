@@ -84,7 +84,7 @@ export default function TicketDetailPage() {
   const canResolve = isDelivered && ticket.status !== 'Resolved';
 
   return (
-    <div className="container-custom min-h-screen py-8 lg:py-12">
+    <div className="flex w-full flex-col gap-6">
       <div className="flex flex-col gap-8">
         {/* ========== Header Navigation ========== */}
         <div className="flex items-center gap-4">

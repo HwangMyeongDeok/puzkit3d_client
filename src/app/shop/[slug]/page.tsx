@@ -257,9 +257,6 @@ export default function ProductDetailPage() {
                 Product has no configuration or pricing
               </span>
             )}
-            <p className="mt-3 text-xs font-medium text-slate-500">
-              ◎ Final price includes all applicable taxes and fees
-            </p>
           </div>
 
           <div className="mb-6 rounded-2xl border border-slate-100 bg-slate-50 p-6">

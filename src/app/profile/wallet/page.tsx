@@ -144,7 +144,7 @@ export default function MyWalletPage() {
   const formatCoin = (amount: number) => new Intl.NumberFormat('en-US').format(amount);
 
   return (
-    <div className="container-custom mx-auto max-w-4xl py-8">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div className="flex flex-col gap-6">
         {' '}
         {/* Đổi gap-8 thành gap-6 để UI gắn kết hơn */}

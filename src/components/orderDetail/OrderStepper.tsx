@@ -6,6 +6,7 @@ interface OrderStepperProps {
   isPaid?: boolean;
   isCancelled?: boolean;
   isReturned?: boolean;
+  isExpired?: boolean;
 }
 
 export default function OrderStepper({
@@ -14,6 +15,7 @@ export default function OrderStepper({
   isPaid = false,
   isCancelled = false,
   isReturned = false,
+  isExpired = false,
 }: OrderStepperProps) {
   return (
     <div className="flex items-center gap-1 overflow-x-auto py-2">
@@ -25,37 +27,51 @@ export default function OrderStepper({
 
         const isCancelledStep = isCancelled && step.toLowerCase().includes('cancel');
         const isReturnedStep = isReturned && step.toLowerCase().includes('return');
+        const isExpiredStep = isExpired && step.toLowerCase().includes('expired'); // 3. CHECK EXPIRED STEP
 
-        // Step sau Returned (Delivered, Completed) không được highlight
-        const isBlockedAfterReturn = isReturned && !isReturnedStep && idx > activeStep;
+        // Gộp logic: Nếu đã Bị Hủy / Trả Hàng / Hết Hạn thì các step sau đó bị mờ hết (blocked)
+        const isBlockedAfterError =
+          (isReturned && !isReturnedStep && idx > activeStep) ||
+          (isCancelled && !isCancelledStep && idx > activeStep) ||
+          (isExpired && !isExpiredStep && idx > activeStep);
 
         const dotClass =
           isCancelledStep || isReturnedStep
             ? 'bg-red-500 text-white'
-            : isBlockedAfterReturn
-              ? 'bg-secondary text-muted-foreground'
-              : isCompleted
-                ? 'bg-success text-success-foreground'
-                : isActive
-                  ? 'bg-brand text-brand-foreground'
-                  : 'bg-secondary text-muted-foreground';
+            : isExpiredStep
+              ? 'bg-slate-500 text-white' // 4. MÀU XÁM CHO EXPIRED
+              : isBlockedAfterError
+                ? 'bg-secondary text-muted-foreground'
+                : isCompleted
+                  ? 'bg-success text-success-foreground'
+                  : isActive
+                    ? 'bg-brand text-brand-foreground'
+                    : 'bg-secondary text-muted-foreground';
 
         const labelClass =
           isCancelledStep || isReturnedStep
             ? 'font-bold text-red-500'
-            : isBlockedAfterReturn
-              ? 'text-muted-foreground'
-              : isCompleted
-                ? 'text-success'
-                : isActive
-                  ? 'text-brand'
-                  : 'text-muted-foreground';
+            : isExpiredStep
+              ? 'font-bold text-slate-500' // 5. CHỮ XÁM ĐẬM CHO EXPIRED
+              : isBlockedAfterError
+                ? 'text-muted-foreground'
+                : isCompleted
+                  ? 'text-success'
+                  : isActive
+                    ? 'text-brand'
+                    : 'text-muted-foreground';
 
-        const icon = isCancelledStep ? '✕' : isReturnedStep ? '✕' : isCompleted ? '✓' : idx + 1;
+        // Gắn icon dấu X cho cả Cancelled, Returned và Expired
+        const icon =
+          isCancelledStep || isReturnedStep || isExpiredStep ? '✕' : isCompleted ? '✓' : idx + 1;
 
         // Connector line sau step này
         const lineClass =
-          isCompleted && !isCancelledStep && !isReturnedStep && !isBlockedAfterReturn
+          isCompleted &&
+          !isCancelledStep &&
+          !isReturnedStep &&
+          !isExpiredStep &&
+          !isBlockedAfterError
             ? 'bg-success'
             : 'bg-border';
 

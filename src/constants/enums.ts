@@ -36,7 +36,7 @@ export const ORDER_STATUS_MAP: Record<
   { label: string; color: string; stepIndex: number }
 > = {
   Pending: { label: 'Pending', color: 'yellow', stepIndex: 0 },
-  Paid: { label: 'Paid', color: 'yellow', stepIndex: 1 },
+  Paid: { label: 'Paid', color: 'green', stepIndex: 1 },
   Processing: { label: 'Processing', color: 'blue', stepIndex: 2 },
   Waiting: { label: 'Waiting', color: 'yellow', stepIndex: 2 },
   HandedOverToDelivery: { label: 'Handed Over', color: 'indigo', stepIndex: 3 },
@@ -46,6 +46,7 @@ export const ORDER_STATUS_MAP: Record<
   Cancelled: { label: 'Cancelled', color: 'red', stepIndex: -1 },
   Returned: { label: 'Returned', color: 'orange', stepIndex: -1 },
   Rejected: { label: 'Rejected', color: 'rose', stepIndex: -1 },
+  Expired: { label: 'Expired', color: 'slate', stepIndex: -1 },
 } as const;
 
 /** Steps shown in the OrderStepper (happy path only). */

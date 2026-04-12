@@ -22,7 +22,13 @@ import type {
 } from '@/types/api/order.api.types';
 import { useEffectiveOrderStatus } from '@/lib/hooks/useEffectiveOrderStatus';
 
-const TERMINAL_STATUSES: InstockOrderStatus[] = ['Cancelled', 'Rejected', 'Returned', 'Completed'];
+const TERMINAL_STATUSES: InstockOrderStatus[] = [
+  'Cancelled',
+  'Rejected',
+  'Returned',
+  'Completed',
+  'Expired',
+];
 
 interface OrderCardProps {
   order: GetCustomerOrderResponseDto;

@@ -1,18 +1,21 @@
 import type { DeliveryTracking } from '@/types/api/delivery.api.types';
+import type { InstockOrderStatus } from '@/types/api/order.api.types';
 
 export function getEffectiveOrderStatus(
   orderStatus: string | undefined,
-  trackingData: DeliveryTracking[]
-): string | undefined {
-  if (
-    orderStatus &&
-    ['HandedOverToDelivery', 'Delivering'].includes(orderStatus) &&
-    trackingData.length > 0
-  ) {
-    const s = trackingData[0].status?.toLowerCase() || '';
-    if (s.includes('return')) return 'Returned';
-    if (s.includes('delivered')) return 'Delivered';
-    if (s.includes('delivering')) return 'Delivering';
+  trackingData: DeliveryTracking[] = []
+): InstockOrderStatus | undefined {
+  if (!orderStatus) return undefined;
+
+  const activeDeliveryStatuses = ['HandedOverToDelivery', 'Delivering'];
+
+  if (activeDeliveryStatuses.includes(orderStatus) && trackingData.length > 0) {
+    const latestStatus = trackingData[0]?.status?.toLowerCase() ?? '';
+
+    if (latestStatus.includes('return')) return 'Returned';
+    if (latestStatus.includes('delivered')) return 'Delivered';
+    if (latestStatus.includes('delivering')) return 'Delivering';
   }
-  return orderStatus;
+
+  return orderStatus as InstockOrderStatus;
 }
