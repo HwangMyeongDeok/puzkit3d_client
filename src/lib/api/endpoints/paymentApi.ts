@@ -12,9 +12,11 @@ export const paymentApi = apiSlice.injectEndpoints({
       query: (orderId) => ({ url: `/orders/${orderId}/payments` }),
       providesTags: ['Payment'],
     }),
+
     getPaymentTransactions: builder.query<GetPaymentTransactionsResponse, string>({
       query: (paymentId) => ({ url: `/payments/${paymentId}/transactions` }),
     }),
+
     createTransaction: builder.mutation<string, CreateTransactionRequestDto>({
       query: ({ paymentId, provider }) => ({
         url: `/payments/${paymentId}/transactions`,

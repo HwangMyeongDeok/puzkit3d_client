@@ -514,16 +514,8 @@ export default function MiniCart({ children }: MiniCartProps) {
 
             <div className="flex w-full flex-col gap-2">
               <SheetClose asChild>
-                <Link
-                  href={ROUTES.CART}
-                  className={hasInvalidInstockItem ? 'pointer-events-none' : 'w-full'}
-                  onClick={(e) => hasInvalidInstockItem && e.preventDefault()}
-                >
-                  <Button
-                    className="w-full gap-2 rounded-xl py-5 text-sm font-bold shadow-lg"
-                    disabled={hasInvalidInstockItem}
-                    tabIndex={-1}
-                  >
+                <Link href={ROUTES.CART} className="w-full">
+                  <Button className="w-full gap-2 rounded-xl py-5 text-sm font-bold shadow-lg">
                     View Cart
                   </Button>
                 </Link>

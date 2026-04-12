@@ -11,7 +11,8 @@ export type InstockOrderStatus =
   | 'Completed'
   | 'Returned'
   | 'HandedOverToDelivery'
-  | 'Rejected';
+  | 'Rejected'
+  | 'Expired';
 
 // ==========================================
 // 2. DTOs - CHI TIẾT SẢN PHẨM TRONG ĐƠN

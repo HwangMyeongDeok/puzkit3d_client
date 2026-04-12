@@ -19,6 +19,7 @@ interface PaymentDialogProps {
   orderId: string | null;
   onClose: () => void;
   onSuccess?: () => void;
+  mode?: 'checkout' | 'history';
 }
 
 export default function PaymentActionDialog({
@@ -26,6 +27,7 @@ export default function PaymentActionDialog({
   orderId,
   onClose,
   onSuccess,
+  mode = 'checkout',
 }: PaymentDialogProps) {
   const [getPayment, { isLoading: isGettingPayment }] = useLazyGetPaymentByOrderIdQuery();
   const [createTransaction, { isLoading: isCreatingTx }] = useCreateTransactionMutation();
@@ -34,6 +36,9 @@ export default function PaymentActionDialog({
     if (!orderId) return;
     try {
       const paymentRes = await getPayment(orderId).unwrap();
+
+      // Lưu ý: Tạm thời provider vẫn fix cứng 'VnPay' cho API.
+      // Nếu sau này bạn có nhiều cổng thanh toán, bạn sẽ cần truyền biến provider này vào linh hoạt nhé.
       const paymentUrl = await createTransaction({
         paymentId: paymentRes.paymentId,
         provider: 'VnPay',
@@ -42,38 +47,38 @@ export default function PaymentActionDialog({
       if (onSuccess) {
         onSuccess();
       }
-      toast.info('Redirecting to VNPAY...');
+      toast.info('Redirecting to payment gateway...');
 
       sessionStorage.removeItem('checkout_active_ids');
 
-      // Chuyển hướng thẳng sang cổng VNPay
+      // Chuyển hướng sang cổng thanh toán
       window.location.href = paymentUrl;
     } catch (error) {
       toast.error('Error creating payment. You can pay later in your order history.');
-      // Nếu lỗi API cổng thanh toán, coi như Pay Later, đá về trang Orders
       onClose();
     }
   };
 
-  const handlePayLater = () => {
+  const handleCancel = () => {
     onClose();
   };
 
   const isProcessing = isGettingPayment || isCreatingTx;
 
   return (
-    <Dialog open={open} onOpenChange={(val) => !val && handlePayLater()}>
+    <Dialog open={open} onOpenChange={(val) => !val && handleCancel()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Online Payment</DialogTitle>
+          <DialogTitle>{mode === 'checkout' ? 'Online Payment' : 'Confirm Payment'}</DialogTitle>
           <DialogDescription>
-            Your order has been created and is pending payment. Would you like to pay through the
-            VNPAY gateway now?
+            {mode === 'checkout'
+              ? 'Your order has been created and is pending payment. Would you like to proceed to the secure online payment gateway now?'
+              : 'You are about to be redirected to the secure online payment gateway to complete your payment. Do you want to proceed?'}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="mt-4 flex sm:justify-between">
-          <Button variant="outline" onClick={handlePayLater} disabled={isProcessing}>
-            Pay Later
+          <Button variant="outline" onClick={handleCancel} disabled={isProcessing}>
+            {mode === 'checkout' ? 'Pay Later' : 'Cancel'}
           </Button>
           <Button onClick={handlePayNow} disabled={isProcessing}>
             {isProcessing ? 'Connecting...' : 'Pay Now'}
