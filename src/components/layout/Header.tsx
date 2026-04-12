@@ -164,16 +164,7 @@ export default function Header() {
           </Link>
 
           {!isMiniCartDisabled && !isAuthLoading ? <MiniCart>{cartButton}</MiniCart> : cartButton}
-          {isAuthenticated && !isAuthLoading && (
-            <Link
-              href="/partner-requests"
-              title="My Requests"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#dbe7ff] bg-[linear-gradient(180deg,#ffffff_0%,#f5f9ff_100%)] text-[#052a5b] shadow-sm transition hover:-translate-y-0.5 hover:bg-white"
-              aria-label="My Requests"
-            >
-              <FileText className="h-5 w-5" />
-            </Link>
-          )}
+          
           {isAuthenticated && (
             <button
               onClick={() => handleLogout(false)}

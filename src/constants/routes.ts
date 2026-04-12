@@ -16,6 +16,12 @@ export const ROUTES = {
   CHECKOUT_SUCCESS_QUOTE: '/checkout/success-quote',
 
   BRANDS: '/brands',
+  PARTNER_BRAND_DETAIL: (partnerSlug: string) => `/brands/${partnerSlug}` as const,
+  PARTNER_PRODUCT_DETAIL: (partnerSlug: string, productSlug: string) =>
+    `/brands/${partnerSlug}/${productSlug}` as const,
+
+  PARTNER_REQUESTS: '/partner-requests',
+  PARTNER_ORDERS: '/partner-orders',
 
   ORDERS: '/profile/orders',
   ORDER_DETAIL: (id: string) => `/profile/orders/${id}` as const,

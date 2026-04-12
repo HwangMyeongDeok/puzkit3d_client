@@ -65,7 +65,19 @@ export const partnerProductApi = apiSlice.injectEndpoints({
       }),
       providesTags: ['Product'],
     }),
+
+    getPartnerProductBySlug: builder.query<PartnerProductDetailDto, string>({
+      query: (slug) => ({
+        url: `/partner-products/slug/${slug}`,
+        method: 'GET',
+      }),
+      providesTags: ['Product'],
+    }),
   }),
 });
 
-export const { useGetPartnerProductsQuery, useGetPartnerProductByIdQuery } = partnerProductApi;
+export const {
+  useGetPartnerProductsQuery,
+  useGetPartnerProductByIdQuery,
+  useGetPartnerProductBySlugQuery,
+} = partnerProductApi;

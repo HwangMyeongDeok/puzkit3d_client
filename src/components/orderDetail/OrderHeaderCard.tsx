@@ -17,14 +17,37 @@ import {
   Package,
   CalendarClock,
   Clock,
+  CreditCard,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import OrderBadge from '@/components/orderDetail/OrderBadge';
 import OrderStepper from '@/components/orderDetail/OrderStepper';
 import { ORDER_STATUS_MAP } from '@/constants';
-import { InstockOrderStatus } from '@/types/api/order.api.types';
+import { GetCustomerOrderResponseDto, InstockOrderStatus } from '@/types/api/order.api.types';
 import type { DeliveryTracking } from '@/types/api/delivery.api.types';
+import { SupportTicketDto } from '@/lib/api/endpoints/supportTicketApi';
+
+interface OrderHeaderCardProps {
+  order: GetCustomerOrderResponseDto;
+  effectiveStatus?: string;
+  isCOD?: boolean;
+  isCancelled?: boolean;
+  isReturned?: boolean;
+  canCancel?: boolean;
+  canReport?: boolean;
+  isExpired?: boolean;
+  canPay?: boolean;
+  isDelivered?: boolean;
+  isCanceling?: boolean;
+  isCompleting?: boolean;
+  ticketData?: SupportTicketDto;
+  trackingData?: DeliveryTracking[];
+  onCancelClick?: () => void;
+  onCompleteClick?: () => void;
+  onReportClick?: () => void;
+  onPayClick?: () => void;
+}
 
 export default function OrderHeaderCard({
   order,
@@ -32,62 +55,76 @@ export default function OrderHeaderCard({
   isCOD,
   isCancelled,
   isReturned,
+  isExpired,
   canCancel,
   canReport,
+  canPay,
   isDelivered,
   isCanceling,
   isCompleting,
   ticketData,
-  trackingData,
+  trackingData = [],
   onCancelClick,
   onCompleteClick,
   onReportClick,
-}: any) {
+  onPayClick,
+}: OrderHeaderCardProps) {
   const [showFullTracking, setShowFullTracking] = useState(false);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
+  // 1. Dẹp chữ Expired ở cuối đi, chỉ lấy mảng gốc bình thường
   const defaultSteps = isCOD
     ? [
-        ORDER_STATUS_MAP['Waiting']?.label,
-        ORDER_STATUS_MAP['Processing'].label,
-        ORDER_STATUS_MAP['HandedOverToDelivery'].label,
-        ORDER_STATUS_MAP['Delivering'].label,
-        ORDER_STATUS_MAP['Delivered'].label,
-        ORDER_STATUS_MAP['Completed'].label,
+        ORDER_STATUS_MAP['Waiting']?.label || 'Waiting',
+        ORDER_STATUS_MAP['Processing']?.label || 'Processing',
+        ORDER_STATUS_MAP['HandedOverToDelivery']?.label || 'Handed Over',
+        ORDER_STATUS_MAP['Delivering']?.label || 'Delivering',
+        ORDER_STATUS_MAP['Delivered']?.label || 'Delivered',
+        ORDER_STATUS_MAP['Completed']?.label || 'Completed',
       ]
     : [
-        ORDER_STATUS_MAP['Pending'].label,
-        ORDER_STATUS_MAP['Paid'].label,
-        ORDER_STATUS_MAP['Processing'].label,
-        ORDER_STATUS_MAP['HandedOverToDelivery'].label,
-        ORDER_STATUS_MAP['Delivering'].label,
-        ORDER_STATUS_MAP['Delivered'].label,
-        ORDER_STATUS_MAP['Completed'].label,
+        ORDER_STATUS_MAP['Pending']?.label || 'Pending',
+        ORDER_STATUS_MAP['Paid']?.label || 'Paid',
+        ORDER_STATUS_MAP['Processing']?.label || 'Processing',
+        ORDER_STATUS_MAP['HandedOverToDelivery']?.label || 'Handed Over',
+        ORDER_STATUS_MAP['Delivering']?.label || 'Delivering',
+        ORDER_STATUS_MAP['Delivered']?.label || 'Delivered',
+        ORDER_STATUS_MAP['Completed']?.label || 'Completed',
       ];
 
   const stepperSteps = [...defaultSteps];
-  if (isCancelled) {
-    const insertIndex = isCOD ? 1 : 2;
-    stepperSteps.splice(insertIndex, 0, ORDER_STATUS_MAP['Cancelled']?.label || 'Cancelled');
-  }
+
+  // 2. Logic chèn Expired, Cancelled, Returned
+  const expiredLabel = ORDER_STATUS_MAP['Expired']?.label || 'Expired';
+  const cancelledLabel = ORDER_STATUS_MAP['Cancelled']?.label || 'Cancelled';
   const returnedLabel = ORDER_STATUS_MAP['Returned']?.label || 'Returned';
+
+  if (isExpired) {
+    // Chèn Expired vào ngay sau Pending (index 1)
+    stepperSteps.splice(1, 0, expiredLabel);
+  } else if (isCancelled) {
+    const insertIndex = isCOD ? 1 : 2;
+    stepperSteps.splice(insertIndex, 0, cancelledLabel);
+  }
+
   if (isReturned) {
-    const deliveringLabel = ORDER_STATUS_MAP['Delivering']?.label;
+    const deliveringLabel = ORDER_STATUS_MAP['Delivering']?.label || 'Delivering';
     const deliveringIndex = stepperSteps.indexOf(deliveringLabel);
     if (deliveringIndex !== -1) {
       stepperSteps.splice(deliveringIndex + 1, 0, returnedLabel);
     }
   }
 
-  const statusInfo = effectiveStatus
-    ? ORDER_STATUS_MAP[effectiveStatus as InstockOrderStatus] || { label: effectiveStatus }
-    : undefined;
-
+  // 3. Cho activeStep dừng lại đúng chỗ khi có biến
   const activeStep = (() => {
+    if (isExpired) return stepperSteps.indexOf(expiredLabel);
+    if (isCancelled) return stepperSteps.indexOf(cancelledLabel);
     if (isReturned) {
       const idx = stepperSteps.indexOf(returnedLabel);
       return idx !== -1 ? idx : 0;
     }
+
+    // Nếu đơn bình thường thì chạy theo status
     const statusInfo = effectiveStatus
       ? ORDER_STATUS_MAP[effectiveStatus as InstockOrderStatus] || { label: effectiveStatus }
       : undefined;
@@ -95,39 +132,37 @@ export default function OrderHeaderCard({
     return Math.max(0, stepperSteps.indexOf(statusInfo.label));
   })();
 
-  // 👉 ĐÃ FIX: Cho phép hiển thị ở trạng thái Completed và Returned
   const showTracking =
     ['HandedOverToDelivery', 'Delivering', 'Delivered', 'Completed'].includes(
       effectiveStatus || ''
-    ) && trackingData?.length > 0;
+    ) && trackingData.length > 0;
 
   const isTicketResolved = ticketData?.status === 'Resolved';
   const hasActiveComplaint = ticketData && !isTicketResolved;
 
-  // 👉 Lấy data tracking mới nhất của lần giao đầu
-  const latestTracking = trackingData?.[0] as DeliveryTracking | undefined;
-  // 👉 Hàm Copy Mã vận đơn
+  const latestTracking = trackingData[0] as DeliveryTracking | undefined;
+
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
-    toast.success('Copied');
+    toast.success('Copied to clipboard');
   };
 
   return (
     <div className="bg-card border-border flex flex-col gap-6 rounded-xl border p-6 shadow-sm">
-      {/* KHỐI 1: THÔNG TIN CƠ BẢN VÀ ACTIONS GÓC PHẢI */}
+      {/* KHỐI 1: THÔNG TIN CƠ BẢN VÀ ACTIONS */}
       <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-        {/* Cột trái: Mã đơn & Ngày */}
+        {/* Cột trái */}
         <div>
           <p className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
             Order Code
           </p>
           <div className="mt-1 flex items-center gap-3">
             <p className="text-foreground text-2xl font-bold uppercase">
-              #{order.code || order.id.split('-')[0]}
+              #{order?.code || order?.id?.split('-')[0]}
             </p>
-            <OrderBadge status={effectiveStatus} />
+            <OrderBadge status={effectiveStatus as InstockOrderStatus} />
           </div>
-          {order.createdAt && (
+          {order?.createdAt && (
             <p className="text-muted-foreground mt-2 flex items-center gap-2 text-sm">
               <Calendar className="h-4 w-4" />
               {new Date(order.createdAt).toLocaleDateString('en-US', {
@@ -141,10 +176,19 @@ export default function OrderHeaderCard({
           )}
         </div>
 
-        {/* Cột phải: Control Center (Các nút hành động) */}
+        {/* Cột phải: Actions */}
         <div className="flex flex-col items-start gap-2 md:items-end">
           <div className="flex flex-wrap items-center gap-2">
-            {/* Nút Cancel */}
+            {canPay && (
+              <Button
+                size="sm"
+                className="bg-brand text-brand-foreground hover:bg-brand/90"
+                onClick={onPayClick}
+              >
+                <CreditCard className="mr-2 h-4 w-4" />
+                Pay Now
+              </Button>
+            )}
             {canCancel && (
               <Button
                 variant="destructive"
@@ -161,7 +205,6 @@ export default function OrderHeaderCard({
               </Button>
             )}
 
-            {/* Nút View Ticket */}
             {ticketData && (
               <Link
                 href={`/profile/ticket-support/${ticketData.id}`}
@@ -176,7 +219,6 @@ export default function OrderHeaderCard({
               </Link>
             )}
 
-            {/* Cụm nút nhận hàng / Report */}
             {isDelivered && (
               <>
                 {canReport && (
@@ -215,9 +257,10 @@ export default function OrderHeaderCard({
           <OrderStepper
             steps={stepperSteps}
             activeStep={activeStep}
-            isPaid={order.isPaid ?? false}
+            isPaid={order?.isPaid ?? false}
             isCancelled={isCancelled}
             isReturned={isReturned}
+            isExpired={isExpired}
           />
         </div>
       )}
@@ -225,10 +268,8 @@ export default function OrderHeaderCard({
       {/* KHỐI 3: COMPACT TRACKING GẤP GỌN */}
       {showTracking && latestTracking && (
         <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-          {/* HEADER CỦA TRACKING CARD */}
           <div className="flex flex-col gap-3 pb-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-col gap-2 md:flex-row md:items-center">
-              {/* Mã vận đơn (deliveryOrderCode) */}
               {latestTracking.deliveryOrderCode && (
                 <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1.5 shadow-sm">
                   <Package className="h-4 w-4 text-slate-500" />
@@ -240,7 +281,7 @@ export default function OrderHeaderCard({
                     variant="ghost"
                     size="icon"
                     className="ml-1 h-6 w-6 text-blue-600 hover:bg-blue-50"
-                    onClick={() => handleCopyCode(latestTracking.deliveryOrderCode)}
+                    onClick={() => handleCopyCode(latestTracking.deliveryOrderCode!)}
                     title="Copy Waybill Code"
                   >
                     <Copy className="h-3.5 w-3.5" />
@@ -248,7 +289,6 @@ export default function OrderHeaderCard({
                 </div>
               )}
 
-              {/* Ngày giao dự kiến (expectedDeliveryDate) */}
               {latestTracking.expectedDeliveryDate && effectiveStatus === 'Delivering' && (
                 <div className="flex items-center gap-1.5 rounded-md border border-emerald-100 bg-emerald-50 px-3 py-1.5">
                   <CalendarClock className="h-4 w-4 text-emerald-600" />
@@ -263,7 +303,6 @@ export default function OrderHeaderCard({
 
           <div className="border-t border-slate-200" />
 
-          {/* TOGGLE MỞ RỘNG CHI TIẾT */}
           <div
             className="flex cursor-pointer items-center justify-between pt-4 transition-opacity hover:opacity-80"
             onClick={() => setShowFullTracking(!showFullTracking)}
@@ -284,31 +323,33 @@ export default function OrderHeaderCard({
             )}
           </div>
 
-          {/* CHI TIẾT LỊCH SỬ TRACKING */}
           {showFullTracking && (
             <div className="mt-4 flex flex-col gap-5 border-t border-slate-200 pt-5">
               {trackingData.slice(0, 5).map((tracking: DeliveryTracking, index: number) => (
                 <div key={tracking.id} className="relative flex items-start gap-4 text-sm">
-                  {/* Timeline Line */}
                   {index !== Math.min(trackingData.length, 5) - 1 && (
                     <div className="absolute top-6 bottom-[-20px] left-2.5 w-0.5 bg-slate-200" />
                   )}
 
-                  {/* Timeline Dot */}
                   <div className="relative z-10 mt-1 flex flex-col items-center">
                     <div
-                      className={`flex h-5 w-5 items-center justify-center rounded-full ${index === 0 ? 'bg-blue-100 ring-2 ring-blue-600/20' : 'bg-slate-100'}`}
+                      className={`flex h-5 w-5 items-center justify-center rounded-full ${
+                        index === 0 ? 'bg-blue-100 ring-2 ring-blue-600/20' : 'bg-slate-100'
+                      }`}
                     >
                       <div
-                        className={`h-2 w-2 rounded-full ${index === 0 ? 'bg-blue-600' : 'bg-slate-400'}`}
+                        className={`h-2 w-2 rounded-full ${
+                          index === 0 ? 'bg-blue-600' : 'bg-slate-400'
+                        }`}
                       />
                     </div>
                   </div>
 
-                  {/* Timeline Content */}
                   <div className="flex-1 rounded-lg border border-slate-100 bg-white p-3 shadow-sm">
                     <p
-                      className={`font-semibold ${index === 0 ? 'text-slate-800' : 'text-slate-600'}`}
+                      className={`font-semibold ${
+                        index === 0 ? 'text-slate-800' : 'text-slate-600'
+                      }`}
                     >
                       {tracking.status}
                     </p>
@@ -326,14 +367,12 @@ export default function OrderHeaderCard({
                       </p>
                     )}
 
-                    {/* Hiển thị Note của Shipper */}
                     {tracking.note && (
                       <div className="mt-2 border-l-2 border-slate-300 bg-slate-50 px-2 py-1.5 text-xs text-slate-600 italic">
                         "{tracking.note}"
                       </div>
                     )}
 
-                    {/* Hiển thị Ảnh giao hàng (handOverImageUrl) */}
                     {tracking.handOverImageUrl && (
                       <div className="mt-3">
                         <p className="mb-1 text-[11px] font-medium text-slate-500">
@@ -341,7 +380,7 @@ export default function OrderHeaderCard({
                         </p>
                         <div
                           className="relative h-20 w-20 cursor-zoom-in overflow-hidden rounded-md border border-slate-200 shadow-sm"
-                          onClick={() => setZoomedImage(tracking.handOverImageUrl)}
+                          onClick={() => setZoomedImage(tracking.handOverImageUrl!)}
                         >
                           <Image
                             src={tracking.handOverImageUrl}
@@ -360,13 +399,16 @@ export default function OrderHeaderCard({
         </div>
       )}
 
-      {/* Modal Phóng to Ảnh Giao Hàng */}
+      {/* Modal Phóng to Ảnh */}
       {zoomedImage && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
           onClick={() => setZoomedImage(null)}
         >
-          <div className="relative h-[80vh] w-full max-w-2xl overflow-hidden rounded-lg bg-black">
+          <div
+            className="relative h-[80vh] w-full max-w-2xl overflow-hidden rounded-lg bg-black"
+            onClick={(e) => e.stopPropagation()}
+          >
             <Image src={zoomedImage} alt="Zoomed Delivery Proof" fill className="object-contain" />
             <Button
               className="absolute top-4 right-4 h-8 w-8 rounded-full bg-black/50 text-white hover:bg-black/80"

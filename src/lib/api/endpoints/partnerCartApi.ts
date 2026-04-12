@@ -17,8 +17,8 @@ export interface PartnerCartProductDetails {
 }
 
 export interface PartnerCartItem {
-  id: string; // row id trong cart
-  itemId: string; // partner product id
+  id: string;
+  itemId: string;
   unitPrice: number | null;
   inStockProductPriceDetailId: string | null;
   quantity: number;
@@ -42,7 +42,12 @@ export interface PartnerCartResponse {
 }
 
 export interface AddItemToPartnerCartBody {
-  itemId: string; // partner product id
+  itemId: string;
+  quantity: number;
+}
+
+export interface UpdatePartnerCartItemBody {
+  itemId: string;
   quantity: number;
 }
 
@@ -63,6 +68,14 @@ export const partnerCartApi = apiSlice.injectEndpoints({
       }),
     }),
 
+    updatePartnerCartItem: builder.mutation<void, UpdatePartnerCartItemBody>({
+      query: ({ itemId, quantity }) => ({
+        url: `/partner-carts/items/${itemId}`,
+        method: 'PUT',
+        data: { quantity },
+      }),
+    }),
+
     removeItemFromPartnerCart: builder.mutation<void, string>({
       query: (itemId) => ({
         url: `/partner-carts/items/${itemId}`,
@@ -75,5 +88,6 @@ export const partnerCartApi = apiSlice.injectEndpoints({
 export const {
   useGetPartnerCartQuery,
   useAddItemToPartnerCartMutation,
+  useUpdatePartnerCartItemMutation,
   useRemoveItemFromPartnerCartMutation,
 } = partnerCartApi;

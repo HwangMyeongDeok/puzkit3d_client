@@ -3,7 +3,15 @@
 import { ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { User, Receipt, Settings, LogOut, Palette, Wallet } from 'lucide-react';
+import {
+  User,
+  Receipt,
+  Settings,
+  LogOut,
+  Palette,
+  Wallet,
+  FileText,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useAppDispatch } from '@/stores/hooks';
@@ -21,7 +29,6 @@ export default function ProfileLayout({ children }: { children: ReactNode }) {
     clearAxiosState();
 
     dispatch(apiSlice.util.resetApiState());
-
     dispatch(logout());
 
     localStorage.clear();
@@ -34,55 +41,115 @@ export default function ProfileLayout({ children }: { children: ReactNode }) {
   return (
     <div className="container-custom py-8 lg:py-12">
       <div className="flex flex-col gap-8 md:flex-row">
-        {/* Sidebar */}
         <aside className="w-full shrink-0 md:w-64">
           <div className="bg-card border-border rounded-xl border p-4">
             <nav className="flex flex-col gap-2">
               <Link
                 href="/profile"
-                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${pathname === '/profile' ? 'bg-brand/10 text-brand' : 'hover:bg-muted text-card-foreground'}`}
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${
+                  pathname === '/profile'
+                    ? 'bg-brand/10 text-brand'
+                    : 'hover:bg-muted text-card-foreground'
+                }`}
               >
                 <User
-                  className={`h-5 w-5 ${pathname === '/profile' ? 'text-brand' : 'text-muted-foreground'}`}
+                  className={`h-5 w-5 ${
+                    pathname === '/profile' ? 'text-brand' : 'text-muted-foreground'
+                  }`}
                 />
                 Profile
               </Link>
+
               <Link
                 href="/profile/orders"
-                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${pathname?.startsWith('/profile/orders') ? 'bg-brand/10 text-brand' : 'hover:bg-muted text-card-foreground'}`}
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${
+                  pathname?.startsWith('/profile/orders')
+                    ? 'bg-brand/10 text-brand'
+                    : 'hover:bg-muted text-card-foreground'
+                }`}
               >
                 <Receipt
-                  className={`h-5 w-5 ${pathname?.startsWith('/profile/orders') ? 'text-brand' : 'text-muted-foreground'}`}
+                  className={`h-5 w-5 ${
+                    pathname?.startsWith('/profile/orders')
+                      ? 'text-brand'
+                      : 'text-muted-foreground'
+                  }`}
                 />
                 Order History
               </Link>
+
+              <Link
+                href="/profile/partner-requests"
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${
+                  pathname?.startsWith('/profile/partner-requests')
+                    ? 'bg-brand/10 text-brand'
+                    : 'hover:bg-muted text-card-foreground'
+                }`}
+              >
+                <FileText
+                  className={`h-5 w-5 ${
+                    pathname?.startsWith('/profile/partner-requests')
+                      ? 'text-brand'
+                      : 'text-muted-foreground'
+                  }`}
+                />
+                My Request
+              </Link>
+
               <Link
                 href="/profile/custom-designs"
-                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${pathname?.startsWith('/profile/custom-designs') ? 'bg-brand/10 text-brand' : 'hover:bg-muted text-card-foreground'}`}
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${
+                  pathname?.startsWith('/profile/custom-designs')
+                    ? 'bg-brand/10 text-brand'
+                    : 'hover:bg-muted text-card-foreground'
+                }`}
               >
                 <Palette
-                  className={`h-5 w-5 ${pathname?.startsWith('/profile/custom-designs') ? 'text-brand' : 'text-muted-foreground'}`}
+                  className={`h-5 w-5 ${
+                    pathname?.startsWith('/profile/custom-designs')
+                      ? 'text-brand'
+                      : 'text-muted-foreground'
+                  }`}
                 />
                 Custom Designs
               </Link>
+
               <Link
                 href="/profile/ticket-support"
-                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${pathname?.startsWith('/profile/ticket-support') ? 'bg-brand/10 text-brand' : 'hover:bg-muted text-card-foreground'}`}
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${
+                  pathname?.startsWith('/profile/ticket-support')
+                    ? 'bg-brand/10 text-brand'
+                    : 'hover:bg-muted text-card-foreground'
+                }`}
               >
                 <Receipt
-                  className={`h-5 w-5 ${pathname?.startsWith('/profile/ticket-support') ? 'text-brand' : 'text-muted-foreground'}`}
+                  className={`h-5 w-5 ${
+                    pathname?.startsWith('/profile/ticket-support')
+                      ? 'text-brand'
+                      : 'text-muted-foreground'
+                  }`}
                 />
                 Ticket Support
               </Link>
+
               <Link
                 href="/profile/wallet"
-                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${pathname?.startsWith('/profile/wallet') ? 'bg-brand/10 text-brand' : 'hover:bg-muted text-card-foreground'}`}
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${
+                  pathname?.startsWith('/profile/wallet')
+                    ? 'bg-brand/10 text-brand'
+                    : 'hover:bg-muted text-card-foreground'
+                }`}
               >
                 <Wallet
-                  className={`h-5 w-5 ${pathname?.startsWith('/profile/wallet') ? 'text-brand' : 'text-muted-foreground'}`}
+                  className={`h-5 w-5 ${
+                    pathname?.startsWith('/profile/wallet')
+                      ? 'text-brand'
+                      : 'text-muted-foreground'
+                  }`}
                 />
                 Wallet
               </Link>
+
               <Link
                 href="#"
                 className="hover:bg-muted text-card-foreground flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors"
@@ -90,7 +157,9 @@ export default function ProfileLayout({ children }: { children: ReactNode }) {
                 <Settings className="text-muted-foreground h-5 w-5" />
                 Settings
               </Link>
+
               <div className="bg-border my-2 h-px w-full" />
+
               <button
                 className="hover:bg-destructive/10 text-destructive flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left font-medium transition-colors"
                 onClick={handleLogout}

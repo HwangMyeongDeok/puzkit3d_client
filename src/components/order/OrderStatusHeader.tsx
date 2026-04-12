@@ -1,33 +1,8 @@
 import { Calendar, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ORDER_STATUS_MAP, ORDER_STEPPER_STEPS } from '@/constants';
 import OrderStepper from '@/components/orderDetail/OrderStepper';
-import { InstockOrderStatus } from '@/types/api/order.api.types';
-
-// Copied existing badge logic
-const colorMap: Record<string, string> = {
-  yellow: 'border-yellow-500/20  bg-yellow-500/10  text-yellow-600',
-  blue: 'border-blue-500/20    bg-blue-500/10    text-blue-600',
-  indigo: 'border-indigo-500/20  bg-indigo-500/10  text-indigo-600',
-  violet: 'border-violet-500/20  bg-violet-500/10  text-violet-600',
-  emerald: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600',
-  green: 'border-green-500/20   bg-green-500/10   text-green-600',
-  red: 'bg-destructive/10     text-destructive   border-destructive/20',
-  orange: 'border-orange-500/20  bg-orange-500/10  text-orange-600',
-  rose: 'border-rose-500/20    bg-rose-500/10    text-rose-600',
-};
-
-const badgeBase = 'rounded-md border px-3 py-1.5 text-sm font-semibold tracking-wider uppercase';
-
-function StatusBadge({ status }: { status?: InstockOrderStatus }) {
-  const info = status ? ORDER_STATUS_MAP[status] : undefined;
-  if (!info) {
-    return (
-      <span className={`${badgeBase} bg-muted text-muted-foreground border-border`}>Unknown</span>
-    );
-  }
-  return <span className={`${badgeBase} ${colorMap[info.color] ?? ''}`}>{info.label}</span>;
-}
+import OrderBadge from '@/components/orderDetail/OrderBadge';
+import { DEFAULT_INSTOCK_STEPS } from '@/lib/utils/order-status';
 
 interface OrderStatusHeaderProps {
   order: any;
@@ -37,6 +12,10 @@ interface OrderStatusHeaderProps {
   isCompleting: boolean;
   onSetConfirmCompleteOpen: (open: boolean) => void;
   onSetCreateTicketDialogOpen: (open: boolean) => void;
+  displayStatus?: string;
+  steps?: readonly string[];
+  isCancelled?: boolean;
+  isReturned?: boolean;
 }
 
 export function OrderStatusHeader({
@@ -47,6 +26,10 @@ export function OrderStatusHeader({
   isCompleting,
   onSetConfirmCompleteOpen,
   onSetCreateTicketDialogOpen,
+  displayStatus,
+  steps = DEFAULT_INSTOCK_STEPS,
+  isCancelled = false,
+  isReturned = false,
 }: OrderStatusHeaderProps) {
   return (
     <div className="flex flex-col gap-6 rounded-lg border border-slate-100 bg-linear-to-br from-white to-slate-50/50 p-6 shadow-md">
@@ -72,7 +55,7 @@ export function OrderStatusHeader({
               Order Status
             </p>
             <div className="mt-2">
-              <StatusBadge status={order.status} />
+              <OrderBadge status={displayStatus || order.status} />
             </div>
           </div>
 
@@ -114,7 +97,13 @@ export function OrderStatusHeader({
           <p className="mb-4 text-xs font-semibold tracking-wide text-slate-500 uppercase">
             Order Progress
           </p>
-          <OrderStepper steps={ORDER_STEPPER_STEPS} activeStep={activeStep} isPaid={order.isPaid} />
+          <OrderStepper
+            steps={steps}
+            activeStep={activeStep}
+            isPaid={order.isPaid}
+            isCancelled={isCancelled}
+            isReturned={isReturned}
+          />
         </div>
       )}
     </div>

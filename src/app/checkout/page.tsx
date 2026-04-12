@@ -93,7 +93,7 @@ export default function CheckoutPage() {
 
   // Guard chống double-submit (race condition)
   const isProcessingRef = useRef<boolean>(false);
-
+  const frozenItemsRef = useRef<CartItemDto[]>([]);
   // Restore selected items
   useEffect(() => {
     if (selectedIdsFromRedux.length > 0) {
@@ -112,10 +112,17 @@ export default function CheckoutPage() {
   }, [selectedIdsFromRedux]);
 
   const selectedItems: CartItemDto[] = useMemo(() => {
+    if (isSubmitting || isRedirecting || showPaymentDialog || createdOrderId) {
+      return frozenItemsRef.current;
+    }
+
     if (activeIds.length === 0) return [];
     const idSet = new Set(activeIds);
-    return allCartItems.filter((item: CartItemDto) => idSet.has(item.itemId));
-  }, [allCartItems, activeIds]);
+    const items = allCartItems.filter((item: CartItemDto) => idSet.has(item.itemId));
+
+    frozenItemsRef.current = items;
+    return items;
+  }, [allCartItems, activeIds, isSubmitting, isRedirecting, showPaymentDialog, createdOrderId]);
 
   useEffect(() => {
     if (

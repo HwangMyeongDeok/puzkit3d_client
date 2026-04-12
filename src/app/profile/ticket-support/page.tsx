@@ -45,7 +45,7 @@ export default function SupportTicketsPage() {
   const totalPages: number = data?.totalPages ?? 1;
 
   return (
-    <div className="container-custom min-h-screen bg-slate-50/30 py-8 lg:py-12 dark:bg-slate-950">
+    <div className="flex w-full flex-col gap-6">
       <div className="flex flex-col gap-6">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>

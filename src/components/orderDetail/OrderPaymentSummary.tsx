@@ -14,13 +14,17 @@ import {
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { formatPrice } from '@/lib/utils';
-import type { GetCustomerOrderByIdResponseDto } from '@/types/api/order.api.types';
+import type {
+  GetCustomerOrderByIdResponseDto,
+  InstockOrderStatus,
+} from '@/types/api/order.api.types';
 import type { GetPaymentByOrderIdResponse, TransactionDto } from '@/types/api/payment.api.types';
 
 interface OrderPaymentSummaryProps {
   order: GetCustomerOrderByIdResponseDto;
   payment?: GetPaymentByOrderIdResponse;
   transactions?: TransactionDto[];
+  effectiveStatus: InstockOrderStatus;
 }
 
 // ⏱️ COMPONENT NHỎ: Đồng hồ đếm ngược
@@ -63,6 +67,7 @@ export default function OrderPaymentSummary({
   order,
   payment,
   transactions,
+  effectiveStatus,
 }: OrderPaymentSummaryProps) {
   const isCOD = order.paymentMethod === 'COD';
   const usedCoin = order.usedCoinAmount ?? 0;
@@ -121,11 +126,29 @@ export default function OrderPaymentSummary({
               </>
             ) : (
               <>
-                <span className="flex items-center gap-1.5 rounded-md bg-amber-50 px-3 py-1 text-sm font-bold text-amber-600">
-                  <Clock className="h-4 w-4 animate-pulse" /> Pending Payment
-                </span>
-                {/* ĐỒNG HỒ ĐẾM NGƯỢC */}
-                {!isCOD && payment?.expiredAt && <PaymentCountdown expiredAt={payment.expiredAt} />}
+                {effectiveStatus === 'Pending' && (
+                  <>
+                    <span className="flex items-center gap-1.5 rounded-md bg-amber-50 px-3 py-1 text-sm font-bold text-amber-600">
+                      <Clock className="h-4 w-4 animate-pulse" />
+                      {effectiveStatus}
+                    </span>
+                    {!isCOD && payment?.expiredAt && (
+                      <PaymentCountdown expiredAt={payment.expiredAt} />
+                    )}
+                  </>
+                )}
+
+                {effectiveStatus === 'Expired' && (
+                  <span className="flex items-center gap-1.5 rounded-md bg-slate-100 px-3 py-1 text-sm font-bold text-slate-600">
+                    <Minus className="h-4 w-4" /> {effectiveStatus}
+                  </span>
+                )}
+
+                {(effectiveStatus === 'Cancelled' || effectiveStatus === 'Rejected') && (
+                  <span className="flex items-center gap-1.5 rounded-md bg-red-50 px-3 py-1 text-sm font-bold text-red-600">
+                    <Minus className="h-4 w-4" /> {effectiveStatus}
+                  </span>
+                )}
               </>
             )}
           </div>
