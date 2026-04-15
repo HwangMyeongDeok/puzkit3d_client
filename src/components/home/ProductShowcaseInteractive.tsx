@@ -33,10 +33,22 @@ export default function ProductShowcaseInteractive() {
     setVisibleCount(8);
   }, [difficultyLevel, materialSlug, assemblyMethodSlug, topicSlug, selectedCapabilities]);
 
-  const { data: materialsData } = useGetMaterialsQuery({ pageNumber: 1, pageSize: 50 });
-  const { data: assemblyData } = useGetAssemblyMethodsQuery({ pageNumber: 1, pageSize: 50 });
-  const { data: topicsData } = useGetTopicsQuery({ pageNumber: 1, pageSize: 50 });
-  const { data: capabilitiesData } = useGetCapabilitiesQuery({ pageNumber: 1, pageSize: 50 });
+  const { data: materialsData } = useGetMaterialsQuery({
+    pageNumber: 1,
+    pageSize: 50,
+    ascending: true,
+  });
+  const { data: assemblyData } = useGetAssemblyMethodsQuery({
+    pageNumber: 1,
+    pageSize: 50,
+    ascending: true,
+  });
+  const { data: topicsData } = useGetTopicsQuery({ pageNumber: 1, pageSize: 50, ascending: true });
+  const { data: capabilitiesData } = useGetCapabilitiesQuery({
+    pageNumber: 1,
+    pageSize: 50,
+    ascending: true,
+  });
 
   const capabilitySlugs =
     selectedCapabilities.length > 0 ? selectedCapabilities.join(',') : undefined;

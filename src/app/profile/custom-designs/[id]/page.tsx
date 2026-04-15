@@ -489,7 +489,11 @@ export default function CustomDesignDetailPage({ params }: { params: Promise<{ i
     requirement?.assemblyMethodId ?? '',
     { skip: !requirement?.assemblyMethodId }
   );
-  const { data: capabilitiesData } = useGetCapabilitiesQuery({ pageNumber: 1, pageSize: 50 });
+  const { data: capabilitiesData } = useGetCapabilitiesQuery({
+    pageNumber: 1,
+    pageSize: 50,
+    ascending: true,
+  });
 
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);

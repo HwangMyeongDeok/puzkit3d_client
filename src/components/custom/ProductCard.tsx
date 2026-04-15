@@ -56,7 +56,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [addToCartMutate, { isLoading: isAdding }] = useAddToCartMutation();
 
   // 1. Fetch Topics
-  const { data: topicsData } = useGetTopicsQuery({ pageNumber: 1, pageSize: 100 });
+  const { data: topicsData } = useGetTopicsQuery({ pageNumber: 1, pageSize: 100, ascending: true });
   const topicName = topicsData?.items?.find((t: any) => t.id === product.topicId)?.name || 'N/A';
 
   // 2. Fetch Variant & Price Array

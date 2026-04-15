@@ -25,7 +25,6 @@ import ProductImageGallery from '@/components/productDetail/ProductImageGallery'
 import ProductSpecifications from '@/components/productDetail/ProductSpecifications';
 
 import { useAppDispatch } from '@/stores/hooks';
-import { setSelectedItems } from '@/stores/slices/checkoutSlice';
 
 export default function ProductDetailPage() {
   const params = useParams<{ slug: string }>();
@@ -42,9 +41,15 @@ export default function ProductDetailPage() {
 
   const { data: variantsData } = useGetProductVariantsQuery(product?.id ?? skipToken);
 
+  // Tự động chọn Variant đầu tiên nếu chưa có
   useEffect(() => {
     if (!selectedVariant && variantsData?.variants && variantsData.variants.length > 0) {
-      setSelectedVariant(variantsData.variants[0]);
+      const firstVariant = variantsData.variants[0];
+      const transformedVariant: ProductVariantDto = {
+        ...firstVariant,
+        previewImages: firstVariant.previewImages || [],
+      };
+      setSelectedVariant(transformedVariant);
     }
   }, [variantsData, selectedVariant]);
 
@@ -52,6 +57,7 @@ export default function ProductDetailPage() {
     selectedVariant?.id ?? skipToken
   );
 
+  // Xử lý logic Giá cả
   const { currentPriceObj, standardPriceObj, isOnSale, discountPercent } = useMemo(() => {
     if (!priceData)
       return { currentPriceObj: null, standardPriceObj: null, isOnSale: false, discountPercent: 0 };
@@ -76,6 +82,62 @@ export default function ProductDetailPage() {
     };
   }, [priceData]);
 
+  // --- LOGIC MỚI: GOM TẤT CẢ ẢNH VÀ ĐÁNH DẤU VỊ TRÍ ---
+  const { allImages, variantIndexMap } = useMemo(() => {
+    const images: string[] = [];
+    const indexMap: Record<string, number> = {};
+
+    // 1. THUMBNAIL PRODUCT (Luôn là ảnh số 1)
+    if (product?.thumbnailUrl) {
+      images.push(product.thumbnailUrl);
+    }
+
+    // 2. FULL PREVIEW ASSET CỦA PRODUCT
+    if (product?.previewAsset) {
+      if (Array.isArray(product.previewAsset)) {
+        images.push(...product.previewAsset.filter((url) => url !== product?.thumbnailUrl));
+      } else if (typeof product.previewAsset === 'string') {
+        // Fallback in case of unexpected string data at runtime
+        try {
+          const parsed = JSON.parse(product.previewAsset);
+          if (Array.isArray(parsed)) {
+            images.push(...parsed.filter((url: string) => url !== product?.thumbnailUrl));
+          }
+        } catch {
+          if ((product.previewAsset as string).startsWith('http')) {
+            const url = product.previewAsset as string;
+            if (url !== product?.thumbnailUrl) images.push(url);
+          }
+        }
+      }
+    }
+
+    // 3. FULL ẢNH CỦA TẤT CẢ CÁC VARIANT
+    if (variantsData?.variants) {
+      variantsData.variants.forEach((v: any) => {
+        indexMap[v.id] = images.length; // Đánh dấu vị trí bắt đầu của Variant này
+        if (v.previewImages && Array.isArray(v.previewImages)) {
+          images.push(...v.previewImages);
+        }
+      });
+    }
+
+    // Trả về mảng ảnh đã được làm sạch và map vị trí
+    return {
+      allImages: images.filter(Boolean),
+      variantIndexMap: indexMap,
+    };
+  }, [product, variantsData]);
+
+  // Tính toán vị trí cần trượt tới dựa trên Variant đang chọn
+  const activeIndex = useMemo(() => {
+    if (selectedVariant?.id && variantIndexMap[selectedVariant.id] !== undefined) {
+      return variantIndexMap[selectedVariant.id];
+    }
+    return 0; // Mặc định về đầu tiên nếu không tìm thấy
+  }, [selectedVariant, variantIndexMap]);
+
+  // Các hàm xử lý giỏ hàng
   const handleQuantityChange = (type: 'increase' | 'decrease') => {
     if (type === 'decrease' && quantity > 1) setQuantity((q) => q - 1);
     if (type === 'increase') setQuantity((q) => q + 1);
@@ -99,7 +161,7 @@ export default function ProductDetailPage() {
     try {
       const priceDetailId = currentPriceObj.id.replace(/"/g, '').trim();
 
-      const response = await addToCartMutate({
+      await addToCartMutate({
         itemId: selectedVariant.id,
         inStockProductPriceDetailId: priceDetailId,
         quantity: Number(quantity),
@@ -116,27 +178,12 @@ export default function ProductDetailPage() {
 
   const handleBuyNow = async () => {
     const isSuccess = await handleAddToCart(false);
-
     if (isSuccess) {
       router.push(`/cart?buyNowVariant=${selectedVariant?.id}`);
     }
   };
 
-  const images = useMemo(() => {
-    if (!product?.previewAsset) return product?.thumbnailUrl ? [product.thumbnailUrl] : [];
-    const asset = product.previewAsset;
-    if (Array.isArray(asset)) return asset;
-    if (typeof asset === 'object') return Object.values(asset);
-    if (typeof asset === 'string') {
-      try {
-        const parsed = JSON.parse(asset);
-        if (Array.isArray(parsed)) return parsed;
-      } catch {}
-      if (asset.startsWith('http')) return [asset];
-    }
-    return product.thumbnailUrl ? [product.thumbnailUrl] : [];
-  }, [product]);
-
+  // Render trạng thái Loading
   if (isProductLoading) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4">
@@ -146,6 +193,7 @@ export default function ProductDetailPage() {
     );
   }
 
+  // Render trạng thái Lỗi
   if (isError || !product) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4">
@@ -165,6 +213,7 @@ export default function ProductDetailPage() {
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 md:py-12">
+      {/* BREADCRUMB */}
       <nav className="mb-8 flex items-center gap-2 text-sm text-slate-500">
         <Link href="/" className="transition-colors hover:text-[#e51636]">
           Home
@@ -178,15 +227,16 @@ export default function ProductDetailPage() {
       </nav>
 
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-16">
-        {/* TRÁI */}
+        {/* --- CỘT TRÁI: HÌNH ẢNH & MÔ TẢ --- */}
         <div className="flex flex-col gap-4 lg:col-span-6 xl:col-span-5">
           <ProductImageGallery
-            images={images}
+            images={allImages}
             productName={product.name}
             difficultLevel={product.difficultLevel}
-            thumbnailUrl={product.thumbnailUrl}
+            scrollToIndex={activeIndex} // Truyền vị trí ảnh cần nhảy tới
           />
 
+          {/* Xử lý Rich Text Description */}
           {product.description && (
             <div className="mt-8 flex flex-col">
               <h3 className="mb-4 flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900">
@@ -194,15 +244,16 @@ export default function ProductDetailPage() {
                 Description
               </h3>
               <div className="prose prose-slate max-w-none rounded-2xl border border-slate-100 bg-slate-50 p-6 shadow-sm">
-                <p className="leading-relaxed whitespace-pre-wrap text-slate-600">
-                  {product.description}
-                </p>
+                <div
+                  className="leading-relaxed text-slate-600"
+                  dangerouslySetInnerHTML={{ __html: product.description }}
+                />
               </div>
             </div>
           )}
         </div>
 
-        {/* PHẢI */}
+        {/* --- CỘT PHẢI: THÔNG TIN MUA HÀNG --- */}
         <div className="flex flex-col lg:col-span-6 xl:col-span-7">
           <h1 className="mb-3 text-3xl leading-tight font-extrabold text-slate-900 md:text-4xl">
             {product.name}
@@ -216,6 +267,7 @@ export default function ProductDetailPage() {
             </div>
           )}
 
+          {/* Khối hiển thị Giá */}
           <div className="mb-6 pt-2">
             {isPriceLoading || (!selectedVariant && !isError) ? (
               <div className="flex items-center gap-4">
@@ -259,6 +311,7 @@ export default function ProductDetailPage() {
             )}
           </div>
 
+          {/* Chọn Variants */}
           <div className="mb-6 rounded-2xl border border-slate-100 bg-slate-50 p-6">
             <ProductVariants
               productId={product.id}
@@ -267,6 +320,7 @@ export default function ProductDetailPage() {
             />
           </div>
 
+          {/* Thêm vào giỏ hàng & Số lượng */}
           <div className="mb-6 flex flex-col gap-4 border-t border-slate-200 pt-6">
             <div className="flex items-center gap-6">
               <div className="flex flex-col gap-2">

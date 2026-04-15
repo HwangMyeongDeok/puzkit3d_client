@@ -1,20 +1,12 @@
 import { apiSlice } from '../apiSlice';
 
-export type TicketType = 'ReplacePart' | 'Exchange' | 'Return';
+export type TicketType = 'ReplaceDrive' | 'Exchange' | 'Return';
 
 export type TicketStatus = 'Open' | 'Processing' | 'Resolved' | 'Rejected';
 
-export interface ProductPartDto {
-  id: string;
-  name: string;
-  partType: string;
-  code: string;
-  totalPieces: number;
-}
-
 export interface CreateTicketDetailDto {
   orderDetailId: string;
-  partId?: string;
+  driveId?: string;
   quantity: number;
   note?: string;
 }
@@ -30,7 +22,7 @@ export interface CreateTicketRequestDto {
 export interface TicketDetailDto {
   id: string;
   orderDetailId: string;
-  partId: string | null;
+  driveId: string | null;
   quantity: number;
   note: string | null;
 }
@@ -96,15 +88,6 @@ export interface TicketDeliveryTrackingDto {
 
 export const supportTicketApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    /* GET /api/instock-products/{productId}/parts */
-    getProductParts: builder.query<ProductPartDto[], string>({
-      query: (productId) => ({
-        url: `/instock-products/${productId}/parts`,
-        method: 'GET',
-      }),
-      // Read-only catalogue data — no invalidation tags required
-    }),
-
     /* GET /api/support-tickets — paginated list with optional status filter */
     getTickets: builder.query<SupportTicketPagedResult, GetTicketsParams>({
       query: (params) => ({
@@ -189,7 +172,6 @@ export const supportTicketApi = apiSlice.injectEndpoints({
 });
 
 export const {
-  useGetProductPartsQuery,
   useGetTicketsQuery,
   useGetTicketByIdQuery,
   useGetTicketByOrderIdQuery,

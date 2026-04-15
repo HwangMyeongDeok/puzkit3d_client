@@ -117,7 +117,7 @@ export default function OrderCard({ order, onPayNow, hasComplaint, ticketId }: O
             ))}
             {order.orderDetailsPreview.length > 3 && (
               <div className="border-border text-muted-foreground bg-muted/10 flex h-full min-h-16 items-center justify-center rounded-lg border border-dashed text-xs font-medium">
-                +{order.orderDetailsPreview.length - 3} other products
+                ... other products
               </div>
             )}
           </div>

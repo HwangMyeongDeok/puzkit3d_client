@@ -32,11 +32,12 @@ export default function StepCoreSpecs({
   const { data: topicsData, isLoading: isLoadingTopics } = useGetTopicsQuery({
     pageNumber: 1,
     pageSize: 50,
+    ascending: true,
   });
   const topics = topicsData?.items || [];
 
   const { data: materialsData, isLoading: isLoadingMaterials } = useGetMaterialsQuery(
-    { pageNumber: 1, pageSize: 50 },
+    { pageNumber: 1, pageSize: 50, ascending: true },
     { skip: !config.topic }
   );
   const availableMaterials = materialsData?.items || [];
@@ -44,12 +45,14 @@ export default function StepCoreSpecs({
   const { data: assembliesData, isLoading: isLoadingAssemblies } = useGetAssemblyMethodsQuery({
     pageNumber: 1,
     pageSize: 50,
+    ascending: true,
   });
   const assemblies = assembliesData?.items || [];
 
   const { data: capabilitiesData, isLoading: isLoadingCaps } = useGetCapabilitiesQuery({
     pageNumber: 1,
     pageSize: 50,
+    ascending: true,
   });
   const capabilitiesList = capabilitiesData?.items || [];
 

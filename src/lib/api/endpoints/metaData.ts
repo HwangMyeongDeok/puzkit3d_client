@@ -17,7 +17,7 @@ export const metaDataApi = apiSlice.injectEndpoints({
       query: (params) => ({
         url: '/capabilities',
         method: 'GET',
-        params: params as Record<string, unknown>,
+        params: params as unknown as Record<string, unknown>,
       }),
       providesTags: ['Capability'],
     }),
@@ -26,7 +26,7 @@ export const metaDataApi = apiSlice.injectEndpoints({
       query: (params) => ({
         url: '/materials',
         method: 'GET',
-        params: params as Record<string, unknown>,
+        params: params as unknown as Record<string, unknown>,
       }),
     }),
 
@@ -34,7 +34,7 @@ export const metaDataApi = apiSlice.injectEndpoints({
       query: (params) => ({
         url: '/topics',
         method: 'GET',
-        params: params as Record<string, unknown>,
+        params: params as unknown as Record<string, unknown>,
       }),
     }),
 
@@ -43,7 +43,7 @@ export const metaDataApi = apiSlice.injectEndpoints({
         query: (params) => ({
           url: '/assembly-methods',
           method: 'GET',
-          params: params as Record<string, unknown>,
+          params: params as unknown as Record<string, unknown>,
         }),
       }
     ),

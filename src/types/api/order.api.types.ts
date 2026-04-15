@@ -119,6 +119,13 @@ export interface GetCustomerOrderResponseDto {
   totalQuantity?: number;
   status?: InstockOrderStatus;
   paymentMethod?: PaymentMethod;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  customerProvinceName?: string;
+  customerDistrictName?: string;
+  customerWardName?: string;
+  detailAddress?: string;
   isPaid?: boolean;
   paidAt?: string | null;
   createdAt?: string;

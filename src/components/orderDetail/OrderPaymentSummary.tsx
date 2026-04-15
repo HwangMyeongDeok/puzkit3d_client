@@ -11,6 +11,7 @@ import {
   Clock,
   Minus,
   Plus,
+  Package,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { formatPrice } from '@/lib/utils';
@@ -70,8 +71,8 @@ export default function OrderPaymentSummary({
   effectiveStatus,
 }: OrderPaymentSummaryProps) {
   const isCOD = order.paymentMethod === 'COD';
+  const isCoin = order.paymentMethod === 'COIN';
   const usedCoin = order.usedCoinAmount ?? 0;
-  const hasCoinDiscount = usedCoin > 0;
 
   const latestTransaction = transactions?.[0];
 
@@ -107,50 +108,86 @@ export default function OrderPaymentSummary({
           </span>
 
           <div className="flex flex-col items-end text-right">
-            {order.isPaid ? (
-              <>
-                <span className="flex items-center gap-1.5 rounded-md bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-600">
-                  <CheckCircle2 className="h-4 w-4" /> Paid Successfully
-                </span>
-                {latestTransaction && (
-                  <div className="mt-1.5 flex flex-col items-end">
-                    <span className="text-[11px] font-medium text-slate-500">
-                      via{' '}
-                      <span className="font-bold text-slate-700">{latestTransaction.provider}</span>
+            {(() => {
+              // 1. ONLINE VÀ COIN
+              if (!isCOD) {
+                if (order.isPaid) {
+                  return (
+                    <>
+                      <span className="flex items-center gap-1.5 rounded-md bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-600">
+                        <CheckCircle2 className="h-4 w-4" /> Paid Successfully
+                      </span>
+                      {latestTransaction && (
+                        <div className="mt-1.5 flex flex-col items-end">
+                          <span className="text-[11px] font-medium text-slate-500">
+                            via{' '}
+                            <span className="font-bold text-slate-700">
+                              {latestTransaction.provider}
+                            </span>
+                          </span>
+                          <span className="mt-0.5 font-mono text-[10px] text-slate-400">
+                            txnRef: {latestTransaction.txnRef || 'N/A'}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  );
+                } else {
+                  if (effectiveStatus === 'Pending') {
+                    return (
+                      <>
+                        <span className="flex items-center gap-1.5 rounded-md bg-amber-50 px-3 py-1 text-sm font-bold text-amber-600">
+                          <Clock className="h-4 w-4 animate-pulse" /> Pending
+                        </span>
+                        {payment?.expiredAt && <PaymentCountdown expiredAt={payment.expiredAt} />}
+                      </>
+                    );
+                  }
+                  if (
+                    effectiveStatus === 'Expired' ||
+                    effectiveStatus === 'Cancelled' ||
+                    effectiveStatus === 'Rejected'
+                  ) {
+                    return (
+                      <span className="flex items-center gap-1.5 rounded-md bg-red-50 px-3 py-1 text-sm font-bold text-red-600">
+                        <Minus className="h-4 w-4" /> {effectiveStatus}
+                      </span>
+                    );
+                  }
+                  return (
+                    <span className="flex items-center gap-1.5 rounded-md bg-blue-50 px-3 py-1 text-sm font-bold text-blue-600">
+                      <Package className="h-4 w-4" /> {effectiveStatus}
                     </span>
-                    <span className="mt-0.5 font-mono text-[10px] text-slate-400 uppercase">
-                      TXN: {latestTransaction.transactionNo || latestTransaction.txnRef || 'N/A'}
-                    </span>
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                {effectiveStatus === 'Pending' && (
-                  <>
-                    <span className="flex items-center gap-1.5 rounded-md bg-amber-50 px-3 py-1 text-sm font-bold text-amber-600">
-                      <Clock className="h-4 w-4 animate-pulse" />
-                      {effectiveStatus}
-                    </span>
-                    {!isCOD && payment?.expiredAt && (
-                      <PaymentCountdown expiredAt={payment.expiredAt} />
-                    )}
-                  </>
-                )}
+                  );
+                }
+              }
 
-                {effectiveStatus === 'Expired' && (
-                  <span className="flex items-center gap-1.5 rounded-md bg-slate-100 px-3 py-1 text-sm font-bold text-slate-600">
-                    <Minus className="h-4 w-4" /> {effectiveStatus}
+              // 2. COD
+              if (['Delivered', 'Completed'].includes(effectiveStatus) || order.isPaid) {
+                return (
+                  <span className="flex items-center gap-1.5 rounded-md bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-600">
+                    <CheckCircle2 className="h-4 w-4" /> Paid Successfully
                   </span>
-                )}
-
-                {(effectiveStatus === 'Cancelled' || effectiveStatus === 'Rejected') && (
+                );
+              }
+              if (
+                effectiveStatus === 'Cancelled' ||
+                effectiveStatus === 'Rejected' ||
+                effectiveStatus === 'Returned'
+              ) {
+                return (
                   <span className="flex items-center gap-1.5 rounded-md bg-red-50 px-3 py-1 text-sm font-bold text-red-600">
                     <Minus className="h-4 w-4" /> {effectiveStatus}
                   </span>
-                )}
-              </>
-            )}
+                );
+              }
+
+              return (
+                <span className="flex items-center gap-1.5 rounded-md bg-amber-50 px-3 py-1 text-sm font-bold text-amber-600">
+                  <Clock className="h-4 w-4 animate-pulse" /> Pending
+                </span>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -178,21 +215,19 @@ export default function OrderPaymentSummary({
           <span>{formatPrice(originalTotal)}</span>
         </div>
 
-        {hasCoinDiscount && (
-          <div className="-mx-2 mt-1 flex items-center justify-between rounded-lg border border-emerald-100/50 bg-emerald-50/70 p-3 font-bold text-emerald-600">
-            <div className="flex flex-col gap-0.5">
-              <span className="flex items-center gap-2 text-sm">
-                <Coins className="h-4 w-4" /> PuzCoin Applied
-              </span>
-              <span className="ml-6 text-[11px] font-medium text-emerald-600/70">
-                Used {usedCoin.toLocaleString('en-US')} coins
-              </span>
-            </div>
-            <span className="flex items-center gap-1 text-base">
-              <Minus className="h-4 w-4" /> {formatPrice(usedCoin)}
+        <div className="-mx-2 mt-1 flex items-center justify-between rounded-lg border border-yellow-100/50 bg-yellow-50/70 p-3 font-bold text-yellow-600">
+          <div className="flex flex-col gap-0.5">
+            <span className="flex items-center gap-2 text-sm">
+              <Coins className="h-4 w-4" /> PuzCoin Applied
+            </span>
+            <span className="ml-6 text-[11px] font-medium text-yellow-600/70">
+              Used {usedCoin.toLocaleString('en-US')} coins
             </span>
           </div>
-        )}
+          <span className="flex items-center gap-1 text-base">
+            <Minus className="h-4 w-4" /> {formatPrice(usedCoin)}
+          </span>
+        </div>
       </div>
 
       <Separator className="border-dashed border-slate-200 bg-transparent" />

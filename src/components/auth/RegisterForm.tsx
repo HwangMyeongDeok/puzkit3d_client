@@ -39,8 +39,6 @@ export default function RegisterForm() {
         'Registration successful! Please check your email (and spam folder) to verify your account.'
       );
 
-      // Do NOT redirect, let the user stay and see the message.
-      // Optional: Clear form
       setForm({
         firstName: '',
         lastName: '',

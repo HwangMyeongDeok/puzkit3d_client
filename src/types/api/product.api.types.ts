@@ -24,8 +24,15 @@ export interface ProductDto {
   capabilityIds: string[];
 }
 
+export interface DriveDto {
+  driveId: string;
+  driveName: string;
+  quantity: number;
+}
+
 export interface ProductDetailDto extends ProductDto {
-  previewAsset: string;
+  previewAsset: string[];
+  drives: DriveDto[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -38,6 +45,7 @@ export interface ProductVariantDto {
   assembledLengthMm: number;
   assembledWidthMm: number;
   assembledHeightMm: number;
+  previewImages: string[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -113,17 +121,4 @@ export interface UpdateInstockProductRequestDto {
   assemblyMethodId?: string;
   materialId?: string;
   capabilityIds?: string[]; // Đã sửa thành mảng (chữ s)
-}
-
-export interface PartDto {
-  id: string;
-  name: string;
-  partType: string;
-  code: string;
-  quantity: number;
-}
-
-export interface GetPartByIdRequest {
-  productId: string;
-  partId: string;
 }

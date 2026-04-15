@@ -156,14 +156,10 @@ export default function OrderDetailsPage() {
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 pb-10">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button
-          onClick={() => router.back()}
-          variant="ghost"
-          size="icon"
-          className="hover:bg-muted shrink-0 rounded-full"
-        >
+        <Button onClick={() => router.back()} variant="outline" className="mt-2 rounded-full px-6">
           <ArrowLeft className="h-5 w-5" />
         </Button>
+
         <h1 className="text-2xl font-bold md:text-3xl">Order Details</h1>
       </div>
 
@@ -183,15 +179,11 @@ export default function OrderDetailsPage() {
           isCanceling={isCanceling}
           isCompleting={isCompleting}
           ticketData={ticketData}
-          trackingData={originalTrackingData}
           onCancelClick={() => setConfirmCancelOpen(true)}
           onCompleteClick={() => setConfirmCompleteOpen(true)}
           onReportClick={() => setReportDialogOpen(true)}
-          onPayClick={handlePayClick} // <-- Truyền hàm Smart Payment vào đây
+          onPayClick={handlePayClick}
         />
-
-        {/* 2. Customer Info */}
-        <OrderCustomerInfo order={order} />
 
         {/* 3. Products */}
         <OrderProductsList order={order} />
