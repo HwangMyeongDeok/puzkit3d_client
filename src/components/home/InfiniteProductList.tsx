@@ -161,6 +161,7 @@ export default function InfiniteProductList() {
   const { data: topicsData } = useGetTopicsQuery({
     pageNumber: 1,
     pageSize: 50,
+    ascending: true,
   });
   const allTopics = topicsData?.items ?? [];
 

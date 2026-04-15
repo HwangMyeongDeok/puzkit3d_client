@@ -19,6 +19,7 @@ export default function TrustBadges() {
   const { data, isLoading, isError } = useGetCapabilitiesQuery({
     pageNumber: 1,
     pageSize: 4,
+    ascending: true,
     isActive: true,
   });
 

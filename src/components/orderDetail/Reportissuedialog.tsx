@@ -10,8 +10,9 @@ import {
   Link as LinkIcon,
   FileText,
   Package,
-  Wrench,
+  HardDrive,
   UploadCloud,
+  Wrench,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -39,10 +40,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import type { OrderDetailDto } from '@/types/api/order.api.types';
 import {
   useCreateTicketMutation,
-  useGetProductPartsQuery,
   type TicketType,
   type CreateTicketDetailDto,
 } from '@/lib/api/endpoints/supportTicketApi';
+import { useGetProductBySlugQuery } from '@/lib/api/endpoints/productApi';
 
 import { useGetPresignedUrlMutation } from '@/lib/api/endpoints/uploadApi';
 
@@ -52,14 +53,19 @@ import { useGetPresignedUrlMutation } from '@/lib/api/endpoints/uploadApi';
 
 const TICKET_TYPES: { value: TicketType; label: string; description: string }[] = [
   {
-    value: 'ReplacePart',
-    label: 'Replace Part',
-    description: 'Request replacement for missing or damaged parts',
+    value: 'ReplaceDrive',
+    label: 'Replace Drive',
+    description: 'Request replacement for a missing or damaged drive',
   },
   {
     value: 'Exchange',
     label: 'Exchange',
     description: 'Exchange for a different product',
+  },
+  {
+    value: 'Return',
+    label: 'Return',
+    description: 'Return for a refund',
   },
 ];
 
@@ -69,13 +75,13 @@ const TICKET_TYPES: { value: TicketType; label: string; description: string }[] 
 
 interface ItemSelection {
   selected: boolean;
-  partId: string;
+  driveId: string;
   quantity: number;
   note: string;
 }
 
 function defaultItemState(): ItemSelection {
-  return { selected: false, partId: '', quantity: 1, note: '' };
+  return { selected: false, driveId: '', quantity: 1, note: '' };
 }
 
 /* ------------------------------------------------------------------ */
@@ -87,47 +93,49 @@ function isValidInput(value: string): boolean {
 }
 
 /* ------------------------------------------------------------------ */
-/* Part selector sub-component                                        */
+/* Drive selector sub-component                                       */
 /* ------------------------------------------------------------------ */
 
-interface PartSelectorProps {
-  productId: string;
+interface DriveSelectorProps {
+  productSlug: string;
   value: string;
-  onChange: (partId: string) => void;
+  onChange: (driveId: string) => void;
   hasError: boolean;
 }
 
-function PartSelector({ productId, value, onChange, hasError }: PartSelectorProps) {
+function DriveSelector({ productSlug, value, onChange, hasError }: DriveSelectorProps) {
   const {
-    data: parts,
+    data: product,
     isLoading,
     isError,
-  } = useGetProductPartsQuery(productId, {
-    skip: !productId,
+  } = useGetProductBySlugQuery(productSlug, {
+    skip: !productSlug,
   });
+
+  const drives = product?.drives ?? [];
 
   if (isLoading) {
     return (
       <div className="border-input bg-muted/30 text-muted-foreground flex h-9 items-center gap-2 rounded-md border px-3 text-sm">
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        Loading parts list...
+        Loading drives list...
       </div>
     );
   }
 
-  if (isError || !parts) {
+  if (isError || !product) {
     return (
       <div className="flex h-9 items-center gap-2 rounded-md border border-blue-900/40 bg-blue-50 px-3 text-sm text-blue-900">
         <AlertTriangle className="h-3.5 w-3.5" />
-        Failed to load parts. Try again later.
+        Failed to load drives. Try again later.
       </div>
     );
   }
 
-  if (parts.length === 0) {
+  if (drives.length === 0) {
     return (
       <div className="border-input bg-muted/30 text-muted-foreground flex h-9 items-center gap-2 rounded-md border px-3 text-sm">
-        This product has no parts available for replacement.
+        This product has no drives available for replacement.
       </div>
     );
   }
@@ -135,16 +143,14 @@ function PartSelector({ productId, value, onChange, hasError }: PartSelectorProp
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className={hasError ? 'border-blue-900' : ''}>
-        <SelectValue placeholder="Select part to replace..." />
+        <SelectValue placeholder="Select drive to replace..." />
       </SelectTrigger>
       <SelectContent>
-        {parts.map((part) => (
-          <SelectItem key={part.id} value={part.id}>
+        {drives.map((drive: any) => (
+          <SelectItem key={drive.driveId} value={drive.driveId}>
             <div className="flex flex-col gap-0.5">
-              <span className="font-medium">{part.name}</span>
-              <span className="text-muted-foreground text-xs">
-                Code: {part.code} &bull; Type: {part.partType} &bull; {part.totalPieces} pcs
-              </span>
+              <span className="font-medium">{drive.driveName}</span>
+              <span className="text-muted-foreground text-xs">Qty: {drive.quantity}</span>
             </div>
           </SelectItem>
         ))}
@@ -277,10 +283,10 @@ export default function ReportIssueDialog({
     const selectedItems = orderDetails.filter((d) => items[d.id]?.selected);
     if (selectedItems.length === 0) newErrors.items = 'Please select at least one product.';
 
-    if (type === 'ReplacePart') {
+    if (type === 'ReplaceDrive') {
       selectedItems.forEach((d) => {
         const item = items[d.id];
-        if (!item.partId) newErrors[`partId_${d.id}`] = 'Please select a part to replace.';
+        if (!item.driveId) newErrors[`driveId_${d.id}`] = 'Please select a drive to replace.';
         if (!item.quantity || item.quantity < 1)
           newErrors[`qty_${d.id}`] = 'Minimum quantity is 1.';
       });
@@ -314,8 +320,8 @@ export default function ReportIssueDialog({
           quantity: Number(item.quantity),
         };
 
-        if (type === 'ReplacePart' && item.partId) {
-          detail.partId = item.partId;
+        if (type === 'ReplaceDrive' && item.driveId) {
+          detail.driveId = item.driveId;
         }
 
         const trimmedNote = item.note.trim();
@@ -353,7 +359,7 @@ export default function ReportIssueDialog({
     onOpenChange(false);
   };
 
-  const isReplacePart = type === 'ReplacePart';
+  const isReplaceDrive = type === 'ReplaceDrive';
   const isExchange = type === 'Exchange';
 
   /* ── render ── */
@@ -375,7 +381,7 @@ export default function ReportIssueDialog({
           {/* ── Ticket type ── */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="ticket-type" className="font-semibold">
-              Request Type <span className="text-blue-900">*</span>
+              support ticket type <span className="text-blue-900">*</span>
             </Label>
             <Select
               value={type}
@@ -386,7 +392,7 @@ export default function ReportIssueDialog({
                   Object.fromEntries(
                     Object.entries(prev).map(([id, state]) => [
                       id,
-                      { ...state, partId: '', quantity: 1 },
+                      { ...state, driveId: '', quantity: 1 },
                     ])
                   )
                 );
@@ -395,7 +401,7 @@ export default function ReportIssueDialog({
               <SelectTrigger id="ticket-type" className={errors.type ? 'border-blue-900' : ''}>
                 <SelectValue placeholder="Select request type..." />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" sideOffset={4} align="start" alignOffset={8}>
                 {TICKET_TYPES.map((t) => (
                   <SelectItem key={t.value} value={t.value}>
                     <div className="flex flex-col gap-0.5">
@@ -437,7 +443,7 @@ export default function ReportIssueDialog({
           {/* ── Proof URL & Upload ── */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="proof" className="font-semibold">
-              Evidence (YouTube Link or Upload Photo/Video) <span className="text-blue-900">*</span>
+              Evidence (Link or Upload Photo/Video) <span className="text-blue-900">*</span>
             </Label>
 
             <div className="flex items-center gap-2">
@@ -452,6 +458,8 @@ export default function ReportIssueDialog({
                     clearError('proof');
                   }}
                   className={`pl-9 ${errors.proof ? 'border-blue-900' : ''}`}
+                  // Vô hiệu hóa ô nhập Link nếu người dùng ĐÃ tải file lên (tuỳ chọn, bạn có thể bỏ dòng này nếu muốn cho phép cả 2)
+                  disabled={mediaPreviews.length > 0}
                 />
               </div>
 
@@ -459,6 +467,7 @@ export default function ReportIssueDialog({
                 type="file"
                 ref={fileInputRef}
                 className="hidden"
+                // Chỉ nhận ảnh hoặc video
                 accept="image/*,video/*"
                 onChange={handleFileUpload}
               />
@@ -467,7 +476,8 @@ export default function ReportIssueDialog({
                 variant="outline"
                 className="shrink-0 gap-2"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
+                // Vô hiệu hóa nút Upload nếu đang upload HOẶC đã có 1 file được tải lên
+                disabled={isUploading || mediaPreviews.length >= 1}
               >
                 {isUploading ? (
                   <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
@@ -482,13 +492,14 @@ export default function ReportIssueDialog({
               <p className="text-xs text-blue-900">{errors.proof}</p>
             ) : (
               <p className="text-muted-foreground text-xs">
-                You can enter multiple links separated by commas.
+                Provide a link OR upload 1 media file (photo or video).
               </p>
             )}
 
             {mediaPreviews.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-3">
-                {mediaPreviews.map((media, idx) => (
+                {/* Cắt mảng chỉ lấy 1 phần tử đầu tiên để đảm bảo UI không bao giờ hiện > 1 file */}
+                {mediaPreviews.slice(0, 1).map((media, idx) => (
                   <div
                     key={idx}
                     className="border-border bg-muted/20 relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-md border"
@@ -503,6 +514,8 @@ export default function ReportIssueDialog({
                         className="h-full w-full object-cover"
                       />
                     )}
+
+                    {/* Gợi ý: Bạn nên có 1 nút X (Xóa) ở đây để user có thể xóa file đã up và chọn file khác */}
                   </div>
                 ))}
               </div>
@@ -527,6 +540,8 @@ export default function ReportIssueDialog({
                 const isSelected = itemState.selected;
                 const productId: string =
                   (detail.productDetails as { productId?: string } | undefined)?.productId ?? '';
+                const productSlug: string =
+                  (detail.productDetails as { slug?: string } | undefined)?.slug ?? '';
 
                 return (
                   <div
@@ -540,8 +555,8 @@ export default function ReportIssueDialog({
                         id={`item-${detail.id}`}
                         checked={isSelected}
                         onCheckedChange={(checked) => {
-                          updateItem(detail.id, { selected: !!checked, partId: '', quantity: 1 });
-                          clearError('items', `partId_${detail.id}`, `qty_${detail.id}`);
+                          updateItem(detail.id, { selected: !!checked, driveId: '', quantity: 1 });
+                          clearError('items', `driveId_${detail.id}`, `qty_${detail.id}`);
                         }}
                         className="mt-0.5"
                       />
@@ -592,8 +607,30 @@ export default function ReportIssueDialog({
                               max={detail.quantity}
                               value={itemState.quantity}
                               onChange={(e) => {
-                                updateItem(detail.id, { quantity: Number(e.target.value) });
+                                const rawValue = e.target.value;
+
+                                // 1. Cho phép xoá trống input để gõ số mới
+                                if (rawValue === '') {
+                                  updateItem(detail.id, { quantity: 0 });
+                                  return;
+                                }
+
+                                let numVal = parseInt(rawValue, 10);
+
+                                if (numVal > detail.quantity) {
+                                  numVal = detail.quantity;
+                                } else if (numVal < 1) {
+                                  numVal = 1;
+                                }
+
+                                updateItem(detail.id, { quantity: numVal });
                                 clearError(`qty_${detail.id}`);
+                              }}
+                              onBlur={(e) => {
+                                const finalValue = Number(e.target.value);
+                                if (!e.target.value || isNaN(finalValue) || finalValue < 1) {
+                                  updateItem(detail.id, { quantity: 1 });
+                                }
                               }}
                               className={`h-8 w-24 text-sm ${
                                 errors[`qty_${detail.id}`] ? 'border-blue-900' : ''
@@ -606,34 +643,34 @@ export default function ReportIssueDialog({
                           </div>
                         )}
 
-                        {/* ── ReplacePart: part selector + quantity ── */}
-                        {isReplacePart && (
+                        {/* ── ReplaceDrive: drive selector + quantity ── */}
+                        {isReplaceDrive && (
                           <div className="flex flex-col gap-3">
                             <div className="flex flex-col gap-1.5">
                               <Label className="text-xs font-medium">
-                                <Wrench className="mr-1 inline h-3 w-3" />
-                                Part to Replace <span className="text-blue-900">*</span>
+                                <HardDrive className="mr-1 inline h-3 w-3" />
+                                Drive to Replace <span className="text-blue-900">*</span>
                               </Label>
 
-                              {productId ? (
-                                <PartSelector
-                                  productId={productId}
-                                  value={itemState.partId}
-                                  onChange={(partId) => {
-                                    updateItem(detail.id, { partId });
-                                    clearError(`partId_${detail.id}`);
+                              {productSlug ? (
+                                <DriveSelector
+                                  productSlug={productSlug}
+                                  value={itemState.driveId}
+                                  onChange={(driveId) => {
+                                    updateItem(detail.id, { driveId });
+                                    clearError(`driveId_${detail.id}`);
                                   }}
-                                  hasError={!!errors[`partId_${detail.id}`]}
+                                  hasError={!!errors[`driveId_${detail.id}`]}
                                 />
                               ) : (
                                 <div className="flex h-9 items-center gap-2 rounded-md border border-blue-900/40 bg-blue-50 px-3 text-xs text-blue-900">
                                   <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                                  Product information not found to load parts.
+                                  Product information not found to load drives.
                                 </div>
                               )}
-                              {errors[`partId_${detail.id}`] && (
+                              {errors[`driveId_${detail.id}`] && (
                                 <p className="text-xs text-blue-900">
-                                  {errors[`partId_${detail.id}`]}
+                                  {errors[`driveId_${detail.id}`]}
                                 </p>
                               )}
                             </div>

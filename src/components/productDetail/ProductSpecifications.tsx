@@ -2,8 +2,8 @@ import { Package, Scale, Clock } from 'lucide-react';
 import {
   TopicBadge,
   MaterialBadge,
-  AssemblyBadge,
   CapabilitiesList,
+  AssemblyList,
 } from './ProductSpecDynamicBadges';
 
 interface ProductSpecificationsProps {
@@ -59,10 +59,10 @@ export default function ProductSpecifications({ product }: ProductSpecifications
         {product.topicId && <TopicBadge topicId={product.topicId} />}
 
         {product.materialId && <MaterialBadge materialId={product.materialId} />}
-
-        {product.assemblyMethodId && <AssemblyBadge assemblyMethodId={product.assemblyMethodId} />}
       </div>
-
+      {product.assemblyMethodId && product.assemblyMethodId.length > 0 && (
+        <AssemblyList assemblyMethodIds={product.assemblyMethodId} />
+      )}
       {/* Capabilities */}
       <CapabilitiesList capabilityIds={product.capabilityIds} />
     </section>

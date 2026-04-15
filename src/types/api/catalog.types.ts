@@ -9,6 +9,7 @@ export interface GetCapabilitiesRequest {
   pageNumber?: number;
   pageSize?: number;
   searchTerm?: string;
+  ascending: boolean;
   isActive?: boolean;
 }
 
@@ -23,6 +24,7 @@ export interface GetMaterialsRequest {
   pageNumber?: number;
   pageSize?: number;
   searchTerm?: string;
+  ascending: boolean;
   isActive?: boolean;
 }
 
@@ -37,6 +39,7 @@ export interface GetTopicsRequest {
   pageNumber?: number;
   pageSize?: number;
   searchTerm?: string;
+  ascending: boolean;
   isActive?: boolean;
 }
 
@@ -51,5 +54,6 @@ export interface GetAssemblyMethodsRequest {
   pageNumber?: number;
   pageSize?: number;
   searchTerm?: string;
+  ascending: boolean;
   isActive?: boolean;
 }

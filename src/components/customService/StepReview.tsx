@@ -34,7 +34,11 @@ export default function StepReview({
   const { data: assemblyData } = useGetAssemblyMethodByIdQuery(config.assembly, {
     skip: !config.assembly,
   });
-  const { data: capabilitiesData } = useGetCapabilitiesQuery({ pageNumber: 1, pageSize: 50 });
+  const { data: capabilitiesData } = useGetCapabilitiesQuery({
+    pageNumber: 1,
+    pageSize: 50,
+    ascending: true,
+  });
 
   const selectedCapNames = (capabilitiesData?.items || [])
     .filter((c: any) => config.capabilities.includes(c.id))

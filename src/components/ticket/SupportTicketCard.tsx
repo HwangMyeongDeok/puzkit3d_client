@@ -15,8 +15,8 @@ import TicketStepper from './TicketStepper';
 
 // Cấu hình màu cho dễ nhìn
 const TICKET_TYPE_CONFIG: Record<TicketType, { label: string; className: string }> = {
-  ReplacePart: {
-    label: 'Replace Part',
+  ReplaceDrive: {
+    label: 'Replace Drive',
     className:
       'bg-indigo-50/50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20',
   },

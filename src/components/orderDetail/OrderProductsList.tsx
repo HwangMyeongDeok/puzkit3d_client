@@ -1,5 +1,9 @@
-import { Package } from 'lucide-react';
+'use client';
+
+import { useState } from 'react';
+import { Package, ChevronDown, ChevronUp } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button'; // Đảm bảo bạn đã có component này
 import { formatPrice } from '@/lib/utils';
 import type { GetCustomerOrderByIdResponseDto, OrderDetailDto } from '@/types/api/order.api.types';
 import { OrderFeedbackSection } from '@/components/feedback/OrderFeedbackSection';
@@ -10,17 +14,25 @@ interface OrderProductsListProps {
   effectiveStatus?: string;
 }
 
+const INITIAL_VISIBLE_COUNT = 2; // Số lượng sản phẩm hiển thị ban đầu
+
 export default function OrderProductsList({ order, effectiveStatus }: OrderProductsListProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const orderDetails = order.orderDetails || [];
+  const hasMoreItems = orderDetails.length > INITIAL_VISIBLE_COUNT;
+  const displayedItems = isExpanded ? orderDetails : orderDetails.slice(0, INITIAL_VISIBLE_COUNT);
+
   return (
     <div className="bg-card border-border flex flex-col gap-4 rounded-xl border p-6 shadow-sm">
       <h3 className="mb-4 flex items-center gap-2 text-lg font-bold">
         <Package className="text-brand h-5 w-5" />
-        Ordered Products ({order.orderDetails?.length || 0})
+        Ordered Products ({orderDetails.length})
       </h3>
 
-      {order.orderDetails && order.orderDetails.length > 0 ? (
+      {orderDetails.length > 0 ? (
         <div className="flex flex-col">
-          {order.orderDetails.map((item: OrderDetailDto, idx) => {
+          {displayedItems.map((item: OrderDetailDto, idx: number) => {
             const slug = item.productDetails?.slug;
             const productDetailUrl = `/shop/${slug}`;
 
@@ -80,6 +92,29 @@ export default function OrderProductsList({ order, effectiveStatus }: OrderProdu
               </div>
             );
           })}
+
+          {/* --- Nút Xem thêm / Thu gọn --- */}
+          {hasMoreItems && (
+            <div className="mt-6 flex justify-center">
+              <Button
+                variant="outline"
+                className="w-full rounded-full px-6 sm:w-auto"
+                onClick={() => setIsExpanded(!isExpanded)}
+              >
+                {isExpanded ? (
+                  <span className="flex items-center gap-2">
+                    Show less
+                    <ChevronUp className="h-4 w-4" />
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    View {orderDetails.length - INITIAL_VISIBLE_COUNT} more products
+                    <ChevronDown className="h-4 w-4" />
+                  </span>
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="bg-muted/20 rounded-lg border border-dashed py-8 text-center">
