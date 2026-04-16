@@ -3,7 +3,7 @@ import { ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type {
   OrderConfigDto,
-  PaymentConfigDto,
+  PaymentConfigDto, // Hãy đảm bảo bạn đã update type này khớp với API response mới nhé
   WalletConfigDto,
 } from '@/types/api/config.api.types';
 
@@ -20,13 +20,11 @@ export default function BusinessPolicyDialog({
   isOpen,
   onClose,
   onConfirm,
-  orderConfig,
   paymentConfig,
   walletConfig,
 }: BusinessPolicyDialogProps) {
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
 
-  // Reset cái tick mỗi khi mở lại dialog
   useEffect(() => {
     if (isOpen) {
       setIsTermsAccepted(false);
@@ -34,6 +32,12 @@ export default function BusinessPolicyDialog({
   }, [isOpen]);
 
   if (!isOpen) return null;
+
+  // Helper chuyển đổi đơn vị (Day -> days, Minute -> minutes)
+  const formatUnit = (unit?: string, defaultUnit: string = '') => {
+    if (!unit) return defaultUnit;
+    return `${unit.toLowerCase()}s`;
+  };
 
   return (
     <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
@@ -51,9 +55,16 @@ export default function BusinessPolicyDialog({
               <CheckCircle2 className="text-brand h-5 w-5 shrink-0" />
               <span>
                 <strong>Payment Time Limit:</strong> Please complete your payment within{' '}
-                <strong>{paymentConfig?.onlinePaymentExpiredInDays ?? 2} days</strong>. Each payment
-                session lasts for{' '}
-                <strong>{paymentConfig?.onlineTransactionExpiredInMinutes ?? 10} minutes</strong>.
+                <strong>
+                  {paymentConfig?.onlinePaymentExpiredValue ?? 2}{' '}
+                  {formatUnit(paymentConfig?.onlinePaymentExpiredUnit, 'days')}
+                </strong>
+                . Each payment session lasts for{' '}
+                <strong>
+                  {paymentConfig?.onlineTransactionExpiredValue ?? 10}{' '}
+                  {formatUnit(paymentConfig?.onlineTransactionExpiredUnit, 'minutes')}
+                </strong>
+                .
               </span>
             </li>
 

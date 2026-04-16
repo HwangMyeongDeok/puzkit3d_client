@@ -63,7 +63,7 @@ export const driveApi = apiSlice.injectEndpoints({
       query: (params) => ({
         url: '/drives', // Thêm '/api' phía trước nếu apiSlice của bạn chưa có baseUrl là /api
         method: 'GET',
-        params, // RTK Query sẽ tự động chuyển object này thành query string (?pageNumber=1&...)
+        params: params as unknown as Record<string, unknown>, // RTK Query sẽ tự động chuyển object này thành query string (?pageNumber=1&...)
       }),
     }),
 

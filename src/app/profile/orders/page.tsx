@@ -8,10 +8,10 @@ import { useGetCustomerOrdersQuery } from '@/lib/api/endpoints/orderApi';
 import { SupportTicketDto, useGetTicketsQuery } from '@/lib/api/endpoints/supportTicketApi';
 
 // Components đã tách
-import PaymentActionDialog from '@/components/checkout/PaymentActionDialog';
 import OrderStatusFilter from '@/components/order/OrderStatusFilter';
 import OrderCard from '@/components/order/OrderCard';
 import { InstockOrderStatus } from '@/types/api/order.api.types';
+import { SmartPaymentDialog } from '@/components/order/SmartPaymentDialog';
 
 export default function OrdersPage() {
   const [paymentOrderId, setPaymentOrderId] = useState<string | null>(null);
@@ -133,11 +133,10 @@ export default function OrdersPage() {
         )}
       </div>
 
-      <PaymentActionDialog
-        open={!!paymentOrderId}
+      <SmartPaymentDialog
         orderId={paymentOrderId}
+        open={!!paymentOrderId}
         onClose={() => setPaymentOrderId(null)}
-        mode="history"
       />
     </>
   );
