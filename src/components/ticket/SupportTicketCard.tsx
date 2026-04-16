@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 
 import type { SupportTicketDto, TicketType } from '@/lib/api/endpoints/supportTicketApi';
 
-import TicketStepper from './TicketStepper';
+import TicketStepper, { type StepItem } from './TicketStepper';
 
 // Cấu hình màu cho dễ nhìn
 const TICKET_TYPE_CONFIG: Record<TicketType, { label: string; className: string }> = {
@@ -39,13 +39,29 @@ interface SupportTicketCardProps {
 export default function SupportTicketCard({ ticket }: SupportTicketCardProps) {
   const typeConfig = TICKET_TYPE_CONFIG[ticket.type];
 
-  const ticketSteps = [
-    'Submitted',
-    'Processing',
-    ticket.status === 'Rejected' ? 'Rejected' : 'Resolved',
-  ];
-  const activeStep = ticket.status === 'Open' ? 0 : ticket.status === 'Processing' ? 1 : 2;
+  const isOpen = ticket.status === 'Open';
+  const isProcessing = ticket.status === 'Processing';
   const isRejected = ticket.status === 'Rejected';
+  const isResolved = ticket.status === 'Resolved';
+
+  const ticketSteps: StepItem[] = [
+    {
+      label: 'Submitted',
+      isCompleted: true,
+      isActive: isOpen,
+    },
+    {
+      label: 'Processing',
+      isCompleted: !isOpen,
+      isActive: isProcessing,
+    },
+    {
+      label: isRejected ? 'Rejected' : 'Resolved',
+      isCompleted: isResolved,
+      isActive: isRejected || isResolved,
+      isRejected,
+    },
+  ];
 
   return (
     <article className="bg-card border-border group hover:border-brand/40 relative flex flex-col gap-5 rounded-2xl border p-5 shadow-sm transition-all duration-300 hover:shadow-md sm:p-6">
@@ -98,7 +114,7 @@ export default function SupportTicketCard({ ticket }: SupportTicketCardProps) {
 
       {/* ─── PROGRESS BAR ─── */}
       <div className="bg-muted/30 border-border rounded-xl border p-4">
-        <TicketStepper steps={ticketSteps} activeStep={activeStep} isRejected={isRejected} />
+        <TicketStepper steps={ticketSteps} />
       </div>
 
       {/* ─── FOOTER & ACTION ─── */}

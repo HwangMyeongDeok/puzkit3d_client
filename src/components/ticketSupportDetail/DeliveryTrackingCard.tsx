@@ -1,6 +1,12 @@
-import { Truck, CalendarDays, Check, Camera } from 'lucide-react';
+'use client';
+
+import { Truck, CalendarDays, Check, Camera, ExternalLink, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+
+import { useGetWaybillNumberQuery } from '@/lib/api/endpoints/deliveryApi';
+import Image from 'next/image';
 
 const DELIVERY_STEPS = ['Pending', 'ReadyToPick', 'HandedOver', 'Delivering', 'Delivered'];
 
@@ -21,27 +27,69 @@ export default function DeliveryTrackingCard({
   deliveryTracking: any;
   isLoading: boolean;
 }) {
+  // 👉 Fetch Waybill URL
+  const { data: waybillUrl, isLoading: isWaybillLoading } = useGetWaybillNumberQuery(
+    deliveryTracking?.id,
+    { skip: !deliveryTracking?.id }
+  );
+
   if (!isLoading && !deliveryTracking) return null;
 
   return (
     <div className="bg-card border-border overflow-hidden rounded-xl border shadow-sm">
       <div className="bg-muted/30 border-border flex flex-col justify-between gap-4 border-b p-5 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary/10 text-primary rounded-lg p-2">
+        <div className="flex items-start gap-3">
+          <div className="bg-primary/10 text-primary mt-1 rounded-lg p-2">
             <Truck className="h-5 w-5" />
           </div>
-          <div>
-            <h2 className="text-base font-bold">Delivery Tracking</h2>
-            {deliveryTracking?.deliveryOrderCode && (
-              <p className="text-muted-foreground mt-0.5 font-mono text-sm">
-                Code:{' '}
-                <span className="text-foreground font-semibold">
-                  {deliveryTracking.deliveryOrderCode}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold">Delivery Tracking</h2>
+              {/* 👉 Badge hiển thị Type: Return hoặc Resend */}
+              {deliveryTracking?.type && (
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    'text-[10px] tracking-wider uppercase shadow-sm',
+                    deliveryTracking.type === 'Return'
+                      ? 'border-amber-200 bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400'
+                      : 'border-indigo-200 bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400'
+                  )}
+                >
+                  {deliveryTracking.type}
+                </Badge>
+              )}
+            </div>
+
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-4 gap-y-1">
+              {deliveryTracking?.deliveryOrderCode && (
+                <p className="text-muted-foreground font-mono text-sm">
+                  Code:{' '}
+                  <span className="text-foreground font-semibold">
+                    {deliveryTracking.deliveryOrderCode}
+                  </span>
+                </p>
+              )}
+
+              {/* 👉 Link Waybill */}
+              {isWaybillLoading ? (
+                <span className="text-muted-foreground flex items-center gap-1 text-xs">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Loading Waybill...
                 </span>
-              </p>
-            )}
+              ) : waybillUrl ? (
+                <a
+                  href={waybillUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs font-semibold text-blue-600 transition-colors hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  View Waybill <ExternalLink className="h-3 w-3" />
+                </a>
+              ) : null}
+            </div>
           </div>
         </div>
+
         {deliveryTracking?.expectedDeliveryDate && (
           <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm text-amber-600 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-500">
             <CalendarDays className="h-4 w-4" />
@@ -110,11 +158,17 @@ export default function DeliveryTrackingCard({
                   <Camera className="text-muted-foreground h-4 w-4" />
                   Handover Evidence
                 </h3>
-                <img
-                  src={deliveryTracking.handOverImageUrl}
-                  alt="Delivery Proof"
-                  className="border-border h-auto w-48 rounded-md border object-cover"
-                />
+                <a
+                  href={deliveryTracking.handOverImageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Image
+                    src={deliveryTracking.handOverImageUrl}
+                    alt="Delivery Proof"
+                    className="border-border h-auto w-48 rounded-md border object-cover transition-opacity hover:opacity-90"
+                  />
+                </a>
               </div>
             )}
           </div>

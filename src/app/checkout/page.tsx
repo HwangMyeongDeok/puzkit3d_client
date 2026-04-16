@@ -475,7 +475,6 @@ export default function CheckoutPage() {
         isOpen={showTermsDialog}
         onClose={() => setShowTermsDialog(false)}
         onConfirm={executeOrder}
-        orderConfig={orderConfig}
         paymentConfig={paymentConfig}
         walletConfig={walletConfig}
       />

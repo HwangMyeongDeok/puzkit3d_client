@@ -1,7 +1,5 @@
 'use client';
 
-// src/components/ticket/ReportIssueDialog.tsx
-
 import { useState, useRef } from 'react';
 import { toast } from 'sonner';
 import {
@@ -12,7 +10,6 @@ import {
   Package,
   HardDrive,
   UploadCloud,
-  Wrench,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -76,12 +73,13 @@ const TICKET_TYPES: { value: TicketType; label: string; description: string }[] 
 interface ItemSelection {
   selected: boolean;
   driveId: string;
+  driveMaxQty: number; // 👉 THÊM: Lưu trữ giới hạn tối đa của linh kiện
   quantity: number;
   note: string;
 }
 
 function defaultItemState(): ItemSelection {
-  return { selected: false, driveId: '', quantity: 1, note: '' };
+  return { selected: false, driveId: '', driveMaxQty: 0, quantity: 1, note: '' };
 }
 
 /* ------------------------------------------------------------------ */
@@ -99,7 +97,7 @@ function isValidInput(value: string): boolean {
 interface DriveSelectorProps {
   productSlug: string;
   value: string;
-  onChange: (driveId: string) => void;
+  onChange: (driveId: string, driveQtyPerItem: number) => void; // 👉 THÊM: Truyền số lượng lên cha
   hasError: boolean;
 }
 
@@ -141,7 +139,14 @@ function DriveSelector({ productSlug, value, onChange, hasError }: DriveSelector
   }
 
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select
+      value={value}
+      onValueChange={(val) => {
+        // Tìm linh kiện đang chọn để lấy số lượng mặc định trên 1 sản phẩm
+        const selectedDrive = drives.find((d: any) => d.driveId === val);
+        onChange(val, selectedDrive?.quantity || 1);
+      }}
+    >
       <SelectTrigger className={hasError ? 'border-blue-900' : ''}>
         <SelectValue placeholder="Select drive to replace..." />
       </SelectTrigger>
@@ -150,7 +155,9 @@ function DriveSelector({ productSlug, value, onChange, hasError }: DriveSelector
           <SelectItem key={drive.driveId} value={drive.driveId}>
             <div className="flex flex-col gap-0.5">
               <span className="font-medium">{drive.driveName}</span>
-              <span className="text-muted-foreground text-xs">Qty: {drive.quantity}</span>
+              <span className="text-muted-foreground text-xs">
+                Qty per product: {drive.quantity}
+              </span>
             </div>
           </SelectItem>
         ))}
@@ -287,12 +294,17 @@ export default function ReportIssueDialog({
       selectedItems.forEach((d) => {
         const item = items[d.id];
         if (!item.driveId) newErrors[`driveId_${d.id}`] = 'Please select a drive to replace.';
-        if (!item.quantity || item.quantity < 1)
+        if (!item.quantity || item.quantity < 1) {
           newErrors[`qty_${d.id}`] = 'Minimum quantity is 1.';
+        }
+        // 👉 KIỂM TRA QUANITTY TỐI ĐA CHO DRIVE
+        else if (item.quantity > item.driveMaxQty) {
+          newErrors[`qty_${d.id}`] = `Maximum quantity is ${item.driveMaxQty}.`;
+        }
       });
     }
 
-    if (type === 'Exchange') {
+    if (type === 'Exchange' || type === 'Return') {
       selectedItems.forEach((d) => {
         const item = items[d.id];
         if (!item.quantity || item.quantity < 1)
@@ -360,7 +372,7 @@ export default function ReportIssueDialog({
   };
 
   const isReplaceDrive = type === 'ReplaceDrive';
-  const isExchange = type === 'Exchange';
+  const isExchangeOrReturn = type === 'Exchange' || type === 'Return';
 
   /* ── render ── */
 
@@ -381,7 +393,7 @@ export default function ReportIssueDialog({
           {/* ── Ticket type ── */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="ticket-type" className="font-semibold">
-              support ticket type <span className="text-blue-900">*</span>
+              Support Ticket Type <span className="text-blue-900">*</span>
             </Label>
             <Select
               value={type}
@@ -392,7 +404,7 @@ export default function ReportIssueDialog({
                   Object.fromEntries(
                     Object.entries(prev).map(([id, state]) => [
                       id,
-                      { ...state, driveId: '', quantity: 1 },
+                      { ...state, driveId: '', driveMaxQty: 0, quantity: 1 },
                     ])
                   )
                 );
@@ -458,7 +470,6 @@ export default function ReportIssueDialog({
                     clearError('proof');
                   }}
                   className={`pl-9 ${errors.proof ? 'border-blue-900' : ''}`}
-                  // Vô hiệu hóa ô nhập Link nếu người dùng ĐÃ tải file lên (tuỳ chọn, bạn có thể bỏ dòng này nếu muốn cho phép cả 2)
                   disabled={mediaPreviews.length > 0}
                 />
               </div>
@@ -467,7 +478,6 @@ export default function ReportIssueDialog({
                 type="file"
                 ref={fileInputRef}
                 className="hidden"
-                // Chỉ nhận ảnh hoặc video
                 accept="image/*,video/*"
                 onChange={handleFileUpload}
               />
@@ -476,7 +486,6 @@ export default function ReportIssueDialog({
                 variant="outline"
                 className="shrink-0 gap-2"
                 onClick={() => fileInputRef.current?.click()}
-                // Vô hiệu hóa nút Upload nếu đang upload HOẶC đã có 1 file được tải lên
                 disabled={isUploading || mediaPreviews.length >= 1}
               >
                 {isUploading ? (
@@ -498,7 +507,6 @@ export default function ReportIssueDialog({
 
             {mediaPreviews.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-3">
-                {/* Cắt mảng chỉ lấy 1 phần tử đầu tiên để đảm bảo UI không bao giờ hiện > 1 file */}
                 {mediaPreviews.slice(0, 1).map((media, idx) => (
                   <div
                     key={idx}
@@ -514,8 +522,6 @@ export default function ReportIssueDialog({
                         className="h-full w-full object-cover"
                       />
                     )}
-
-                    {/* Gợi ý: Bạn nên có 1 nút X (Xóa) ở đây để user có thể xóa file đã up và chọn file khác */}
                   </div>
                 ))}
               </div>
@@ -538,8 +544,6 @@ export default function ReportIssueDialog({
               {orderDetails.map((detail) => {
                 const itemState = items[detail.id] ?? defaultItemState();
                 const isSelected = itemState.selected;
-                const productId: string =
-                  (detail.productDetails as { productId?: string } | undefined)?.productId ?? '';
                 const productSlug: string =
                   (detail.productDetails as { slug?: string } | undefined)?.slug ?? '';
 
@@ -555,7 +559,12 @@ export default function ReportIssueDialog({
                         id={`item-${detail.id}`}
                         checked={isSelected}
                         onCheckedChange={(checked) => {
-                          updateItem(detail.id, { selected: !!checked, driveId: '', quantity: 1 });
+                          updateItem(detail.id, {
+                            selected: !!checked,
+                            driveId: '',
+                            driveMaxQty: 0,
+                            quantity: 1,
+                          });
                           clearError('items', `driveId_${detail.id}`, `qty_${detail.id}`);
                         }}
                         className="mt-0.5"
@@ -578,7 +587,7 @@ export default function ReportIssueDialog({
                           </p>
                         )}
                         <p className="text-muted-foreground mt-1 text-xs">
-                          Quantity: {detail.quantity}
+                          Quantity ordered: {detail.quantity}
                         </p>
                       </label>
                     </div>
@@ -595,8 +604,8 @@ export default function ReportIssueDialog({
                           />
                         </div>
 
-                        {/* ── Exchange: quantity only ── */}
-                        {isExchange && (
+                        {/* ── Exchange / Return: quantity ── */}
+                        {isExchangeOrReturn && (
                           <div className="flex flex-col gap-1">
                             <Label className="text-xs font-medium">
                               Exchange Quantity <span className="text-blue-900">*</span>
@@ -609,7 +618,6 @@ export default function ReportIssueDialog({
                               onChange={(e) => {
                                 const rawValue = e.target.value;
 
-                                // 1. Cho phép xoá trống input để gõ số mới
                                 if (rawValue === '') {
                                   updateItem(detail.id, { quantity: 0 });
                                   return;
@@ -656,9 +664,19 @@ export default function ReportIssueDialog({
                                 <DriveSelector
                                   productSlug={productSlug}
                                   value={itemState.driveId}
-                                  onChange={(driveId) => {
-                                    updateItem(detail.id, { driveId });
-                                    clearError(`driveId_${detail.id}`);
+                                  onChange={(driveId, driveQtyPerItem) => {
+                                    // Tổng max của drive = (Số drive / 1 SP) * (Số SP đã mua)
+                                    const allowedMax = driveQtyPerItem * detail.quantity;
+
+                                    // Chặn lại số lượng nếu đang nhập lớn hơn max cho phép mới
+                                    const safeQty = Math.min(itemState.quantity || 1, allowedMax);
+
+                                    updateItem(detail.id, {
+                                      driveId,
+                                      driveMaxQty: allowedMax,
+                                      quantity: safeQty,
+                                    });
+                                    clearError(`driveId_${detail.id}`, `qty_${detail.id}`);
                                   }}
                                   hasError={!!errors[`driveId_${detail.id}`]}
                                 />
@@ -682,16 +700,42 @@ export default function ReportIssueDialog({
                               <Input
                                 type="number"
                                 min={1}
-                                max={detail.quantity}
+                                max={itemState.driveMaxQty || 1}
                                 value={itemState.quantity}
+                                disabled={!itemState.driveId} // Bắt buộc chọn Drive trước khi nhập số lượng
                                 onChange={(e) => {
-                                  updateItem(detail.id, { quantity: Number(e.target.value) });
+                                  const rawValue = e.target.value;
+
+                                  if (rawValue === '') {
+                                    updateItem(detail.id, { quantity: 0 });
+                                    return;
+                                  }
+
+                                  let numVal = parseInt(rawValue, 10);
+
+                                  if (numVal > itemState.driveMaxQty) {
+                                    numVal = itemState.driveMaxQty;
+                                  } else if (numVal < 1) {
+                                    numVal = 1;
+                                  }
+
+                                  updateItem(detail.id, { quantity: numVal });
                                   clearError(`qty_${detail.id}`);
+                                }}
+                                onBlur={(e) => {
+                                  const finalValue = Number(e.target.value);
+                                  if (!e.target.value || isNaN(finalValue) || finalValue < 1) {
+                                    updateItem(detail.id, { quantity: 1 });
+                                  }
                                 }}
                                 className={`h-8 w-24 text-sm ${
                                   errors[`qty_${detail.id}`] ? 'border-blue-900' : ''
                                 }`}
                               />
+                              <p className="text-muted-foreground text-xs">
+                                Max:{' '}
+                                {itemState.driveId ? itemState.driveMaxQty : 'Select a drive first'}
+                              </p>
                               {errors[`qty_${detail.id}`] && (
                                 <p className="text-xs text-blue-900">
                                   {errors[`qty_${detail.id}`]}
