@@ -46,7 +46,15 @@ export const partnerApi = apiSlice.injectEndpoints({
       }),
       providesTags: ['Product'],
     }),
+
+    getPartnerBySlug: builder.query<PartnerDto, string>({
+      query: (slug) => ({
+        url: `/partners/slug/${slug}`,
+        method: 'GET',
+      }),
+      providesTags: ['Product'],
+    }),
   }),
 });
 
-export const { useGetPartnersQuery } = partnerApi;
+export const { useGetPartnersQuery, useGetPartnerBySlugQuery } = partnerApi;

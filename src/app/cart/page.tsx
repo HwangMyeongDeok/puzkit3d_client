@@ -7,21 +7,25 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Loader2,
   Package,
-  BriefcaseBusiness,
   ShoppingBag,
   CreditCard,
   FileText,
   Trash2,
   AlertCircle,
+  BriefcaseBusiness,
+  Minus,
+  Plus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useAppDispatch, useAppSelector } from '@/stores';
 import { useCartSync } from '@/lib/hooks/useCartSync';
 import { useGetCartQuery, useUpdateCartItemMutation } from '@/lib/api/endpoints/cartApi';
+import { useGetPartnersQuery } from '@/lib/api/endpoints/partnerApi';
 import {
   useGetPartnerCartQuery,
   useRemoveItemFromPartnerCartMutation,
+  useUpdatePartnerCartItemMutation,
   type PartnerCartItem,
 } from '@/lib/api/endpoints/partnerCartApi';
 import { ROUTES } from '@/constants';
@@ -34,6 +38,9 @@ import CartLoading from '@/components/cart/CartLoading';
 import CartEmpty from '@/components/cart/CartEmpty';
 import CartItemRow from '@/components/cart/CartItemRow';
 
+const PARTNER_REQUEST_STORAGE_KEY = 'partner_request_selected_ids';
+const PARTNER_REQUEST_QUANTITY_STORAGE_KEY = 'partner_request_selected_quantities';
+const PARTNER_REQUEST_SUMMARY_ROUTE = '/partner-request-summary';
 const DEFAULT_PARTNER_MEDIA_BASE_URL =
   'https://puzkit3d-media-s3-bucket.s3.ap-southeast-1.amazonaws.com';
 
@@ -80,12 +87,33 @@ function partnerKey(itemId: string) {
   return `partner:${itemId}`;
 }
 
+function getPartnerSelectionAliases(item: PartnerCartItem) {
+  const productDetails = item.productDetails as PartnerCartItem['productDetails'] & {
+    productId?: string;
+    id?: string;
+  };
+
+  return Array.from(
+    new Set(
+      [item.itemId, productDetails.productId, productDetails.id].filter(
+        (value): value is string => Boolean(value && String(value).trim())
+      )
+    )
+  );
+}
+
 export default function CartPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const searchParams = useSearchParams();
   const buyNowVariantId = searchParams.get('buyNowVariant');
   const { isAuthenticated, isLoading: isAuthLoading } = useAppSelector((state) => state.auth);
+  const requestedTab = searchParams.get('tab');
+
+  const [activeCartTab, setActiveCartTab] = useState<'instock' | 'partner'>(
+    requestedTab === 'partner' ? 'partner' : 'instock'
+  );
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const {
     data: cartDto,
@@ -94,6 +122,7 @@ export default function CartPage() {
     refetch: refetchCart,
   } = useGetCartQuery(undefined, {
     skip: isAuthLoading || !isAuthenticated,
+    refetchOnMountOrArgChange: true,
   });
 
   const {
@@ -104,10 +133,23 @@ export default function CartPage() {
     refetch: refetchPartnerCart,
   } = useGetPartnerCartQuery(undefined, {
     skip: isAuthLoading || !isAuthenticated,
+    refetchOnMountOrArgChange: true,
   });
 
-  const [updateCartItem, { isLoading: isUpdating }] = useUpdateCartItemMutation();
+  const { data: partnerResponse } = useGetPartnersQuery(
+    {
+      pageNumber: 1,
+      pageSize: 100,
+      ascending: true,
+    },
+    {
+      skip: isAuthLoading || !isAuthenticated,
+    }
+  );
 
+  const [updateCartItem, { isLoading: isUpdatingInstock }] = useUpdateCartItemMutation();
+  const [updatePartnerCartItem, { isLoading: isUpdatingPartner }] =
+    useUpdatePartnerCartItemMutation();
   const [removePartnerItem, { isLoading: isRemovingPartnerItem }] =
     useRemoveItemFromPartnerCartMutation();
 
@@ -116,33 +158,109 @@ export default function CartPage() {
     ? []
     : (partnerCartDto?.items ?? []);
 
-  const { handleIncrement, handleDecrement, handleRemove } = useCartSync();
+  const partnerNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const partner of partnerResponse?.items ?? []) {
+      map.set(partner.id, partner.name);
+    }
+    return map;
+  }, [partnerResponse?.items]);
 
+  const partnerSlugById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const partner of partnerResponse?.items ?? []) {
+      map.set(partner.id, partner.slug);
+    }
+    return map;
+  }, [partnerResponse?.items]);
+
+  const groupedPartnerItems = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        partnerId: string;
+        partnerName: string;
+        partnerSlug: string;
+        items: PartnerCartItem[];
+      }
+    >();
+
+    for (const item of partnerItems) {
+      const partnerId = item.productDetails.partnerId;
+      const partnerName = partnerNameById.get(partnerId) || 'Partner';
+      const partnerSlug = partnerSlugById.get(partnerId) || '';
+
+      if (!map.has(partnerId)) {
+        map.set(partnerId, {
+          partnerId,
+          partnerName,
+          partnerSlug,
+          items: [],
+        });
+      }
+
+      map.get(partnerId)!.items.push(item);
+    }
+
+    return Array.from(map.values());
+  }, [partnerItems, partnerNameById, partnerSlugById]);
+
+  const { handleIncrement, handleDecrement, handleRemove } = useCartSync();
   const [checkedKeys, setCheckedKeys] = useState<Set<string>>(new Set());
-  const [isNavigating, setIsNavigating] = useState<boolean>(false);
+  useEffect(() => {
+    if (requestedTab === 'partner') {
+      setActiveCartTab('partner');
+    } else if (requestedTab === 'instock') {
+      setActiveCartTab('instock');
+    }
+  }, [requestedTab]);
 
   useEffect(() => {
     if (buyNowVariantId && instockItems.length > 0) {
-      // 1. Tìm cái item vừa được thêm vào.
-      // ⚠️ QUAN TRỌNG: Bác check lại xem CartItemDto của bác lưu ID variant ở field nào nhé (productVariantId, variantId, hay là chính itemId).
-      // Ở đây tui đang ví dụ là nó lưu ở field `productVariantId`.
-      const targetItem = instockItems.find((item: CartItemDto) => item.itemId === buyNowVariantId);
+      const targetItem = instockItems.find((item) => item.itemId === buyNowVariantId);
 
       if (targetItem) {
-        // 2. Tự động thêm nó vào danh sách được Tick trên UI
         setCheckedKeys((prev) => {
           const next = new Set(prev);
           next.add(instockKey(targetItem.itemId));
           return next;
-        }); // 3. Xóa cái param trên URL đi để nếu khách có F5 trang thì nó không bị tự tick lại lung tung
+        });
 
         router.replace(ROUTES.CART, { scroll: false });
       }
     }
   }, [buyNowVariantId, instockItems, router]);
+
   useEffect(() => {
     router.prefetch(ROUTES.CHECKOUT);
+    router.prefetch(PARTNER_REQUEST_SUMMARY_ROUTE);
   }, [router]);
+
+  useEffect(() => {
+    if (isAuthLoading || !isAuthenticated) return;
+
+    const refreshAll = () => {
+      refetchCart();
+      refetchPartnerCart();
+    };
+
+    refreshAll();
+
+    const handleFocus = () => refreshAll();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        refreshAll();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [isAuthLoading, isAuthenticated, refetchCart, refetchPartnerCart]);
 
   const isPageLoading =
     isAuthLoading ||
@@ -165,12 +283,14 @@ export default function CartPage() {
     [instockItems, checkedKeys]
   );
 
-  const selectedPartnerIds = useMemo(
-    () =>
-      partnerItems
-        .filter((item) => checkedKeys.has(partnerKey(item.itemId)))
-        .map((item) => item.itemId),
+  const selectedPartnerItems = useMemo(
+    () => partnerItems.filter((item) => checkedKeys.has(partnerKey(item.itemId))),
     [partnerItems, checkedKeys]
+  );
+
+  const selectedPartnerIds = useMemo(
+    () => selectedPartnerItems.map((item) => item.itemId),
+    [selectedPartnerItems]
   );
 
   const selectedInstockTotal = useMemo(
@@ -199,9 +319,39 @@ export default function CartPage() {
     [partnerItems, checkedKeys]
   );
 
-  const selectedCheckoutTotal = selectedInstockTotal;
-  const selectedPartnerEstimate = selectedPartnerTotal;
-  const selectedCount = selectedInstockIds.length + selectedPartnerIds.length;
+  const isInstockTab = activeCartTab === 'instock';
+
+  const activeSelectedCount = isInstockTab
+    ? selectedInstockIds.length
+    : selectedPartnerIds.length;
+
+  const activeSelectedTotal = isInstockTab
+    ? selectedInstockTotal
+    : selectedPartnerTotal;
+
+  const activeItemCount = isInstockTab ? instockItems.length : partnerItems.length;
+
+  const selectableInstockItems = instockItems.filter(
+    (item) =>
+      item.availableInventory > 0 &&
+      item.isValidPrice !== false &&
+      item.quantity <= item.availableInventory
+  );
+
+  const isInstockAllChecked =
+    selectableInstockItems.length > 0 &&
+    selectableInstockItems.every((item) => checkedKeys.has(instockKey(item.itemId)));
+
+  const isInstockPartialChecked =
+    selectableInstockItems.some((item) => checkedKeys.has(instockKey(item.itemId))) &&
+    !isInstockAllChecked;
+
+  const isPartnerAllChecked =
+    partnerItems.length > 0 &&
+    partnerItems.every((item) => checkedKeys.has(partnerKey(item.itemId)));
+
+  const isPartnerPartialChecked =
+    partnerItems.some((item) => checkedKeys.has(partnerKey(item.itemId))) && !isPartnerAllChecked;
 
   const toggleChecked = (key: string) => {
     setCheckedKeys((prev) => {
@@ -239,36 +389,30 @@ export default function CartPage() {
   const togglePartnerSectionAll = (checked: boolean) => {
     setCheckedKeys((prev) => {
       const next = new Set(prev);
+
       partnerItems.forEach((item) => {
         const key = partnerKey(item.itemId);
         if (checked) next.add(key);
         else next.delete(key);
       });
+
       return next;
     });
   };
 
-  const selectableInstockItems = instockItems.filter(
-    (item) =>
-      item.availableInventory > 0 &&
-      item.isValidPrice !== false &&
-      item.quantity <= item.availableInventory
-  );
+  const handlePartnerGroupToggle = (items: PartnerCartItem[], checked: boolean) => {
+    setCheckedKeys((prev) => {
+      const next = new Set(prev);
 
-  const isInstockAllChecked =
-    selectableInstockItems.length > 0 &&
-    selectableInstockItems.every((item) => checkedKeys.has(instockKey(item.itemId)));
+      items.forEach((item) => {
+        const key = partnerKey(item.itemId);
+        if (checked) next.add(key);
+        else next.delete(key);
+      });
 
-  const isInstockPartialChecked =
-    selectableInstockItems.some((item) => checkedKeys.has(instockKey(item.itemId))) &&
-    !isInstockAllChecked;
-
-  const isPartnerAllChecked =
-    partnerItems.length > 0 &&
-    partnerItems.every((item) => checkedKeys.has(partnerKey(item.itemId)));
-
-  const isPartnerPartialChecked =
-    partnerItems.some((item) => checkedKeys.has(partnerKey(item.itemId))) && !isPartnerAllChecked;
+      return next;
+    });
+  };
 
   const handleUpdatePrice = async (itemId: string, quantity: number, newPriceDetailId: string) => {
     try {
@@ -278,9 +422,9 @@ export default function CartPage() {
         inStockProductPriceDetailId: newPriceDetailId,
       }).unwrap();
 
-      toast.success('Cart updated with the new price!');
+      toast.success('Cart updated with the new price');
       await refetchCart();
-    } catch (error) {
+    } catch {
       toast.error('Failed to update price. Please try again.');
     }
   };
@@ -294,11 +438,45 @@ export default function CartPage() {
 
       toast.success(`Quantity updated to maximum available (${maxInventory})`);
       await refetchCart();
-    } catch (error) {
+    } catch {
       toast.error('Failed to update quantity.');
     }
   };
 
+  const handlePartnerQuantityChange = async (item: PartnerCartItem, nextQuantity: number) => {
+    if (nextQuantity < 1) return;
+
+    try {
+      await updatePartnerCartItem({
+        itemId: item.itemId,
+        quantity: nextQuantity,
+      }).unwrap();
+
+      await refetchPartnerCart();
+    } catch {
+      toast.error('Failed to update partner cart quantity');
+    }
+  };
+
+  const handlePartnerDecrement = async (item: PartnerCartItem) => {
+    if (item.quantity <= 1) {
+      const confirmed = window.confirm('Do you want to remove this product from cart?');
+      if (!confirmed) return;
+
+      await handleRemovePartner(item.itemId);
+      return;
+    }
+
+    await handlePartnerQuantityChange(item, item.quantity - 1);
+  };
+  const handleChangeCartTab = (tab: 'instock' | 'partner') => {
+    setActiveCartTab(tab);
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', tab);
+
+    router.replace(`${ROUTES.CART}?${params.toString()}`, { scroll: false });
+  };
   const handleCheckoutInstock = () => {
     if (selectedInstockIds.length === 0) return;
 
@@ -307,9 +485,29 @@ export default function CartPage() {
     router.push(ROUTES.CHECKOUT);
   };
 
-  const handleRequestQuote = () => {
-    if (selectedPartnerIds.length === 0) return;
-    toast.info('Request Quote API chưa có, hiện tại mới dừng ở bước review cart.');
+  const handleGoToPartnerRequestSummary = async () => {
+    if (selectedPartnerItems.length === 0) return;
+
+    const nextIds: string[] = [];
+    const nextQuantities: Record<string, number> = {};
+
+    for (const item of selectedPartnerItems) {
+      const aliases = getPartnerSelectionAliases(item);
+
+      for (const alias of aliases) {
+        nextIds.push(alias);
+        nextQuantities[alias] = item.quantity;
+      }
+    }
+
+    try {
+      sessionStorage.setItem(PARTNER_REQUEST_STORAGE_KEY, JSON.stringify(Array.from(new Set(nextIds))));
+      sessionStorage.setItem(PARTNER_REQUEST_QUANTITY_STORAGE_KEY, JSON.stringify(nextQuantities));
+      sessionStorage.setItem('partner_cart_last_updated_at', String(Date.now()));
+    } catch { }
+
+    await refetchPartnerCart();
+    router.push(PARTNER_REQUEST_SUMMARY_ROUTE);
   };
 
   async function handleRemovePartner(itemId: string) {
@@ -324,10 +522,18 @@ export default function CartPage() {
 
       await refetchPartnerCart();
       toast.success('Removed partner product from cart');
-    } catch (error) {
-      console.error('Remove partner product failed:', error);
+    } catch {
       toast.error('Failed to remove partner product');
     }
+  }
+
+  function getPartnerProductHref(item: PartnerCartItem) {
+    const partnerSlug = partnerSlugById.get(item.productDetails.partnerId);
+    const productSlug = item.productDetails.slug;
+
+    if (!partnerSlug || !productSlug) return ROUTES.BRANDS;
+
+    return ROUTES.PARTNER_PRODUCT_DETAIL(partnerSlug, productSlug);
   }
 
   if (isPageLoading) return <CartLoading />;
@@ -335,138 +541,159 @@ export default function CartPage() {
 
   return (
     <div className="container-custom pt-8 pb-28 lg:pt-12 lg:pb-12">
-      <div className="mb-8 flex items-center gap-3">
-        <h1 className="text-3xl font-bold md:text-4xl">Shopping Cart</h1>
-        {(isInstockFetching || isPartnerFetching) && (
-          <Loader2 className="text-brand h-5 w-5 animate-spin" />
-        )}
+      <div className="mb-8">
+        <div className="mb-4 flex items-center gap-3">
+          <h1 className="text-3xl font-bold md:text-4xl">Shopping Cart</h1>
+          {(isInstockFetching || isPartnerFetching) && (
+            <Loader2 className="text-brand h-5 w-5 animate-spin" />
+          )}
+        </div>
+
+        <div className="inline-flex rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+          <button
+            type="button"
+            onClick={() => handleChangeCartTab('instock')}
+            className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition ${activeCartTab === 'instock'
+                ? 'bg-slate-900 text-white'
+                : 'text-slate-700 hover:bg-slate-50'
+              }`}
+          >
+            Instock Product ({instockItems.length})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleChangeCartTab('partner')}
+            className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition ${activeCartTab === 'partner'
+                ? 'bg-slate-900 text-white'
+                : 'text-slate-700 hover:bg-slate-50'
+              }`}
+          >
+            Partner Product ({partnerItems.length})
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col gap-8">
-        {instockItems.length > 0 && (
-          <section>
-            <div className="mb-4 flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={isInstockAllChecked}
-                ref={(el) => {
-                  if (el) el.indeterminate = isInstockPartialChecked;
-                }}
-                onChange={(e) => toggleInstockSectionAll(e.target.checked)}
-                className="border-border accent-brand text-brand h-4 w-4 rounded"
-              />
+        {isInstockTab ? (
+          instockItems.length > 0 ? (
+            <section>
+              <div className="mb-4 flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={isInstockAllChecked}
+                  ref={(el) => {
+                    if (el) el.indeterminate = isInstockPartialChecked;
+                  }}
+                  onChange={(e) => toggleInstockSectionAll(e.target.checked)}
+                  className="border-border accent-brand text-brand h-4 w-4 rounded"
+                />
 
-              <div className="flex items-center gap-2">
-                <Package className="h-5 w-5 text-emerald-600" />
-                <h2 className="text-card-foreground text-lg font-bold">
-                  Products
-                  <span className="text-muted-foreground ml-2 text-sm font-normal">
-                    ({instockItems.length} items)
-                  </span>
-                </h2>
+                <div className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-emerald-600" />
+                  <h2 className="text-card-foreground text-lg font-bold">
+                    In-stock Products
+                    <span className="text-muted-foreground ml-2 text-sm font-normal">
+                      ({instockItems.length} items)
+                    </span>
+                  </h2>
+                </div>
               </div>
-            </div>
 
-            <div className="flex flex-col gap-3">
-              {instockItems.map((item) => {
-                const isOutOfStock = item.availableInventory === 0;
-                const isOverStock =
-                  item.availableInventory > 0 && item.quantity > item.availableInventory;
+              <div className="flex flex-col gap-3">
+                {instockItems.map((item) => {
+                  const isOutOfStock = item.availableInventory === 0;
+                  const isOverStock =
+                    item.availableInventory > 0 && item.quantity > item.availableInventory;
 
-                const isPriceChanged =
-                  item.isValidPrice === false && item.newPriceDetailId && item.newUnitPrice;
+                  const isPriceChanged =
+                    item.isValidPrice === false && item.newPriceDetailId && item.newUnitPrice;
 
-                const isSelectable = !isOutOfStock && !isOverStock && item.isValidPrice !== false;
+                  const isSelectable = !isOutOfStock && !isOverStock && item.isValidPrice !== false;
 
-                return (
-                  <div
-                    key={`instock-${item.itemId}`}
-                    className={`flex flex-col gap-2 rounded-lg p-2 transition-colors ${
-                      isOutOfStock ? 'bg-secondary/40 opacity-60 grayscale-40' : ''
-                    }`}
-                  >
-                    <CartItemRow
-                      item={item}
-                      isChecked={isSelectable && checkedKeys.has(instockKey(item.itemId))}
-                      onToggle={() => {
-                        if (!isSelectable) return;
-                        toggleChecked(instockKey(item.itemId));
-                      }}
-                      onIncrement={() => {
-                        handleIncrement(item.itemId, item.quantity);
-                      }}
-                      onDecrement={() =>
-                        !isOutOfStock && handleDecrement(item.itemId, item.quantity)
-                      }
-                      onRemove={() => handleRemove(item.itemId)}
-                    />
+                  return (
+                    <div
+                      key={`instock-${item.itemId}`}
+                      className={`flex flex-col gap-2 rounded-lg p-2 transition-colors ${isOutOfStock ? 'bg-secondary/40 opacity-60 grayscale-[40%]' : ''
+                        }`}
+                    >
+                      <CartItemRow
+                        item={item}
+                        isChecked={isSelectable && checkedKeys.has(instockKey(item.itemId))}
+                        onToggle={() => {
+                          if (!isSelectable) return;
+                          toggleChecked(instockKey(item.itemId));
+                        }}
+                        onIncrement={() => !isOutOfStock && handleIncrement(item.itemId, item.quantity)}
+                        onDecrement={() => !isOutOfStock && handleDecrement(item.itemId, item.quantity)}
+                        onRemove={() => handleRemove(item.itemId)}
+                      />
 
-                    {isOverStock && (
-                      <div className="flex flex-col justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 sm:flex-row sm:items-center">
-                        <div className="flex items-start gap-2">
-                          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
-                          <p className="text-xs leading-relaxed text-blue-800">
-                            <span className="font-bold text-blue-900">Limited Stock!</span> Only{' '}
-                            <span className="font-bold">{item.availableInventory}</span> items
-                            available. Please update your cart quantity to proceed.
+                      {isOverStock && (
+                        <div className="flex flex-col justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 sm:flex-row sm:items-center">
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                            <p className="text-xs leading-relaxed text-blue-800">
+                              <span className="font-bold text-blue-900">Limited Stock.</span> Only{' '}
+                              <span className="font-bold">{item.availableInventory}</span> items available.
+                            </p>
+                          </div>
+
+                          <Button
+                            size="sm"
+                            disabled={isUpdatingInstock}
+                            onClick={() => handleUpdateToMaxInventory(item.itemId, item.availableInventory)}
+                            className="h-8 w-full shrink-0 bg-blue-600 px-4 text-xs font-bold text-white shadow-sm transition-all hover:bg-blue-700 sm:w-auto"
+                          >
+                            {isUpdatingInstock ? 'Updating...' : `Update to ${item.availableInventory}`}
+                          </Button>
+                        </div>
+                      )}
+
+                      {isOutOfStock && (
+                        <div className="bg-destructive/10 border-destructive/20 flex items-center gap-2 rounded-lg border p-3">
+                          <AlertCircle className="text-destructive mt-0.5 h-4 w-4 shrink-0" />
+                          <p className="text-destructive-foreground text-xs leading-relaxed font-medium">
+                            This product is currently out of stock.
                           </p>
                         </div>
+                      )}
 
-                        <Button
-                          size="sm"
-                          disabled={isUpdating}
-                          onClick={() =>
-                            handleUpdateToMaxInventory(item.itemId, item.availableInventory)
-                          }
-                          className="h-8 w-full shrink-0 bg-blue-600 px-4 text-xs font-bold text-white shadow-sm transition-all hover:bg-blue-700 sm:w-auto"
-                        >
-                          {isUpdating ? 'Updating...' : `Update to ${item.availableInventory}`}
-                        </Button>
-                      </div>
-                    )}
+                      {!isOutOfStock && isPriceChanged && (
+                        <div className="flex flex-col justify-between gap-3 rounded-lg border border-amber-200 bg-amber-100/60 p-3 sm:flex-row sm:items-center">
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                            <p className="text-xs leading-relaxed text-amber-800">
+                              <span className="font-bold text-amber-900">Price changed.</span> New price:{' '}
+                              <span className="font-bold">{formatPrice(item.newUnitPrice!)}</span>{' '}
+                              {item.newPriceName && `(${item.newPriceName})`}.
+                            </p>
+                          </div>
 
-                    {isOutOfStock && (
-                      <div className="bg-destructive/10 border-destructive/20 flex items-center gap-2 rounded-lg border p-3">
-                        <AlertCircle className="text-destructive mt-0.5 h-4 w-4 shrink-0" />
-                        <p className="text-destructive-foreground text-xs leading-relaxed font-medium">
-                          This product is currently out of stock. Please remove it from your cart to
-                          proceed with checkout.
-                        </p>
-                      </div>
-                    )}
-
-                    {!isOutOfStock && isPriceChanged && (
-                      <div className="flex flex-col justify-between gap-3 rounded-lg border border-amber-200 bg-amber-100/60 p-3 sm:flex-row sm:items-center">
-                        <div className="flex items-start gap-2">
-                          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                          <p className="text-xs leading-relaxed text-amber-800">
-                            <span className="font-bold text-amber-900">Price changed!</span> The
-                            price for this item has changed to{' '}
-                            <span className="font-bold">{formatPrice(item.newUnitPrice!)}</span>{' '}
-                            {item.newPriceName && `(${item.newPriceName})`}. Update to proceed.
-                          </p>
+                          <Button
+                            size="sm"
+                            disabled={isUpdatingInstock}
+                            onClick={() => handleUpdatePrice(item.itemId, item.quantity, item.newPriceDetailId!)}
+                            className="h-8 w-full shrink-0 bg-amber-500 px-4 text-xs font-bold text-white shadow-sm transition-all hover:bg-amber-600 sm:w-auto"
+                          >
+                            {isUpdatingInstock ? 'Updating...' : 'Update Price'}
+                          </Button>
                         </div>
-
-                        <Button
-                          size="sm"
-                          disabled={isUpdating}
-                          onClick={() =>
-                            handleUpdatePrice(item.itemId, item.quantity, item.newPriceDetailId!)
-                          }
-                          className="h-8 w-full shrink-0 bg-amber-500 px-4 text-xs font-bold text-white shadow-sm transition-all hover:bg-amber-600 sm:w-auto"
-                        >
-                          {isUpdating ? 'Updating...' : 'Update Price'}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ) : (
+            <div className="rounded-2xl border bg-white p-10 text-center shadow-sm">
+              <h3 className="text-lg font-bold text-slate-900">No in-stock products</h3>
+              <p className="mt-2 text-sm text-slate-500">
+                You do not have any in-stock products in your cart.
+              </p>
             </div>
-          </section>
-        )}
-
-        {partnerItems.length > 0 && (
+          )
+        ) : partnerItems.length > 0 ? (
           <section>
             <div className="mb-4 flex items-center gap-3">
               <input
@@ -490,131 +717,207 @@ export default function CartPage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3">
-              {partnerItems.map((item) => (
-                <div
-                  key={`partner-${item.id}`}
-                  className="border-border bg-card flex gap-4 rounded-2xl border p-4 shadow-sm"
-                >
-                  <input
-                    type="checkbox"
-                    checked={checkedKeys.has(partnerKey(item.itemId))}
-                    onChange={() => toggleChecked(partnerKey(item.itemId))}
-                    className="border-border accent-brand text-brand mt-2 h-4 w-4 rounded"
-                  />
+            <div className="space-y-5">
+              {groupedPartnerItems.map((group) => {
+                const groupAllChecked =
+                  group.items.length > 0 &&
+                  group.items.every((item) => checkedKeys.has(partnerKey(item.itemId)));
 
-                  <div className="bg-muted relative h-24 w-24 shrink-0 overflow-hidden rounded-xl">
-                    <Image
-                      src={resolvePartnerImageUrl(item.productDetails.thumbnailUrl)}
-                      alt={item.productDetails.productName}
-                      fill
-                      sizes="96px"
-                      className="object-cover"
-                    />
-                  </div>
+                const groupPartialChecked =
+                  group.items.some((item) => checkedKeys.has(partnerKey(item.itemId))) &&
+                  !groupAllChecked;
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-col gap-1 md:flex-row md:items-start md:justify-between">
-                      <div>
-                        <p className="text-base font-semibold">{item.productDetails.productName}</p>
+                return (
+                  <div key={group.partnerId} className="rounded-3xl border bg-white shadow-sm">
+                    <div className="flex items-center gap-3 border-b px-5 py-4">
+                      <input
+                        type="checkbox"
+                        checked={groupAllChecked}
+                        ref={(el) => {
+                          if (el) el.indeterminate = groupPartialChecked;
+                        }}
+                        onChange={(e) => handlePartnerGroupToggle(group.items, e.target.checked)}
+                        className="border-border accent-brand text-brand h-4 w-4 rounded"
+                      />
 
-                        <p className="text-muted-foreground text-sm">
-                          {item.productDetails.variantName || 'Partner product'}
-                        </p>
-
-                        {item.productDetails.slug ? (
-                          <p className="text-muted-foreground mt-1 text-xs">
-                            Slug: {item.productDetails.slug}
-                          </p>
-                        ) : null}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
-                          Quote-based
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={() => handleRemovePartner(item.itemId)}
-                          disabled={isRemovingPartnerItem}
-                          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
-                          aria-label="Remove partner item"
+                      {group.partnerSlug ? (
+                        <Link
+                          href={ROUTES.PARTNER_BRAND_DETAIL(group.partnerSlug)}
+                          className="text-lg font-bold text-slate-900 hover:text-slate-700"
                         >
-                          {isRemovingPartnerItem ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
+                          {group.partnerName}
+                        </Link>
+                      ) : (
+                        <h3 className="text-lg font-bold text-slate-900">{group.partnerName}</h3>
+                      )}
                     </div>
 
-                    <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                      <div>
-                        <p className="text-sm text-slate-500">Estimated price</p>
-                        <p className="text-lg font-bold text-slate-900">
-                          {formatPrice(getPartnerUnitPrice(item))}
-                        </p>
-                      </div>
+                    <div className="space-y-3 p-4">
+                      {group.items.map((item) => (
+                        <div
+                          key={`partner-${item.itemId}`}
+                          className="flex flex-col gap-2 rounded-lg p-2 transition-colors"
+                        >
+                          <div
+                            className={`border-border bg-card flex flex-col gap-4 rounded-xl border p-4 transition-all hover:shadow-md sm:flex-row ${checkedKeys.has(partnerKey(item.itemId))
+                                ? 'ring-primary/20 bg-primary/5 ring-1'
+                                : ''
+                              }`}
+                          >
+                            <div className="flex items-center gap-4 sm:items-start">
+                              <div className="flex shrink-0 items-center justify-center pt-0 sm:pt-1">
+                                <input
+                                  type="checkbox"
+                                  checked={checkedKeys.has(partnerKey(item.itemId))}
+                                  onChange={() => toggleChecked(partnerKey(item.itemId))}
+                                  className="border-border text-primary accent-primary h-5 w-5 cursor-pointer rounded transition-all focus:ring-0"
+                                  aria-label={`Select ${item.productDetails.productName}`}
+                                />
+                              </div>
 
-                      <div className="text-sm text-slate-600">Quantity: {item.quantity}</div>
+                              <Link
+                                href={getPartnerProductHref(item)}
+                                className="border-border bg-muted relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border transition-opacity hover:opacity-80 sm:h-24 sm:w-24"
+                              >
+                                <Image
+                                  src={resolvePartnerImageUrl(item.productDetails.thumbnailUrl)}
+                                  alt={item.productDetails.productName}
+                                  fill
+                                  sizes="(max-width: 640px) 80px, 96px"
+                                  className="object-cover"
+                                />
+                              </Link>
+                            </div>
 
-                      <div className="text-right">
-                        <p className="text-sm text-slate-500">Estimated total</p>
-                        <p className="text-lg font-extrabold text-slate-900">
-                          {formatPrice(getPartnerLineTotal(item))}
-                        </p>
-                      </div>
+                            <div className="flex min-w-0 flex-1 flex-col justify-between">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex flex-col">
+                                  <Link href={getPartnerProductHref(item)}>
+                                    <h4 className="text-card-foreground hover:text-primary line-clamp-2 cursor-pointer text-sm font-semibold transition-colors sm:text-base">
+                                      {item.productDetails.productName}
+                                    </h4>
+                                  </Link>
+
+                                  <p className="text-muted-foreground mt-2 hidden text-sm font-medium sm:block">
+                                    {formatPrice(getPartnerUnitPrice(item))}{' '}
+                                    <span className="text-xs opacity-60">/ item</span>
+                                  </p>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemovePartner(item.itemId)}
+                                  disabled={isRemovingPartnerItem}
+                                  className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive shrink-0 rounded-md p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                                  aria-label="Remove partner item"
+                                >
+                                  {isRemovingPartnerItem ? (
+                                    <Loader2 className="h-4 w-4 animate-spin sm:h-5 sm:w-5" />
+                                  ) : (
+                                    <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                                  )}
+                                </button>
+                              </div>
+
+                              <div className="mt-4 flex items-center justify-between sm:mt-auto">
+                                <div className="border-border bg-background flex h-9 items-center overflow-hidden rounded-md border shadow-sm">
+                                  <button
+                                    type="button"
+                                    onClick={() => handlePartnerDecrement(item)}
+                                    disabled={isUpdatingPartner}
+                                    className="text-foreground/70 hover:bg-muted flex h-full w-9 cursor-pointer items-center justify-center transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                                    aria-label="Decrease quantity"
+                                  >
+                                    <Minus className="h-3.5 w-3.5" />
+                                  </button>
+
+                                  <span className="border-border flex h-full w-12 items-center justify-center border-x text-sm font-bold">
+                                    {item.quantity}
+                                  </span>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handlePartnerQuantityChange(item, item.quantity + 1)}
+                                    disabled={isUpdatingPartner}
+                                    className="text-foreground/70 hover:bg-muted flex h-full w-9 cursor-pointer items-center justify-center transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                                    aria-label="Increase quantity"
+                                  >
+                                    <Plus className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+
+                                <div className="flex flex-col items-end">
+                                  <span className="text-primary text-base font-bold sm:text-lg">
+                                    {formatPrice(getPartnerLineTotal(item))}
+                                  </span>
+                                  <span className="text-muted-foreground text-[10px] sm:hidden">
+                                    {formatPrice(getPartnerUnitPrice(item))} / item
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
+        ) : (
+          <div className="rounded-2xl border bg-white p-10 text-center shadow-sm">
+            <h3 className="text-lg font-bold text-slate-900">No partner products</h3>
+            <p className="mt-2 text-sm text-slate-500">
+              You do not have any partner products in your cart.
+            </p>
+          </div>
         )}
       </div>
 
       <div className="sticky bottom-4 z-10 mt-8 rounded-2xl border bg-white/95 p-4 shadow-lg backdrop-blur">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-sm text-slate-500">{selectedCount} items selected</p>
-            <p className="text-3xl font-extrabold text-rose-600">
-              {formatPrice(selectedCheckoutTotal)}
+            <p className="text-sm text-slate-500">
+              {activeSelectedCount} selected / {activeItemCount} item{activeItemCount !== 1 ? 's' : ''}
             </p>
-
-            {selectedPartnerIds.length > 0 && (
-              <p className="mt-1 text-sm font-semibold text-amber-700">
-                Partner estimate (not included in subtotal): {formatPrice(selectedPartnerEstimate)}
-              </p>
-            )}
+            <p className="text-3xl font-extrabold text-rose-600">
+              {formatPrice(activeSelectedTotal)}
+            </p>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
-            {selectedInstockIds.length > 0 && (
+            {isInstockTab ? (
+              activeSelectedCount > 0 ? (
+                <button
+                  type="button"
+                  onClick={handleCheckoutInstock}
+                  disabled={isNavigating}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  {isNavigating ? 'Redirecting...' : 'Checkout In-stock'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-200 px-5 py-3 text-sm font-bold text-slate-500"
+                >
+                  <ShoppingBag className="h-4 w-4" />
+                  Select products
+                </button>
+              )
+            ) : activeSelectedCount > 0 ? (
               <button
                 type="button"
-                onClick={handleCheckoutInstock}
-                disabled={isNavigating}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <CreditCard className="h-4 w-4" />
-                {isNavigating ? 'Redirecting...' : 'Checkout In-stock Products'}
-              </button>
-            )}
-
-            {selectedPartnerIds.length > 0 && (
-              <button
-                type="button"
-                onClick={handleRequestQuote}
+                onClick={handleGoToPartnerRequestSummary}
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-50"
               >
                 <FileText className="h-4 w-4" />
-                Request Quote for Partner Products
+                Request Summary
               </button>
-            )}
-
-            {selectedCount === 0 && (
+            ) : (
               <button
                 type="button"
                 disabled
@@ -626,29 +929,6 @@ export default function CartPage() {
             )}
           </div>
         </div>
-
-        {(selectedInstockIds.length > 0 || selectedPartnerIds.length > 0) && (
-          <div className="mt-3 grid gap-2 text-sm text-slate-500 sm:grid-cols-2">
-            <div>In-stock selected: {selectedInstockIds.length}</div>
-            <div>Partner selected: {selectedPartnerIds.length}</div>
-          </div>
-        )}
-      </div>
-
-      <div className="mt-6 flex flex-wrap gap-3">
-        <Link
-          href="/shop"
-          className="inline-flex items-center justify-center rounded-xl border px-5 py-3 text-sm font-semibold hover:bg-slate-50"
-        >
-          Continue shopping
-        </Link>
-
-        <Link
-          href="/brands"
-          className="inline-flex items-center justify-center rounded-xl border px-5 py-3 text-sm font-semibold hover:bg-slate-50"
-        >
-          Browse partner products
-        </Link>
       </div>
     </div>
   );

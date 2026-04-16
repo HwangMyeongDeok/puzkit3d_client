@@ -1,21 +1,21 @@
 import { useRef, MouseEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Filter } from 'lucide-react';
-import { ORDER_STATUS_MAP } from '@/constants';
-import { InstockOrderStatus } from '@/types/api/order.api.types';
-
-const STATUS_OPTIONS = Object.entries(ORDER_STATUS_MAP).map(([key, info]) => ({
-  value: key as InstockOrderStatus,
-  label: info.label,
-}));
+import { INSTOCK_FILTER_OPTIONS, type FilterOption } from '@/lib/utils/order-status';
 
 interface OrderStatusFilterProps {
-  selectedStatus: InstockOrderStatus | '';
-  onChange: (status: InstockOrderStatus | '') => void;
+  selectedStatus: string;
+  onChange: (status: string) => void;
+  options?: FilterOption[];
+  allLabel?: string;
 }
 
-export default function OrderStatusFilter({ selectedStatus, onChange }: OrderStatusFilterProps) {
-  // Tạo ref để gắn vào thẻ div bọc ngoài và lưu trạng thái chuột
+export default function OrderStatusFilter({
+  selectedStatus,
+  onChange,
+  options = INSTOCK_FILTER_OPTIONS,
+  allLabel = 'All Orders',
+}: OrderStatusFilterProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isDown = useRef(false);
   const startX = useRef(0);
@@ -39,9 +39,9 @@ export default function OrderStatusFilter({ selectedStatus, onChange }: OrderSta
 
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     if (!isDown.current || !scrollRef.current) return;
-    e.preventDefault(); // Ngăn chặn bôi đen text khi kéo
+    e.preventDefault();
     const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - startX.current) * 1.5; // Tốc độ cuộn (nhân 1.5 lần, bạn có thể tăng giảm tùy ý)
+    const walk = (x - startX.current) * 1.5;
     scrollRef.current.scrollLeft = scrollLeft.current - walk;
   };
 
@@ -52,7 +52,6 @@ export default function OrderStatusFilter({ selectedStatus, onChange }: OrderSta
       onMouseLeave={handleMouseLeave}
       onMouseUp={handleMouseUp}
       onMouseMove={handleMouseMove}
-      // Thêm cursor-grab, active:cursor-grabbing và select-none
       className="scrollbar-hide flex cursor-grab items-center gap-2 overflow-x-auto pb-2 select-none active:cursor-grabbing"
     >
       <div className="text-muted-foreground mr-2 hidden items-center gap-2 text-sm font-medium md:flex">
@@ -66,10 +65,10 @@ export default function OrderStatusFilter({ selectedStatus, onChange }: OrderSta
         className="rounded-full px-5 whitespace-nowrap transition-all"
         size="sm"
       >
-        All Orders
+        {allLabel}
       </Button>
 
-      {STATUS_OPTIONS.map((opt) => (
+      {options.map((opt) => (
         <Button
           key={opt.value}
           variant={selectedStatus === opt.value ? 'default' : 'outline'}

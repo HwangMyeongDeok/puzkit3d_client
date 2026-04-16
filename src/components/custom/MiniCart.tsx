@@ -21,6 +21,7 @@ import { useGetCartQuery, useUpdateCartItemMutation } from '@/lib/api/endpoints/
 import {
   useGetPartnerCartQuery,
   useRemoveItemFromPartnerCartMutation,
+  useUpdatePartnerCartItemMutation,
   type PartnerCartItem,
 } from '@/lib/api/endpoints/partnerCartApi';
 import { ROUTES } from '@/constants';
@@ -81,7 +82,8 @@ export default function MiniCart({ children }: MiniCartProps) {
   const [open, setOpen] = useState(false);
   const { handleIncrement, handleDecrement, handleRemove } = useCartSync();
   const { isAuthenticated, isLoading: isAuthLoading } = useAppSelector((state) => state.auth);
-
+  const [updatePartnerCartItem, { isLoading: isUpdatingPartner }] =
+  useUpdatePartnerCartItemMutation();
   const cartQuery = useGetCartQuery(undefined, {
     skip: isAuthLoading || !isAuthenticated,
   });
@@ -402,92 +404,147 @@ export default function MiniCart({ children }: MiniCartProps) {
               )}
 
               {partnerItems.length > 0 && (
-                <section className="flex flex-col gap-3">
-                  <div className="flex items-center gap-2">
-                    <BriefcaseBusiness className="h-4 w-4 text-amber-600" />
-                    <p className="text-sm font-bold">
-                      Partner Products
-                      <span className="text-muted-foreground ml-2 font-normal">
-                        ({partnerCartQuery.data?.totalItem ?? partnerItems.length})
-                      </span>
+  <section className="flex flex-col gap-3">
+    <div className="flex items-center gap-2">
+      <BriefcaseBusiness className="h-4 w-4 text-amber-600" />
+      <p className="text-sm font-bold">
+        Partner Products
+        <span className="text-muted-foreground ml-2 font-normal">
+          ({partnerCartQuery.data?.totalItem ?? partnerItems.length})
+        </span>
+      </p>
+    </div>
+
+    {partnerItems.map((item) => {
+      const imageUrl = resolvePartnerImageUrl(item.productDetails.thumbnailUrl);
+
+      return (
+        <div
+          key={`partner-${item.itemId}`}
+          className="border-border bg-card flex flex-col gap-2 rounded-lg border p-3 transition-colors hover:shadow-sm"
+        >
+          <div className="flex gap-4">
+            <SheetClose asChild>
+              <Link
+                href={
+                  item.productDetails.slug
+                    ? ROUTES.PARTNER_PRODUCT_DETAIL(
+                        '',
+                        item.productDetails.slug
+                      )
+                    : ROUTES.BRANDS
+                }
+                className="bg-muted relative h-20 w-20 shrink-0 overflow-hidden rounded-md transition-opacity hover:opacity-80"
+              >
+                {imageUrl ? (
+                  <Image
+                    src={imageUrl}
+                    alt={item.productDetails.productName}
+                    fill
+                    sizes="80px"
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
+                    No image
+                  </div>
+                )}
+              </Link>
+            </SheetClose>
+
+            <div className="flex min-w-0 flex-1 flex-col justify-between">
+              <div>
+                <SheetClose asChild>
+                  <Link
+                    href={
+                      item.productDetails.slug
+                        ? ROUTES.BRANDS
+                        : ROUTES.BRANDS
+                    }
+                  >
+                    <p className="text-card-foreground hover:text-primary line-clamp-2 cursor-pointer text-sm font-semibold transition-colors">
+                      {item.productDetails.productName}
                     </p>
+                  </Link>
+                </SheetClose>
+              </div>
+
+              <div className="mt-2 flex items-center justify-between">
+                <p className="text-primary text-xs font-bold">
+                  {formatPrice(getPartnerUnitPrice(item))}
+                </p>
+
+                <div className="flex items-center gap-3">
+                  <div className="border-border bg-background flex items-center rounded border">
+                    <button
+                      onClick={async () => {
+                        if (item.quantity <= 1) {
+                          await handleRemovePartner(item.itemId);
+                          return;
+                        }
+
+                        try {
+                          await updatePartnerCartItem({
+                            itemId: item.itemId,
+                            quantity: item.quantity - 1,
+                          }).unwrap();
+                          await partnerCartQuery.refetch();
+                        } catch {
+                          toast.error('Failed to update partner cart quantity');
+                        }
+                      }}
+                      disabled={isUpdatingPartner || isRemovingPartnerItem}
+                      className="text-foreground/50 hover:bg-secondary flex h-6 w-6 items-center justify-center transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label="Decrease quantity"
+                    >
+                      <Minus className="h-3 w-3" />
+                    </button>
+
+                    <span className="border-border flex h-6 w-7 items-center justify-center border-x text-[11px] font-bold">
+                      {item.quantity}
+                    </span>
+
+                    <button
+                      onClick={async () => {
+                        try {
+                          await updatePartnerCartItem({
+                            itemId: item.itemId,
+                            quantity: item.quantity + 1,
+                          }).unwrap();
+                          await partnerCartQuery.refetch();
+                        } catch {
+                          toast.error('Failed to update partner cart quantity');
+                        }
+                      }}
+                      disabled={isUpdatingPartner || isRemovingPartnerItem}
+                      className="text-foreground/50 hover:bg-secondary flex h-6 w-6 items-center justify-center transition-colors disabled:opacity-40"
+                      aria-label="Increase quantity"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
                   </div>
 
-                  {partnerItems.map((item) => {
-                    const imageUrl = resolvePartnerImageUrl(item.productDetails.thumbnailUrl);
-
-                    return (
-                      <div
-                        key={`partner-${item.id}`}
-                        className="border-border bg-card flex gap-4 rounded-lg border p-3"
-                      >
-                        <div className="bg-muted relative h-20 w-20 shrink-0 overflow-hidden rounded-md">
-                          {imageUrl ? (
-                            <Image
-                              src={imageUrl}
-                              alt={item.productDetails.productName}
-                              fill
-                              sizes="80px"
-                              className="object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
-                              No image
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex min-w-0 flex-1 flex-col justify-between">
-                          <div>
-                            <p className="text-card-foreground line-clamp-2 text-sm font-semibold">
-                              {item.productDetails.productName}
-                            </p>
-
-                            <p className="text-muted-foreground mt-0.5 line-clamp-1 text-[11px]">
-                              {item.productDetails.variantName || 'Partner product'}
-                            </p>
-                          </div>
-
-                          <div className="mt-2 flex items-center justify-between gap-2">
-                            <div>
-                              <p className="text-primary text-xs font-bold">
-                                {formatPrice(getPartnerUnitPrice(item))}
-                              </p>
-                              <p className="text-muted-foreground mt-1 text-[11px]">
-                                Qty: {item.quantity}
-                              </p>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={cn(
-                                  'rounded-full px-2.5 py-1 text-[10px] font-semibold',
-                                  'bg-amber-100 text-amber-700'
-                                )}
-                              >
-                                Quote-based
-                              </span>
-
-                              <button
-                                onClick={() => handleRemovePartner(item.itemId)}
-                                disabled={isRemovingPartnerItem}
-                                className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded p-1 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
-                                aria-label="Remove partner item"
-                              >
-                                {isRemovingPartnerItem ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                ) : (
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </section>
-              )}
+                  <button
+                    onClick={() => handleRemovePartner(item.itemId)}
+                    disabled={isRemovingPartnerItem}
+                    className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded p-1 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label="Remove partner item"
+                  >
+                    {isRemovingPartnerItem ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    })}
+  </section>
+)}
             </div>
           )}
         </div>

@@ -2,10 +2,13 @@ import type { DeliveryTracking } from '@/types/api/delivery.api.types';
 
 export default function OrderDeliveryTracking({ effectiveStatus, trackingData }: any) {
   if (
-    !['HandedOverToDelivery', 'Delivering', 'Delivered'].includes(effectiveStatus || '') ||
+    !['HandedOverToDelivery', 'Delivering', 'Delivered', 'Completed'].includes(
+      effectiveStatus || ''
+    ) ||
     trackingData.length === 0
-  )
+  ) {
     return null;
+  }
 
   return (
     <div className="rounded-xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
@@ -17,7 +20,9 @@ export default function OrderDeliveryTracking({ effectiveStatus, trackingData }:
           <div key={tracking.id} className="flex items-start gap-3 text-sm text-blue-900">
             <div className="mt-1 flex flex-col items-center">
               <div
-                className={`h-2.5 w-2.5 rounded-full ${index === 0 ? 'bg-blue-600 ring-4 ring-blue-600/20' : 'bg-blue-300'}`}
+                className={`h-2.5 w-2.5 rounded-full ${
+                  index === 0 ? 'bg-blue-600 ring-4 ring-blue-600/20' : 'bg-blue-300'
+                }`}
               />
               {index !== Math.min(trackingData.length, 3) - 1 && (
                 <div className="mt-1 h-full min-h-8 w-0.5 bg-blue-200" />
