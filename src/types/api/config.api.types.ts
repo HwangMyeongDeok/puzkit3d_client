@@ -6,8 +6,10 @@ export interface OrderConfigDto {
 
 export interface PaymentConfigDto {
   id: string;
-  onlinePaymentExpiredInDays: number;
-  onlineTransactionExpiredInMinutes: number;
+  onlinePaymentExpiredValue: number;
+  onlinePaymentExpiredUnit: string;
+  onlineTransactionExpiredValue: number;
+  onlineTransactionExpiredUnit: string;
   updatedAt: string;
 }
 

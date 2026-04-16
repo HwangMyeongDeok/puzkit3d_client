@@ -94,7 +94,7 @@ function PaymentSuccessContent() {
             {orderId && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center text-slate-500">
-                  <Hash className="mr-2 h-4 w-4" /> Order Code
+                  <Hash className="mr-2 h-4 w-4" /> Transaction Reference
                 </div>
                 <span className="font-semibold text-slate-800">{orderId}</span>
               </div>

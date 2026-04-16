@@ -1,9 +1,9 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { CheckCircle, ArrowRight, Package, CreditCard, LayoutList } from 'lucide-react';
+import { CheckCircle, ArrowRight, Package, LayoutList } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/constants';

@@ -179,11 +179,16 @@ export default function ShopPage() {
     { refetchOnMountOrArgChange: true }
   );
 
-  const { data: topicsData } = useGetTopicsQuery({ pageNumber: 1, pageSize: 100 });
-  const { data: materialsData } = useGetMaterialsQuery({ pageNumber: 1, pageSize: 100 });
+  const { data: topicsData } = useGetTopicsQuery({ pageNumber: 1, pageSize: 100, ascending: true });
+  const { data: materialsData } = useGetMaterialsQuery({
+    pageNumber: 1,
+    pageSize: 100,
+    ascending: true,
+  });
   const { data: assemblyMethodsData } = useGetAssemblyMethodsQuery({
     pageNumber: 1,
     pageSize: 100,
+    ascending: true,
   });
 
   const topics = topicsData?.items ?? [];

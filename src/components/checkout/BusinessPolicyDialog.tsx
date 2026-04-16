@@ -3,7 +3,7 @@ import { ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type {
   OrderConfigDto,
-  PaymentConfigDto,
+  PaymentConfigDto, // Hãy đảm bảo bạn đã update type này khớp với API response mới nhé
   WalletConfigDto,
 } from '@/types/api/config.api.types';
 
@@ -20,13 +20,11 @@ export default function BusinessPolicyDialog({
   isOpen,
   onClose,
   onConfirm,
-  orderConfig,
   paymentConfig,
   walletConfig,
 }: BusinessPolicyDialogProps) {
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
 
-  // Reset cái tick mỗi khi mở lại dialog
   useEffect(() => {
     if (isOpen) {
       setIsTermsAccepted(false);
@@ -34,6 +32,12 @@ export default function BusinessPolicyDialog({
   }, [isOpen]);
 
   if (!isOpen) return null;
+
+  // Helper chuyển đổi đơn vị (Day -> days, Minute -> minutes)
+  const formatUnit = (unit?: string, defaultUnit: string = '') => {
+    if (!unit) return defaultUnit;
+    return `${unit.toLowerCase()}s`;
+  };
 
   return (
     <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
@@ -48,38 +52,38 @@ export default function BusinessPolicyDialog({
 
           <ul className="space-y-4">
             <li className="flex gap-2">
-              <CheckCircle2 className="h-5 w-5 shrink-0 text-green-500" />
+              <CheckCircle2 className="text-brand h-5 w-5 shrink-0" />
               <span>
-                <strong>Pending Payments:</strong> Unpaid orders will reserve your items for{' '}
-                <strong>{paymentConfig?.onlinePaymentExpiredInDays ?? 2} days</strong> before being
-                automatically canceled and restocked. Upon proceeding to checkout, each payment
-                gateway session is valid for{' '}
-                <strong>{paymentConfig?.onlineTransactionExpiredInMinutes ?? 10} minutes</strong>.
+                <strong>Payment Time Limit:</strong> Please complete your payment within{' '}
+                <strong>
+                  {paymentConfig?.onlinePaymentExpiredValue ?? 2}{' '}
+                  {formatUnit(paymentConfig?.onlinePaymentExpiredUnit, 'days')}
+                </strong>
+                . Each payment session lasts for{' '}
+                <strong>
+                  {paymentConfig?.onlineTransactionExpiredValue ?? 10}{' '}
+                  {formatUnit(paymentConfig?.onlineTransactionExpiredUnit, 'minutes')}
+                </strong>
+                .
               </span>
             </li>
 
-            {/* Tách bạch rõ Ràng Days và Minutes */}
             <li className="flex gap-2">
-              <CheckCircle2 className="h-5 w-5 shrink-0 text-green-500" />
+              <CheckCircle2 className="text-brand h-5 w-5 shrink-0" />
               <span>
-                <strong>Payment Terms:</strong> You have{' '}
-                <strong>{paymentConfig?.onlinePaymentExpiredInDays ?? 2} days</strong> to fulfill
-                the payment before the order is canceled. Once you open the payment gateway, the
-                transaction session will expire in{' '}
-                <strong>{paymentConfig?.onlineTransactionExpiredInMinutes ?? 10} minutes</strong>.
+                <strong>Refunds:</strong> Returned online orders will be refunded at{' '}
+                <strong>{walletConfig?.onlineOrderReturnPercentage ?? 80}%</strong> to your wallet.
               </span>
             </li>
 
-            {/* Sửa từ Cancel thành Return, dùng Cashback */}
             <li className="flex gap-2">
-              <CheckCircle2 className="h-5 w-5 shrink-0 text-green-500" />
+              <CheckCircle2 className="text-brand h-5 w-5 shrink-0" />
               <span>
-                <strong>Refunds & Cashback:</strong> <strong>Returned</strong> online orders will
-                refund <strong>{walletConfig?.onlineOrderReturnPercentage ?? 80}%</strong> of the
-                value to your wallet. Successfully completed orders earn a cashback of{' '}
-                <strong>{walletConfig?.onlineOrderCompletedRewardPercentage ?? 5}%</strong> (Online
-                Payments) or{' '}
-                <strong>{walletConfig?.codOrderCompletedRewardPercentage ?? 2}%</strong> (COD).
+                <strong>Cashback:</strong> Earn{' '}
+                <strong>{walletConfig?.onlineOrderCompletedRewardPercentage ?? 5}%</strong> cashback
+                for Online payments and{' '}
+                <strong>{walletConfig?.codOrderCompletedRewardPercentage ?? 2}%</strong> for COD
+                upon order completion.
               </span>
             </li>
           </ul>

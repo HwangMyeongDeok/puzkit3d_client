@@ -38,6 +38,7 @@ export interface ProductVariantDto {
   assembledLengthMm: number;
   assembledWidthMm: number;
   assembledHeightMm: number;
+  previewImages: string[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

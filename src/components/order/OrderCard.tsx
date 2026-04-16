@@ -117,7 +117,7 @@ export default function OrderCard({ order, onPayNow, hasComplaint, ticketId }: O
             ))}
             {order.orderDetailsPreview.length > 3 && (
               <div className="border-border text-muted-foreground bg-muted/10 flex h-full min-h-16 items-center justify-center rounded-lg border border-dashed text-xs font-medium">
-                +{order.orderDetailsPreview.length - 3} other products
+                ... other products
               </div>
             )}
           </div>
@@ -146,7 +146,7 @@ export default function OrderCard({ order, onPayNow, hasComplaint, ticketId }: O
 
           {hasComplaint && ticketId && (
             <Link
-              href={`/ticket-support/${ticketId}`}
+              href={`/profile/ticket-support/${ticketId}`}
               className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-6 py-2.5 font-semibold text-rose-700 shadow-sm transition-colors hover:bg-rose-100 md:w-auto dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20"
             >
               <Ticket className="h-4 w-4" /> View Ticket

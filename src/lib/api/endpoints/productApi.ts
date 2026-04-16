@@ -7,8 +7,6 @@ import type {
   GetProductVariantsResponse,
   CreateInstockProductRequestDto,
   UpdateInstockProductRequestDto,
-  PartDto,
-  GetPartByIdRequest,
 } from '@/types/api/product.api.types';
 
 export const productApi = apiSlice.injectEndpoints({
@@ -99,14 +97,6 @@ export const productApi = apiSlice.injectEndpoints({
         { type: 'Product', id: 'LIST' },
       ],
     }),
-
-    getPartById: builder.query<PartDto, GetPartByIdRequest>({
-      query: ({ productId, partId }) => ({
-        url: `/instock-products/${productId}/parts/${partId}`,
-        method: 'GET',
-      }),
-      providesTags: (_result, _error, arg) => [{ type: 'Part', id: arg.partId }],
-    }),
   }),
 });
 
@@ -118,5 +108,4 @@ export const {
   useUpdateInstockProductMutation,
   useDeleteInstockProductMutation,
   useActivateInstockProductMutation,
-  useGetPartByIdQuery,
 } = productApi;

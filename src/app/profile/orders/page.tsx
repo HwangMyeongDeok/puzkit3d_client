@@ -14,11 +14,14 @@ import OrderStatusFilter from '@/components/order/OrderStatusFilter';
 import OrderCard from '@/components/order/OrderCard';
 import PartnerOrderCard from '@/components/partnerOrder/PartnerOrderCard';
 
-import type { InstockOrderStatus } from '@/types/api/order.api.types';
 import type { PartnerOrderStatus } from '@/types/api/partner-order.api.types';
 import { INSTOCK_FILTER_OPTIONS, PARTNER_FILTER_OPTIONS } from '@/lib/utils/order-status';
+import { InstockOrderStatus } from '@/types/api/order.api.types';
+import { SmartPaymentDialog } from '@/components/order/SmartPaymentDialog';
 
 type OrderTab = 'instock' | 'partner';
+
+// Components đã tách
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -314,22 +317,31 @@ export default function OrdersPage() {
         )}
       </div>
 
-      <PaymentActionDialog
-        open={!!paymentDialog.orderId}
-        orderId={paymentDialog.orderId}
-        onClose={() =>
-          setPaymentDialog({
-            orderId: null,
-            orderType: 'instock',
-          })
-        }
-        redirectRoute={
-          paymentDialog.orderType === 'partner'
-            ? '/profile/orders?tab=partner'
-            : '/profile/orders'
-        }
-        orderType={paymentDialog.orderType}
-      />
+      {paymentDialog.orderType === 'instock' ? (
+        <SmartPaymentDialog
+          orderId={paymentDialog.orderId}
+          open={paymentDialog.orderType === 'instock' && !!paymentDialog.orderId}
+          onClose={() =>
+            setPaymentDialog({
+              orderId: null,
+              orderType: 'instock',
+            })
+          }
+        />
+      ) : (
+        <PaymentActionDialog
+          open={!!paymentDialog.orderId}
+          orderId={paymentDialog.orderId}
+          onClose={() =>
+            setPaymentDialog({
+              orderId: null,
+              orderType: 'instock',
+            })
+          }
+          redirectRoute="/profile/orders?tab=partner"
+          orderType={paymentDialog.orderType}
+        />
+      )}
     </>
   );
 }
